@@ -4,5 +4,14 @@
 			"path": "."
 		}
 	],
-	"settings": {}
+	"settings": {
+		"files.associations": {
+			"charconv": "cpp",
+			"format": "cpp",
+			"memory": "cpp",
+			"xloctime": "cpp",
+			"xmemory": "cpp",
+			"xutility": "cpp"
+		}
+	}
 }

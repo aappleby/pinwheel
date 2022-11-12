@@ -47,20 +47,20 @@ double total_time = 0;
 
 TestResults test_blah2() {
   static int blep = 0;
-  TEST_INIT();
+  TestResults results;
   blep++;
   EXPECT_NE(1, 4, "slkdjf");
-  TEST_DONE("wee");
+  return results;
   //TestResults results;
   //EXPECT_EQ(1, 2, "What?")
   //return results;
 }
 
 TestResults test_blah() {
-  TEST_INIT();
+  TestResults results;
   results += test_blah2();
   ASSERT_NE(0, 1, "why?");
-  TEST_DONE("test_blah pass");
+  return results;
   //TestResults results;
   //EXPECT_EQ(1, 2, "What?")
   //return results;
@@ -70,7 +70,17 @@ TestResults test_instruction(const char* test_name, const int reps,
                              int max_cycles) {
   TEST_INIT("Testing op %6s, %d reps: ", test_name, reps);
 
-  //results += test_blah();
+  results += test_blah();
+
+  if (strcmp(test_name, "sub") == 0) {
+    ASSERT_EQ(1, 0, "slkdjf");
+  }
+
+  /*
+  if (strcmp(test_name, "jalr") == 0) {
+    ASSERT_EQ(1, 0, "slkdjf");
+  }
+  */
 
   char buf1[256];
   char buf2[256];
@@ -118,6 +128,15 @@ TestResults test_instruction(const char* test_name, const int reps,
 
 //------------------------------------------------------------------------------
 
+TestResults test_instructions(int reps, int max_cycles) {
+  TEST_INIT("Testing %d reps up to %d cycles", reps, max_cycles);
+  for (int i = 0; i < instruction_count; i++) {
+    results += test_instruction(instructions[i], reps, max_cycles);
+  }
+  TEST_DONE();
+  //TEST_DONE("All instructions pass");
+}
+
 int main(int argc, const char** argv) {
   int reps = 2;
   int max_cycles = 10000;
@@ -128,9 +147,10 @@ int main(int argc, const char** argv) {
   total_time = 0;
 
   TestResults results;
-  for (int i = 0; i < instruction_count; i++) {
-    results += test_instruction(instructions[i], reps, max_cycles);
-  }
+  results += test_instructions(reps, max_cycles);
+  results.dump();
+  //LOG_G("  %d passing checks, %d failing checks\n", results.check_pass, results.check_fail);
+  //LOG_G("  %d passing tests, %d failing tests\n", results.test_pass, results.test_fail);
 
   LOG_B("Total tocks %f\n", double(total_tocks));
   LOG_B("Total time %f\n", double(total_time));
@@ -138,5 +158,5 @@ int main(int argc, const char** argv) {
   double rate = double(total_tocks) / double(total_time);
   LOG_G("Sim rate %f mhz\n", rate / 1.0e6);
 
-  return results.fail ? 0 : 1;
+  return results.test_fail ? 0 : 1;
 }
