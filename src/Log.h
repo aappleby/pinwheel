@@ -51,7 +51,7 @@ inline void log_print(uint32_t color, const char* buffer, int len) {
     else if (c == '\v') {
       log_indent -= 2;
     }
-    else if (c == '\f') {
+    else if (c == '\r') {
       if (!log_start_line) {
         putchar('\n');
         log_start_line = true;
