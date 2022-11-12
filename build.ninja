@@ -1,0 +1,17 @@
+################################################################################
+# Rules
+
+rule compile_cpp
+  command = g++ -g -O3 -std=gnu++2a ${includes} -c ${in} -o ${out}
+
+rule link
+  command = g++ -g -O3 ${in} -o ${out}
+
+################################################################################
+# Compile bin/pinwheel
+
+build obj/main.o: compile_cpp src/main.cpp
+  includes = -I.
+
+build bin/pinwheel: link obj/main.o
+  includes = -I.

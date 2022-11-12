@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+.ninja_deps
+.ninja_log
+.vscode
+bin
+obj
