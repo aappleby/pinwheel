@@ -1,11 +1,8 @@
 #pragma once
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdarg.h>
-#include <inttypes.h>
-//#include <intrin.h>
-#include <chrono>
-#include <thread>
 #include <time.h>
 
 //-----------------------------------------------------------------------------
@@ -53,6 +50,15 @@ inline void log_print(uint32_t color, const char* buffer, int len) {
     }
     else if (c == '\v') {
       log_indent -= 2;
+    }
+    else if (c == '\f') {
+      if (!log_start_line) {
+        putchar('\n');
+        log_start_line = true;
+      }
+      else {
+        //putchar('*');
+      }
     }
     else {
       if (log_start_line) {

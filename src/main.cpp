@@ -1,10 +1,12 @@
+#include "Tests.h"
+
 #include <stdio.h>
 #include <time.h>
 #include <stdint.h>
 #include <stdarg.h>
 
 //#include "Platform.h"
-//#include "Tests.h"
+#include "Tests.h"
 //#include "submodules/CLI11/include/CLI/App.hpp"
 //#include "submodules/CLI11/include/CLI/Config.hpp"
 //#include "submodules/CLI11/include/CLI/Formatter.hpp"
@@ -43,10 +45,32 @@ const int instruction_count = sizeof(instructions) / sizeof(instructions[0]);
 uint64_t total_tocks = 0;
 double total_time = 0;
 
-void test_instruction(const char* test_name, const int reps,
+TestResults test_blah2() {
+  static int blep = 0;
+  TEST_INIT();
+  blep++;
+  EXPECT_NE(1, 4, "slkdjf");
+  TEST_DONE("wee");
+  //TestResults results;
+  //EXPECT_EQ(1, 2, "What?")
+  //return results;
+}
+
+TestResults test_blah() {
+  TEST_INIT();
+  results += test_blah2();
+  ASSERT_NE(0, 1, "why?");
+  TEST_DONE("test_blah pass");
+  //TestResults results;
+  //EXPECT_EQ(1, 2, "What?")
+  //return results;
+}
+
+TestResults test_instruction(const char* test_name, const int reps,
                              int max_cycles) {
-  //TEST_INIT("Testing op %6s, %d reps: ", test_name, reps);
-  printf("Testing op %6s, %d reps: ", test_name, reps);
+  TEST_INIT("Testing op %6s, %d reps: ", test_name, reps);
+
+  //results += test_blah();
 
   char buf1[256];
   char buf2[256];
@@ -70,63 +94,49 @@ void test_instruction(const char* test_name, const int reps,
       total_tocks++;
 
       if (top.sig_p12.dbus_addr == 0xfffffff0 && top.sig_p12.dbus_wmask) {
+        EXPECT_EQ(top.sig_p12.dbus_wdata, 1, "FAIL @ %d", elapsed_cycles);
+        /*
         if (top.sig_p12.dbus_wdata == 0) {
-          //TEST_FAIL("FAIL @ %d\n", elapsed_cycles);
-          printf("FAIL @ %d\n", elapsed_cycles);
+          TEST_FAIL("FAIL @ %d", elapsed_cycles);
         }
         if (rep == 0) {
           //printf("pass on hart %d at cycle %d\n", top.sig_p12.hart, elapsed_cycles);
         }
+        */
         break;
       }
     }
     time_b = timestamp();
     //printf("%f\n", (time_b - time_a));
     total_time += time_b - time_a;
-    if (elapsed_cycles == max_cycles) {
-      //TEST_FAIL("TIMEOUT\n");
-      printf("TIMEOUT\n");
-      return;
-    }
+    ASSERT_NE(elapsed_cycles, max_cycles, "TIMEOUT");
   }
 
-  //TEST_PASS();
-  printf("TEST_PASS\n");
+  //TEST_DONE();
+  TEST_DONE("op %6s pass", test_name);
 }
 
 //------------------------------------------------------------------------------
 
 int main(int argc, const char** argv) {
-  //CLI::App app{"Simple test and benchmark for rvsimple"};
-
-  //int reps = 1000;
-  int reps = 10;
+  int reps = 2;
   int max_cycles = 10000;
 
-  //app.add_option("-r,--reps", reps, "How many times to repeat the test");
-  //app.add_option("-m,--max_cycles", max_cycles,
-  //               "Maximum # cycles to simulate before timeout");
-  //CLI11_PARSE(app, argc, argv);
-
-  //LOG_B("Starting %s @ %d reps...\n", argv[0], reps);
-  printf("Starting %s @ %d reps...\n", argv[0], reps);
+  LOG_B("Starting %s @ %d reps...\n", argv[0], reps);
 
   total_tocks = 0;
   total_time = 0;
 
-  printf("Testing...\n");
-  //TestResults results("main");
+  TestResults results;
   for (int i = 0; i < instruction_count; i++) {
-    //results << test_instruction(instructions[i], reps, max_cycles);
-    test_instruction(instructions[i], reps, max_cycles);
+    results += test_instruction(instructions[i], reps, max_cycles);
   }
 
-  printf("Total tocks %f\n", double(total_tocks));
-  printf("Total time %f\n", double(total_time));
+  LOG_B("Total tocks %f\n", double(total_tocks));
+  LOG_B("Total time %f\n", double(total_time));
 
   double rate = double(total_tocks) / double(total_time);
-  printf("Sim rate %f mhz\n", rate / 1.0e6);
+  LOG_G("Sim rate %f mhz\n", rate / 1.0e6);
 
-  //return results.show_banner();
-  return 0;
+  return results.fail ? 0 : 1;
 }
