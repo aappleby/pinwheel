@@ -123,7 +123,7 @@ TestResults test_instruction(const char* test_name, const int reps,
   }
 
   //TEST_DONE();
-  TEST_DONE("op %6s pass", test_name);
+  TEST_DONE("pass");
 }
 
 //------------------------------------------------------------------------------
