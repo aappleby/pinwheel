@@ -128,7 +128,8 @@ class logic {
   typedef typename bitsize_to_basetype<WIDTH>::signed_type SBASE;
 
   BASE x = 0;
-  static const BASE mask = BASE(~0ull) >> ((sizeof(BASE) * 8) - WIDTH);
+  static const BASE mask = BASE(~BASE(0)) >> ((sizeof(BASE) * 8) - WIDTH);
+  static const BASE max = BASE(~BASE(0)) >> ((sizeof(BASE) * 8) - WIDTH);
 
   //----------
   // Logics can be constructed and assigned from their base type or other logics
@@ -167,7 +168,7 @@ class logic {
 
   template <int M>
   logic& operator=(const logic<M>& y) {
-    set(y.x);
+    set(BASE(y.x));
     return *this;
   }
 
@@ -229,7 +230,7 @@ struct bitslice {
     int lo = LO;
     if (hi > WIDTH - 1) hi = WIDTH - 1;
 
-    const DST mask = DST(-1ll) >> ((sizeof(DST) * 8) - (hi - lo + 1));
+    const DST mask = (~DST(0)) >> ((sizeof(DST) * 8) - (hi - lo + 1));
     self = DST((self & ~(mask << LO)) | ((x & mask) << LO));
   }
 };
@@ -529,76 +530,22 @@ void parse_hex(const char* src_filename, void* dst_data, int dst_size);
 //------------------------------------------------------------------------------
 // 'end' is INCLUSIVE
 
-struct file_cache {
-  const char* filename = nullptr;
-  uint8_t* blob = nullptr;
-  int size = 0;
-};
-
-inline file_cache* cache_inst() {
-  static file_cache cache[32];
-  return cache;
-}
-
-inline file_cache* get_cache(const char* filename) {
-  auto cache = cache_inst();
-  for (int i = 0; i < 32; i++) {
-    if (cache[i].filename == nullptr) continue;
-    if (strcmp(cache[i].filename, filename) == 0) return &cache[i];
-  }
-  return nullptr;
-}
-
-inline void put_cache(const char* filename, uint8_t* blob, int size) {
-  auto cache = cache_inst();
-  for (int i = 0; i < 32; i++) {
-    if (cache[i].filename == nullptr) {
-      cache[i] = { filename, blob, size };
-      return;
-    }
-  }
-}
-
 inline void readmemh(const char* path, void* mem, int begin, int end) {
-  memset(mem, 0, end - begin + 1ull);
-  auto cache = get_cache(path);
-  if (cache) {
-    memcpy(mem, cache->blob, cache->size);
-  }
-  else {
-    parse_hex(path, (uint8_t*)mem + begin, end - begin + 1);
-  }
+  memset(mem, 0, end - begin + 1);
+  parse_hex(path, (uint8_t*)mem + begin, end - begin + 1);
 }
 
 inline void readmemh(const std::string& path, void* mem, int begin, int end) {
   memset(mem, 0, end - begin + 1);
-  auto cache = get_cache(path.c_str());
-  if (cache) {
-    memcpy(mem, cache->blob, cache->size);
-  }
-  else {
-    parse_hex(path.c_str(), (uint8_t*)mem + begin, end - begin + 1);
-  }
+  parse_hex(path.c_str(), (uint8_t*)mem + begin, end - begin + 1);
 }
 
 inline void readmemh(const char* path, void* mem) {
-  auto cache = get_cache(path);
-  if (cache) {
-    memcpy(mem, cache->blob, cache->size);
-  }
-  else {
-    parse_hex(path, (uint8_t*)mem, 0xFFFFFFFF);
-  }
+  parse_hex(path, (uint8_t*)mem, 0xFFFFFFFF);
 }
 
 inline void readmemh(const std::string& path, void* mem) {
-  auto cache = get_cache(path.c_str());
-  if (cache) {
-    memcpy(mem, cache->blob, cache->size);
-  }
-  else {
-    parse_hex(path.c_str(), (uint8_t*)mem, 0xFFFFFFFF);
-  }
+  parse_hex(path.c_str(), (uint8_t*)mem, 0xFFFFFFFF);
 }
 
 //----------------------------------------
@@ -632,19 +579,11 @@ inline int write(const char* fmt, ...) {
 // Verilog's signed right shift doesn't work quite the same as C++'s, so we
 // patch around it here.
 
+// FIXME get rid of this now that as_signed() works correctly
+
 template <int WIDTH>
 inline logic<WIDTH> sra(logic<WIDTH> x, int s) {
   return x.as_signed() >> s;
-}
-
-template <int WIDTH>
-inline logic<WIDTH> srl(logic<WIDTH> x, int s) {
-  return x.as_unsigned() >> s;
-}
-
-template <int WIDTH>
-inline logic<WIDTH> sll(logic<WIDTH> x, int s) {
-  return x.as_unsigned() << s;
 }
 
 //----------------------------------------

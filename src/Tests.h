@@ -40,7 +40,10 @@ struct TestResults {
         LOG_G("| ######  ####### ####### ####### |  "); LOG_G("check pass %d\n", check_pass);
         LOG_G("| ##      ##   ##      ##      ## |  "); LOG_G("check fail %d\n", check_fail);
         LOG_G("| ##      ##   ## ####### ####### |  "); LOG_G("\n")
-        LOG_G("+---------------------------------+\n");
+        LOG_G("+---------------------------------+  "); LOG_G("\n");
+        if (test_fail == 0 && check_fail == 0) {
+          LOG_G("All tests pass.\n");
+        }
         LOG_G("\n");
     }
   }
