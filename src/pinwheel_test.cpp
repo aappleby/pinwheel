@@ -64,8 +64,8 @@ TestResults test_instruction(const char* test_name, const int reps,
       top.tock(0);
       tocks++;
 
-      if (top.dbus_addr == 0xfffffff0 && top.dbus_mask) {
-        EXPECT_EQ(top.dbus_wdata, 1, "FAIL @ %d", elapsed_cycles);
+      if (top.data_mem[0x3FC]) {
+        EXPECT_EQ(top.data_mem[0x3FC], 1, "FAIL @ %d", elapsed_cycles);
         break;
       }
     }
@@ -126,14 +126,9 @@ TestResults test_elf(uint8_t* blob, int size, int reps, int max_cycles) {
       top.tock(0);
       tocks++;
 
-      if (top.dbus_mask) {
-        if (top.dbus_addr == 0x40000000) {
-          putchar(top.dbus_wdata);
-        }
-        if (top.dbus_addr == 0xfffffff0) {
-          EXPECT_EQ(top.dbus_wdata, 1, "FAIL @ %d", elapsed_cycles);
-          break;
-        }
+      if (top.data_mem[0x3FC]) {
+        EXPECT_EQ(top.data_mem[0x3FC], 1, "FAIL @ %d", elapsed_cycles);
+        break;
       }
     }
     time += timestamp();
@@ -159,10 +154,11 @@ int main(int argc, const char** argv) {
   auto result = fread(blob, 1, sb.st_size, f);
   fclose(f);
 
-  test_elf(blob, sb.st_size, 1, 1000000000);
+  //test_elf(blob, sb.st_size, 1, 10);
 
-  int reps = 100;
-  int max_cycles = 10000;
+  int reps = 1000;
+  //int reps = 1;
+  int max_cycles = 1425;
 
   LOG_B("Starting %s @ %d reps...\n", argv[0], reps);
 
