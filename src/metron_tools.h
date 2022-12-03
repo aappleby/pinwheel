@@ -464,6 +464,12 @@ inline logic<DST_WIDTH> sign_extend(const logic<SRC_WIDTH> a) {
              bx<SRC_WIDTH - 1>(a));
 }
 
+template <int DST_WIDTH, int SRC_WIDTH>
+inline logic<DST_WIDTH> zero_extend(const logic<SRC_WIDTH> a) {
+  static_assert(DST_WIDTH >= SRC_WIDTH);
+  return bx<DST_WIDTH>(a);
+}
+
 //------------------------------------------------------------------------------
 // Trivial support for Verilog's "+foo=bar" test arg syntax.
 // This only works for $value$plusargs("NAME=%s", s);
