@@ -32,6 +32,19 @@ inline const char* op_id_to_name(int op_id) {
 
 //------------------------------------------------------------------------------
 
+struct cpu_to_mem {
+  logic<32> addr;
+  logic<32> data;
+  logic<4>  mask;
+};
+
+struct cpu_to_regfile {
+  logic<5>  raddr1;
+  logic<5>  raddr2;
+  logic<5>  waddr;
+  logic<32> wdata;
+};
+
 struct registers_p0 {
   logic<5>  hart;
   logic<32> pc;
@@ -179,6 +192,91 @@ class Pinwheel {
 
   //--------------------------------------------------------------------------------
 
+  cpu_to_mem dbus_out(logic<5> hart, logic<32> insn, logic<32> ra, logic<32> rb) {
+    logic<5>  op    = b5(insn, 2);
+    logic<3>  f3    = b3(insn, 12);
+
+    logic<32> imm_i = cat(dup<21>(insn[31]), b6(insn, 25), b5(insn, 20));
+    logic<32> imm_s = cat(dup<21>(insn[31]), b6(insn, 25), b5(insn, 7));
+
+    logic<32> addr = ra + ((op == OP_STORE) ? imm_s : imm_i);
+    logic<2>  align = b2(addr);
+    logic<32> data = rb << (8 * align);
+
+    logic<4> mask  = 0b0000;
+    if (op == OP_STORE) {
+      if      (f3 == 0) mask = 0b0001 << align;
+      else if (f3 == 1) mask = 0b0011 << align;
+      else if (f3 == 2) mask = 0b1111;
+      else              mask = 0b0000;
+    }
+
+    if (!hart) {
+      addr  = 0;
+      data = 0;
+      mask  = 0;
+    }
+
+    return { addr, data, mask };
+  }
+
+  //--------------------------------------------------------------------------------
+
+  cpu_to_mem rbus_out() {
+    return {0,0,0};
+  }
+
+  //--------------------------------------------------------------------------------
+
+  void tick_dbus(logic<32> addr, logic<32> data, logic<4> mask) {
+    logic<32> new_data = data_mem[b10(addr, 2)];
+    if (mask) {
+      if (addr != 0x40000000) {
+        if (mask[0]) new_data = (new_data & 0xFFFFFF00) | (data & 0x000000FF);
+        if (mask[1]) new_data = (new_data & 0xFFFF00FF) | (data & 0x0000FF00);
+        if (mask[2]) new_data = (new_data & 0xFF00FFFF) | (data & 0x00FF0000);
+        if (mask[3]) new_data = (new_data & 0x00FFFFFF) | (data & 0xFF000000);
+        data_mem[b10(addr, 2)] wb new_data;
+      }
+    }
+    dbus_data wb new_data;
+  }
+
+  //--------------------------------------------------------------------------------
+
+  void tick_pbus(logic<32> addr) {
+    pbus_data wb code_mem[b10(addr, 2)];
+  }
+
+  //--------------------------------------------------------------------------------
+
+  void tick_rbus_read(logic<5> read_hart, logic<32> read_insn) {
+    logic<5> rbus_raddr1 = b5(read_insn, 15);
+    logic<5> rbus_raddr2 = b5(read_insn, 20);
+
+    ra wb regfile[read_hart][rbus_raddr1];
+    rb wb regfile[read_hart][rbus_raddr2];
+  }
+
+  void tick_rbus_write(logic<5> write_hart, logic<32> write_insn, logic<5> align, logic<32> data, logic<32> alu_out) {
+    logic<5>  op = b5(write_insn, 2);
+    logic<32> unpacked = unpack(write_insn, align, data);
+    logic<32> rbus_wdata = op == OP_LOAD ? unpacked : alu_out;
+
+    logic<5>  rbus_waddr = b5(write_insn, 7);
+    if (op == OP_STORE)  rbus_waddr = 0;
+    if (op == OP_BRANCH) rbus_waddr = 0;
+
+    if (rbus_waddr) {
+      regfile[write_hart][rbus_waddr] wb rbus_wdata;
+    }
+  }
+
+  void tick_rbus(cpu_to_regfile bus) {
+  }
+
+  //--------------------------------------------------------------------------------
+
   logic<32> next_pc(logic<5>  hart, logic<32> pc, logic<32> insn) {
     logic<5>  op    = b5(insn, 2);
     logic<3>  f3    = b3(insn, 12);
@@ -228,94 +326,31 @@ class Pinwheel {
     const auto old_dbus_data = dbus_data;
     const auto old_pbus_data = pbus_data;
 
+    registers_p0 new_reg_p0;
+    registers_p1 new_reg_p1;
+    registers_p2 new_reg_p2;
+
     //----------------------------------------
 
-    logic<32> new_ra;
-    logic<32> new_rb;
-    {
-      logic<5>  hart  = old_reg_p0.hart;
-      logic<32> insn  = old_pbus_data;
-
-      logic<5> rbus_raddr1 = b5(insn, 15);
-      logic<5> rbus_raddr2 = b5(insn, 20);
-
-      new_ra wb regfile[hart][rbus_raddr1];
-      new_rb wb regfile[hart][rbus_raddr2];
-    }
-
-    registers_p1 new_reg_p1;
     new_reg_p1.hart wb old_reg_p0.hart;
     new_reg_p1.pc   wb old_reg_p0.pc;
     new_reg_p1.insn wb old_pbus_data;
 
     //----------------------------------------
 
-
-    logic<32> dbus_addr;
-    logic<2>  dbus_align;
-    logic<32> dbus_wdata;
-    logic<4>  dbus_mask;
-
-    {
-      logic<5>  hart  = old_reg_p1.hart;
-      logic<32> insn  = old_reg_p1.insn;
-      logic<32> ra    = old_ra;
-      logic<32> rb    = old_rb;
-
-      logic<5>  op    = b5(insn, 2);
-      logic<3>  f3    = b3(insn, 12);
-      logic<32> imm_i = cat(dup<21>(insn[31]), b6(insn, 25), b5(insn, 20));
-      logic<32> imm_s = cat(dup<21>(insn[31]), b6(insn, 25), b5(insn, 7));
-
-      // Data bus driver
-      dbus_addr = ra + ((op == OP_STORE) ? imm_s : imm_i);
-      dbus_align = b2(dbus_addr);
-
-      dbus_wdata = rb << (8 * dbus_align);
-      dbus_mask  = 0b0000;
-
-      if (op == OP_STORE) {
-        if      (f3 == 0) dbus_mask = 0b0001 << dbus_align;
-        else if (f3 == 1) dbus_mask = 0b0011 << dbus_align;
-        else if (f3 == 2) dbus_mask = 0b1111;
-        else              dbus_mask = 0b0000;
-      }
-
-      if (!hart) {
-        dbus_addr  = 0;
-        dbus_wdata = 0;
-        dbus_mask  = 0;
-      }
-    }
-
-    if (dbus_mask) {
-      if (dbus_addr != 0x40000000) {
-        logic<32> masked = data_mem[b10(dbus_addr, 2)];
-        if (dbus_mask[0]) masked = (masked & 0xFFFFFF00) | (dbus_wdata & 0x000000FF);
-        if (dbus_mask[1]) masked = (masked & 0xFFFF00FF) | (dbus_wdata & 0x0000FF00);
-        if (dbus_mask[2]) masked = (masked & 0xFF00FFFF) | (dbus_wdata & 0x00FF0000);
-        if (dbus_mask[3]) masked = (masked & 0x00FFFFFF) | (dbus_wdata & 0xFF000000);
-        data_mem[b10(dbus_addr, 2)] wb masked;
-      }
-    }
+    auto to_dbus = dbus_out(old_reg_p1.hart, old_reg_p1.insn, old_ra, old_rb);
+    tick_dbus(to_dbus.addr, to_dbus.data, to_dbus.mask);
 
     //----------------------------------------
 
-    logic<32> new_dbus_data;
-    new_dbus_data wb data_mem[b10(dbus_addr, 2)];
-
-    //----------------------------------------
-
-    registers_p2 new_reg_p2;
     new_reg_p2.hart    wb old_reg_p1.hart;
     new_reg_p2.pc      wb next_pc(old_reg_p1.hart, old_reg_p1.pc, old_reg_p1.insn);
     new_reg_p2.insn    wb old_reg_p1.insn;
-    new_reg_p2.align   wb dbus_align;
+    new_reg_p2.align   wb b2(to_dbus.addr);
     new_reg_p2.alu_out wb alu(old_reg_p1.pc, old_reg_p1.insn, old_ra, old_rb);
 
     //----------------------------------------
 
-    registers_p0 new_reg_p0;
     new_reg_p0 wb {
       .hart = old_reg_p2.hart,
       .pc   = old_reg_p2.pc,
@@ -323,44 +358,18 @@ class Pinwheel {
 
     //----------------------------------------
 
-
     logic<32> unpacked = unpack(old_reg_p2.insn, old_reg_p2.align, old_dbus_data);
+    logic<5>  write_op = b5(old_reg_p2.insn, 2);
+    logic<32> rbus_wdata = write_op == OP_LOAD ? unpacked : old_reg_p2.alu_out;
 
-    logic<32> rbus_wdata;
-    {
-      logic<32> insn    = old_reg_p2.insn;
-      logic<32> alu_out = old_reg_p2.alu_out;
-      logic<5>  op = b5(insn, 2);
-      rbus_wdata = op == OP_LOAD ? unpacked : alu_out;
-    }
+    tick_rbus_write(old_reg_p2.hart, old_reg_p2.insn, old_reg_p2.align, old_dbus_data, old_reg_p2.alu_out);
+    tick_rbus_read (old_reg_p0.hart, old_pbus_data);
 
-    logic<5>  rbus_waddr;
-    {
-      logic<32> insn = old_reg_p2.insn;
-      logic<5> op = b5(insn, 2);
-      rbus_waddr = b5(insn, 7);
-      if (op == OP_STORE)  rbus_waddr = 0;
-      if (op == OP_BRANCH) rbus_waddr = 0;
-    }
-
-    if (rbus_waddr) {
-      regfile[new_reg_p0.hart][rbus_waddr] wb rbus_wdata;
-    }
-
-    //----------------------------------------
-
-    logic<32> new_pbus_data;
-    new_pbus_data wb code_mem[b10(old_reg_p2.pc, 2)];
-
-    //----------------------------------------
+    tick_pbus(old_reg_p2.pc);
 
     reg_p0 = new_reg_p0;
     reg_p1 = new_reg_p1;
     reg_p2 = new_reg_p2;
-    ra = new_ra;
-    rb = new_rb;
-    dbus_data = new_dbus_data;
-    pbus_data = new_pbus_data;
 
   }
 };
