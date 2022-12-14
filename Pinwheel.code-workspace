@@ -12,7 +12,12 @@
 			"xloctime": "cpp",
 			"xmemory": "cpp",
 			"xutility": "cpp",
-			"cstdio": "cpp"
+			"cstdio": "cpp",
+			"*.tcc": "cpp",
+			"mutex": "cpp",
+			"*.inc": "cpp",
+			"optional": "cpp",
+			"variant": "cpp"
 		}
 	},
 }

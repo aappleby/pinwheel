@@ -7,9 +7,9 @@
 
 #include "Tests.h"
 #include "pinwheel.h"
-#include "pinwheel_demo.h"
+//#include "pinwheel_demo.h"
 
-#include "AppLib/AppHost.h"
+//#include "AppLib/AppHost.h"
 
 double timestamp() {
   static uint64_t origin = 0;

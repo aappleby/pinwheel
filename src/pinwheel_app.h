@@ -1,8 +1,9 @@
 #include "AppLib/App.h"
 
-#include "AppLib/GridPainter.h"
-#include "AppLib/TextPainter.h"
-#include "AppLib/Viewport.h"
+#include "MetroLib/src/AppLib/GridPainter.h"
+#include "MetroLib/src/AppLib/TextPainter.h"
+#include "MetroLib/src/AppLib/Viewport.h"
+#include "pinwheel.h"
 
 struct PinwheelApp : public App {
 
@@ -18,4 +19,6 @@ struct PinwheelApp : public App {
   ViewController view_control;
   TextPainter text_painter;
   GridPainter grid_painter;
+
+  Pinwheel pinwheel;
 };

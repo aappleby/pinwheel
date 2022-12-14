@@ -1,0 +1,39 @@
+################################################################################
+# Rules
+
+default_gpp      = g++ -g -MMD -std=gnu++2a -rdynamic
+default_gcc      = gcc -g -MMD
+build_mode       = -DCONFIG_RELEASE -O3
+default_includes = -I.
+
+rule compile
+  command = ${default_gpp} ${build_mode} ${default_includes} ${includes} -MF ${out}.d -c ${in} -o ${out}
+  depfile = ${out}.d
+  deps = gcc
+
+rule compile_c
+  command = ${default_gcc} ${build_mode} ${default_includes} ${includes} -MF ${out}.d -c ${in} -o ${out}
+  depfile = ${out}.d
+  deps = gcc
+
+rule lib
+  command = ar rcs ${out} ${in}
+
+################################################################################
+# Other libs
+
+build obj/glad/glad.o : compile_c glad/glad.c
+build bin/glad.a      : lib obj/glad/glad.o
+
+build obj/imgui/imgui.o         : compile imgui/imgui.cpp
+build obj/imgui/imgui_demo.o    : compile imgui/imgui_demo.cpp
+build obj/imgui/imgui_draw.o    : compile imgui/imgui_draw.cpp
+build obj/imgui/imgui_tables.o  : compile imgui/imgui_tables.cpp
+build obj/imgui/imgui_widgets.o : compile imgui/imgui_widgets.cpp
+
+build bin/imgui.a : lib $
+  obj/imgui/imgui.o $
+  obj/imgui/imgui_demo.o $
+  obj/imgui/imgui_draw.o $
+  obj/imgui/imgui_tables.o $
+  obj/imgui/imgui_widgets.o

@@ -7,3 +7,6 @@
 [submodule "submodules/SDL"]
 	path = submodules/SDL
 	url = https://github.com/libsdl-org/SDL
+[submodule "submodules/MetroLib"]
+	path = submodules/MetroLib
+	url = https://github.com/aappleby/MetroLib

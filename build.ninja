@@ -3,10 +3,10 @@
 
 default_gpp      = g++ -g -MMD -std=gnu++2a -rdynamic
 build_mode       = -DCONFIG_RELEASE -O3
-default_includes = -Isrc -Isubmodules
+default_includes = -Isrc -Isubmodules -Isubmodules/MetroLib/src
 libs             = -lSDL2
 
-rule compile_cpp
+rule compile
   command = ${default_gpp} ${build_mode} ${default_includes} ${includes} -MF ${out}.d -c ${in} -o ${out}
   depfile = ${out}.d
   deps = gcc
@@ -20,99 +20,49 @@ rule lib
 rule run_test
   command = ${in} | grep "All tests pass." && touch ${out}
 
-################################################################################
-# Compile bin/pinwheel
+rule do_subninja
+  command = ninja -C ${dir}
 
-build obj/pinwheel_main.o: compile_cpp src/pinwheel_main.cpp
-build obj/pinwheel_demo.o: compile_cpp src/pinwheel_demo.cpp
-build obj/pinwheel_test.o: compile_cpp src/pinwheel_test.cpp
+rule compile_c
+  command = gcc -g -MMD ${build_mode} ${default_includes} ${includes} -MF ${out}.d -c ${in} -o ${out}
+  depfile = ${out}.d
+  deps = gcc
+
+################################################################################
+
+build always : phony
+
+build submodules/bin/glad.a submodules/bin/imgui.a : do_subninja | always
+  dir = submodules
+
+build submodules/MetroLib/bin/CoreLib.a submodules/MetroLib/bin/AppLib.a : do_subninja | always
+  dir = submodules/MetroLib
+
+build obj/pinwheel_main.o: compile src/pinwheel_main.cpp
+build obj/pinwheel_app.o:  compile src/pinwheel_app.cpp
+build obj/pinwheel_test.o: compile src/pinwheel_test.cpp
+build obj/rvdisasm.o:      compile src/rvdisasm.cpp
 
 build bin/pinwheel: link $
   obj/pinwheel_main.o $
-  obj/pinwheel_demo.o $
-  obj/glad.o $
-  bin/AppLib.a $
-  bin/CoreLib.a $
-  bin/imgui.a
+  obj/pinwheel_app.o $
+  submodules/MetroLib/bin/AppLib.a $
+  submodules/MetroLib/bin/CoreLib.a $
+  submodules/bin/imgui.a $
+  submodules/bin/glad.a $
 
-build bin/pinwheel_test: link $
-  obj/pinwheel_test.o
 
-build bin/pinwheel_test_pass: run_test bin/pinwheel_test
+#  obj/rvdisasm.o $
+#  submodules/bin/imgui.a $
+#  submodules/MetroLib/bin/CoreLib.a $
+#  submodules/MetroLib/bin/AppLib.a $
 
-################################################################################
-# CoreLib
+#  obj/pinwheel_app.o $
 
-build obj/CoreLib/Assembler.o     : compile_cpp src/CoreLib/Assembler.cpp
-build obj/CoreLib/Constants.o     : compile_cpp src/CoreLib/Constants.cpp
-build obj/CoreLib/Debug.o         : compile_cpp src/CoreLib/Debug.cpp
-build obj/CoreLib/File.o          : compile_cpp src/CoreLib/File.cpp
-build obj/CoreLib/MetroBoyCPU.o   : compile_cpp src/CoreLib/MetroBoyCPU.cpp
-build obj/CoreLib/StateManager2.o : compile_cpp src/CoreLib/StateManager2.cpp
-build obj/CoreLib/Types.o         : compile_cpp src/CoreLib/Types.cpp
-
-build bin/CoreLib.a : lib $
-  obj/CoreLib/Assembler.o $
-  obj/CoreLib/Constants.o $
-  obj/CoreLib/Debug.o $
-  obj/CoreLib/File.o $
-  obj/CoreLib/MetroBoyCPU.o $
-  obj/CoreLib/StateManager2.o $
-  obj/CoreLib/Types.o
-
-################################################################################
-# AppLib
-
-build obj/AppLib/AppHost.o        : compile_cpp src/AppLib/AppHost.cpp
-build obj/AppLib/Audio.o          : compile_cpp src/AppLib/Audio.cpp
-build obj/AppLib/Blitter.o        : compile_cpp src/AppLib/Blitter.cpp
-build obj/AppLib/BoxPainter.o     : compile_cpp src/AppLib/BoxPainter.cpp
-build obj/AppLib/Console.o        : compile_cpp src/AppLib/Console.cpp
-build obj/AppLib/DummyApp.o       : compile_cpp src/AppLib/DummyApp.cpp
-build obj/AppLib/DumpPainter.o    : compile_cpp src/AppLib/DumpPainter.cpp
-build obj/AppLib/GatePix.o        : compile_cpp src/AppLib/GatePix.cpp
-build obj/AppLib/GBBlitter.o      : compile_cpp src/AppLib/GBBlitter.cpp
-build obj/AppLib/GLBase.o         : compile_cpp src/AppLib/GLBase.cpp
-build obj/AppLib/GridPainter.o    : compile_cpp src/AppLib/GridPainter.cpp
-build obj/AppLib/LinePainter.o    : compile_cpp src/AppLib/LinePainter.cpp
-build obj/AppLib/Terminus.o       : compile_cpp src/AppLib/Terminus.cpp
-build obj/AppLib/TextPainter.o    : compile_cpp src/AppLib/TextPainter.cpp
-build obj/AppLib/Viewport.o       : compile_cpp src/AppLib/Viewport.cpp
-
-build bin/AppLib.a : lib $
-  obj/AppLib/AppHost.o $
-  obj/AppLib/Audio.o $
-  obj/AppLib/Blitter.o $
-  obj/AppLib/BoxPainter.o $
-  obj/AppLib/Console.o $
-  obj/AppLib/DummyApp.o $
-  obj/AppLib/DumpPainter.o $
-  obj/AppLib/GatePix.o $
-  obj/AppLib/GBBlitter.o $
-  obj/AppLib/GLBase.o $
-  obj/AppLib/GridPainter.o $
-  obj/AppLib/LinePainter.o $
-  obj/AppLib/Terminus.o $
-  obj/AppLib/TextPainter.o $
-  obj/AppLib/Viewport.o $
-
-################################################################################
-# Other libs
-
-build obj/glad.o          : compile_cpp submodules/glad/glad.c
-
-build obj/imgui.o         : compile_cpp submodules/imgui/imgui.cpp
-build obj/imgui_demo.o    : compile_cpp submodules/imgui/imgui_demo.cpp
-build obj/imgui_draw.o    : compile_cpp submodules/imgui/imgui_draw.cpp
-build obj/imgui_tables.o  : compile_cpp submodules/imgui/imgui_tables.cpp
-build obj/imgui_widgets.o : compile_cpp submodules/imgui/imgui_widgets.cpp
-
-build bin/imgui.a : lib $
-  obj/imgui.o $
-  obj/imgui_demo.o $
-  obj/imgui_draw.o $
-  obj/imgui_tables.o $
-  obj/imgui_widgets.o $
+#build bin/pinwheel_test: link $
+#  obj/pinwheel_test.o
+#
+#build bin/pinwheel_test_pass: run_test bin/pinwheel_test
 
 
 
