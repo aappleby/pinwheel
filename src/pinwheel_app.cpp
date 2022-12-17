@@ -9,6 +9,7 @@
 #endif
 
 #include "CoreLib/Dumper.h"
+#include "CoreLib/Log.h"
 
 const char* PinwheelApp::app_get_title() { return "Pinwheel Test App"; }
 
@@ -21,7 +22,9 @@ void PinwheelApp::app_init(int screen_w, int screen_h) {
   pinwheel.tock(true);
 }
 
-void PinwheelApp::app_close()  {}
+void PinwheelApp::app_close()  {
+  LOG_G("PinwheelApp::app_close()\n");
+}
 
 bool PinwheelApp::pause_when_idle() { return true; }
 

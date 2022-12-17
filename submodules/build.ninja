@@ -2,17 +2,12 @@
 # Rules
 
 default_gpp      = g++ -g -MMD -std=gnu++2a -rdynamic
-default_gcc      = gcc -g -MMD
-build_mode       = -DCONFIG_RELEASE -O3
+#build_mode       = -DCONFIG_RELEASE -O3
+build_mode = -DCONFIG_DEBUG
 default_includes = -I.
 
 rule compile
   command = ${default_gpp} ${build_mode} ${default_includes} ${includes} -MF ${out}.d -c ${in} -o ${out}
-  depfile = ${out}.d
-  deps = gcc
-
-rule compile_c
-  command = ${default_gcc} ${build_mode} ${default_includes} ${includes} -MF ${out}.d -c ${in} -o ${out}
   depfile = ${out}.d
   deps = gcc
 
@@ -22,7 +17,7 @@ rule lib
 ################################################################################
 # Other libs
 
-build obj/glad/glad.o : compile_c glad/glad.c
+build obj/glad/glad.o : compile glad/glad.c
 build bin/glad.a      : lib obj/glad/glad.o
 
 build obj/imgui/imgui.o         : compile imgui/imgui.cpp

@@ -2,7 +2,8 @@
 # Rules
 
 default_gpp      = g++ -g -MMD -std=gnu++2a -rdynamic
-build_mode       = -DCONFIG_RELEASE -O3
+#build_mode       = -DCONFIG_RELEASE -O3
+build_mode       = -DCONFIG_DEBUG -O0
 default_includes = -Isrc -Isubmodules -Isubmodules/MetroLib/src
 libs             = -lSDL2
 
@@ -38,6 +39,9 @@ build submodules/bin/glad.a submodules/bin/imgui.a : do_subninja | always
 build submodules/MetroLib/bin/CoreLib.a submodules/MetroLib/bin/AppLib.a : do_subninja | always
   dir = submodules/MetroLib
 
+build firmware/bin/hello : do_subninja | always
+  dir = firmware
+
 build obj/pinwheel_main.o: compile src/pinwheel_main.cpp
 build obj/pinwheel_app.o:  compile src/pinwheel_app.cpp
 build obj/pinwheel_test.o: compile src/pinwheel_test.cpp
@@ -49,109 +53,10 @@ build bin/pinwheel: link $
   submodules/MetroLib/bin/AppLib.a $
   submodules/MetroLib/bin/CoreLib.a $
   submodules/bin/imgui.a $
-  submodules/bin/glad.a $
+  submodules/bin/glad.a | firmware/bin/hello
 
-
-#  obj/rvdisasm.o $
-#  submodules/bin/imgui.a $
-#  submodules/MetroLib/bin/CoreLib.a $
-#  submodules/MetroLib/bin/AppLib.a $
-
-#  obj/pinwheel_app.o $
 
 #build bin/pinwheel_test: link $
 #  obj/pinwheel_test.o
 #
 #build bin/pinwheel_test_pass: run_test bin/pinwheel_test
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# riscv64-unknown-elf-gcc -c hello.cpp -o hello.cpp.o
-# riscv64-unknown-elf-gcc -c hello.s -o hello.s.o
-
-
-
-# SRCS=$(wildcard *.S)
-# OBJS=$(SRCS:.S=.o)
-# ELFS=$(SRCS:.S=.elf)
-# BINS=$(SRCS:.S=.text.vh) $(SRCS:.S=.data.vh)
-#
-# all: ${BINS}
-#
-# %.o: %.S test_macros.h riscv_test.h
-# 	riscv64-unknown-elf-gcc -c -mabi=ilp32 -march=rv32i -o $@ $<
-#
-# %.elf: %.o
-# 	riscv64-unknown-elf-ld -Tlink.ld -melf32lriscv $< -o $@
-#
-# %.text.bin: %.elf
-# 	riscv64-unknown-elf-objcopy -O binary $< $@ -j .init -j .text --change-addresses -0x400000
-#
-# %.data.bin: %.elf
-# 	riscv64-unknown-elf-objcopy -O binary $< $@ -j .data -j .eh_frame -j .fini_array -j .init_array --change-addresses -0x80000000
-#
-# %.vh: %.bin
-# 	srec_cat $< -binary -byte-swap 4 -O $@ -VMem 32
-#
-# clean:
-# 	rm -f ${OBJS} ${ELFS} ${BINS}
-
-
-#rule metron
-#  command = bin/metron -q -v -r ${src_dir} -o ${dst_dir} -s ${src_top}
-#rule verilator
-#  command = verilator ${includes} --cc ${src_top} -Mdir ${dst_dir}
-#rule make
-#  command = make --quiet -C ${dst_dir} -f ${makefile} > /dev/null
-#rule run_test
-#  command = ${in} | grep "All tests pass." && touch ${out}
-#rule console
-#  command = ${in}
-#  pool = console
-#rule iverilog
-#  command = iverilog -g2012 ${defines} ${includes} ${in} -o ${out}
-#rule yosys
-#  command = yosys -q -p 'read_verilog ${includes} -sv ${in}; dump; $
-#      synth_ice40 -json ${out};'
-#rule nextpnr-ice40
-#  command = nextpnr-ice40 -q --${chip} --package ${package} --json ${in} $
-#      --asc ${out} --pcf ${pcf}
-#rule icepack
-#  command = icepack ${in} ${out}
-#rule command
-#  command = ${command}

@@ -59,7 +59,7 @@ int main(int argc, const char** argv) {
 
 #endif
 
-  return host.app_main(argc, argv);
+  auto app_result = host.app_main(argc, argv);
 
 #if 0
 
@@ -91,8 +91,8 @@ int main(int argc, const char** argv) {
   delete [] blob;
 #endif
 
-  printf("Hello World\n");
-  return 0;
+  printf("main() done\n");
+  return app_result;
 }
 
 //------------------------------------------------------------------------------
