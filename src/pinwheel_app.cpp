@@ -1,5 +1,7 @@
 #include "pinwheel_app.h"
 
+#include "rvdisasm.h"
+
 #define SDL_MAIN_HANDLED
 #ifdef _MSC_VER
 #include "SDL/include/SDL.h"
@@ -75,7 +77,9 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
 
   d("reg_p1.hart   %d\n",     pinwheel.reg_p1.hart);
   d("reg_p1.pc     0x%08x\n", pinwheel.reg_p1.pc);
-  d("reg_p1.insn   0x%08x\n", pinwheel.reg_p1.insn);
+  d("reg_p1.insn   0x%08x ", pinwheel.reg_p1.insn);
+  print_rv(d, pinwheel.reg_p1.insn);
+  d("\n");
   d("reg_p1.enable %d\n",     pinwheel.reg_p1.active);
   d("reg_p1.active %d\n",     pinwheel.reg_p1.enable);
   d("\n");
@@ -107,21 +111,27 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
     switch(phases[hart]) {
       case 0:
         d("pc     0x%08x\n", pinwheel.reg_p0.pc);
-        d("insn   0x%08x\n", pinwheel.reg_p0.active ? int(pinwheel.pbus_data) : 0);
+        d("insn   0x%08x ", pinwheel.reg_p0.active ? int(pinwheel.pbus_data) : 0);
+        print_rv(d, pinwheel.reg_p0.active ? int(pinwheel.pbus_data) : 0);
+        d("\n");
         d("enable %d\n",     pinwheel.reg_p0.active);
         d("active %d\n",     pinwheel.reg_p0.enable);
         d("alu    ----------\n");
         break;
       case 1:
         d("pc     0x%08x\n", pinwheel.reg_p1.pc);
-        d("insn   0x%08x\n", pinwheel.reg_p1.insn);
+        d("insn   0x%08x ", pinwheel.reg_p1.insn);
+        print_rv(d, pinwheel.reg_p1.insn);
+        d("\n");
         d("enable %d\n",     pinwheel.reg_p1.active);
         d("active %d\n",     pinwheel.reg_p1.enable);
         d("alu    ----------\n");
         break;
       case 2:
         d("pc     0x%08x\n", pinwheel.reg_p2.pc);
-        d("insn   0x%08x\n", pinwheel.reg_p2.insn);
+        d("insn   0x%08x ", pinwheel.reg_p2.insn);
+        print_rv(d, pinwheel.reg_p2.insn);
+        d("\n");
         d("enable %d\n",     pinwheel.reg_p2.active);
         d("active %d\n",     pinwheel.reg_p2.enable);
         d("alu    0x%08x\n", pinwheel.reg_p2.alu_out);

@@ -50,6 +50,7 @@ build obj/rvdisasm.o:      compile src/rvdisasm.cpp
 build bin/pinwheel: link $
   obj/pinwheel_main.o $
   obj/pinwheel_app.o $
+  obj/rvdisasm.o $
   submodules/MetroLib/bin/AppLib.a $
   submodules/MetroLib/bin/CoreLib.a $
   submodules/bin/imgui.a $

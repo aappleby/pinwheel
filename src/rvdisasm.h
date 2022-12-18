@@ -1,4 +1,6 @@
 #pragma once
 #include <stdint.h>
 
-void print_rv(uint32_t op);
+struct Dumper;
+
+void print_rv(Dumper& d, uint32_t op);
