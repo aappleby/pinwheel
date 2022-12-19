@@ -34,28 +34,11 @@ struct rbus_write {
   logic<1>  wren;
 };
 
-struct registers_p0 {
-  logic<5>  hart;
-  logic<32> pc;
-  logic<1>  enable;
-  logic<1>  active;
-};
-
-struct registers_p1 {
+struct registers_base {
+  logic<2>  vane;
   logic<5>  hart;
   logic<32> pc;
   logic<32> insn;
-  logic<1>  enable;
-  logic<1>  active;
-};
-
-struct registers_p2 {
-  logic<5>  hart;
-  logic<32> pc;
-  logic<32> insn;
-
-  logic<5>  align;
-  logic<32> alu_out;
   logic<1>  enable;
   logic<1>  active;
 };
@@ -72,9 +55,12 @@ class Pinwheel {
   uint32_t data_mem[16384];  // Cores share RAM
   uint32_t regfile[1024];    // Cores have their own register files
 
-  registers_p0 reg_p0;
-  registers_p1 reg_p1;
-  registers_p2 reg_p2;
+  registers_base vane0;
+  registers_base vane1;
+  registers_base vane2;
+
+  logic<5>  align;
+  logic<32> alu_out;
 
   logic<32> ra;
   logic<32> rb;
@@ -97,23 +83,29 @@ class Pinwheel {
 
     memset(regfile, 0, sizeof(regfile));
 
-    reg_p0.hart   = 0;
-    reg_p0.pc     = 0;
-    reg_p0.enable = 1;
-    reg_p0.active = 0;
+    vane0.vane   = 0;
+    vane0.hart   = 0;
+    vane0.pc     = 0;
+    vane0.insn   = 0;
+    vane0.enable = 1;
+    vane0.active = 0;
 
-    reg_p1.hart   = 1;
-    reg_p1.pc     = 0;
-    reg_p1.insn   = 0;
-    reg_p1.enable = 0;
-    reg_p1.active = 0;
+    vane1.vane   = 1;
+    vane1.hart   = 1;
+    vane1.pc     = 0;
+    vane1.insn   = 0;
+    vane1.enable = 0;
+    vane1.active = 0;
 
-    reg_p2.hart   = 2;
-    reg_p2.pc     = 0;
-    reg_p2.insn   = 0;
-    reg_p2.enable = 0;
-    reg_p2.active = 0;
+    vane2.vane   = 2;
+    vane2.hart   = 2;
+    vane2.pc     = 0;
+    vane2.insn   = 0;
+    vane2.enable = 0;
+    vane2.active = 0;
 
+    align = 0;
+    alu_out = 0;
     ra = 0;
     rb = 0;
     dbus_data = 0;
@@ -278,34 +270,37 @@ class Pinwheel {
       return;
     }
 
-    cpu_to_mem to_dbus       = reg_p1.active ? dbus_out(reg_p1.hart, reg_p1.insn, ra, rb) : cpu_to_mem{0};
-    rbus_read  to_rbus_read  = reg_p0.active ? rbus_out_read(reg_p0.hart, pbus_data) : rbus_read{0};
-    rbus_write to_rbus_write = reg_p2.active ? rbus_out_write(reg_p2.hart, reg_p2.insn, reg_p2.align, dbus_data, reg_p2.alu_out) : rbus_write{0};
-    cpu_to_mem to_pbus       = reg_p2.active ? pbus_out(reg_p2.pc) : cpu_to_mem{0};
+    cpu_to_mem to_dbus       = vane1.active ? dbus_out(vane1.hart, vane1.insn, ra, rb) : cpu_to_mem{0};
+    rbus_read  to_rbus_read  = vane0.active ? rbus_out_read(vane0.hart, pbus_data) : rbus_read{0};
+    rbus_write to_rbus_write = vane2.active ? rbus_out_write(vane2.hart, vane2.insn, align, dbus_data, alu_out) : rbus_write{0};
+    cpu_to_mem to_pbus       = vane2.active ? pbus_out(vane2.pc) : cpu_to_mem{0};
 
-    auto new_p0_hart   = reg_p2.hart;
-    auto new_p0_pc     = reg_p2.pc;
-    auto new_p0_enable = reg_p2.enable;
-    auto new_p0_active = reg_p2.enable | reg_p2.active;
+    auto new_p0_hart   = vane2.hart;
+    auto new_p0_pc     = vane2.pc;
+    auto new_p0_insn   = vane2.insn;
+    auto new_p0_enable = vane2.enable;
+    auto new_p0_active = vane2.enable | vane2.active;
 
-    reg_p2.hart    wb reg_p1.hart;
-    reg_p2.pc      wb reg_p1.active ? next_pc(reg_p1.pc, reg_p1.insn, ra, rb) : b32(0);
-    reg_p2.insn    wb reg_p1.insn;
-    reg_p2.align   wb b2(to_dbus.addr);
-    reg_p2.alu_out wb reg_p1.active ? alu(reg_p1.pc, reg_p1.insn, ra, rb) : b32(0);
-    reg_p2.enable  wb reg_p1.enable;
-    reg_p2.active  wb reg_p1.active;
+    vane2.hart    wb vane1.hart;
+    vane2.pc      wb vane1.active ? next_pc(vane1.pc, vane1.insn, ra, rb) : b32(0);
+    vane2.insn    wb vane1.insn;
+    vane2.enable  wb vane1.enable;
+    vane2.active  wb vane1.active;
 
-    reg_p1.hart    wb reg_p0.hart;
-    reg_p1.pc      wb reg_p0.pc;
-    reg_p1.insn    wb reg_p0.active ? pbus_data : b32(0);
-    reg_p1.enable  wb reg_p0.enable;
-    reg_p1.active  wb reg_p0.active;
+    vane1.hart    wb vane0.hart;
+    vane1.pc      wb vane0.pc;
+    vane1.insn    wb vane0.active ? pbus_data : b32(0);
+    vane1.enable  wb vane0.enable;
+    vane1.active  wb vane0.active;
 
-    reg_p0.hart    wb new_p0_hart;
-    reg_p0.pc      wb new_p0_pc;
-    reg_p0.enable  wb new_p0_enable;
-    reg_p0.active  wb new_p0_active;
+    vane0.hart    wb new_p0_hart;
+    vane0.pc      wb new_p0_pc;
+    vane0.insn    wb new_p0_insn;
+    vane0.enable  wb new_p0_enable;
+    vane0.active  wb new_p0_active;
+
+    align   wb b2(to_dbus.addr);
+    alu_out wb vane1.active ? alu(vane1.pc, vane1.insn, ra, rb) : b32(0);
 
     tick_dbus(to_dbus);
     tick_rbus(to_rbus_read, to_rbus_write);
@@ -352,5 +347,3 @@ class Pinwheel {
   //--------------------------------------------------------------------------------
 
 };
-
-  //--------------------------------------------------------------------------------
