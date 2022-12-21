@@ -8,7 +8,7 @@ all: ${BINS}
 %.o: %.S test_macros.h riscv_test.h
 	riscv64-unknown-elf-gcc -c -mabi=ilp32 -march=rv32i -o $@ $<
 
-%.elf: %.o 
+%.elf: %.o
 	riscv64-unknown-elf-ld -Tlink.ld -melf32lriscv $< -o $@
 
 %.text.bin: %.elf
@@ -22,3 +22,7 @@ all: ${BINS}
 
 clean:
 	rm -f ${OBJS} ${ELFS} ${BINS}
+
+
+.PHONY: clean
+.PRECIOUS: %.o %.elf %.vh

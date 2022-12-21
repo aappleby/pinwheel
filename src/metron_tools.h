@@ -172,6 +172,13 @@ class logic {
   }
 
   //----------
+
+  logic& operator ^= (const logic& y) {
+    x ^= y.x;
+    return *this;
+  }
+
+  //----------
   // Disallow using "<=" with logic<>s, as it means "non-blocking assign" in
   // Verilog and "less than or equal" in C - a typo while porting could cause
   // unexpected behavior.

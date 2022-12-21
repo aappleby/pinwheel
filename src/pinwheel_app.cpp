@@ -25,6 +25,7 @@ void PinwheelApp::app_init(int screen_w, int screen_h) {
   dvec2 screen_size(screen_w, screen_h);
   text_painter.init();
   grid_painter.init(65536,65536);
+  dump_painter.init_hex();
   view_control.init(screen_size);
 
   pinwheel.tock(true);
@@ -84,8 +85,8 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
 
   d("vane0.hart   %d\n",     pinwheel.vane0.hart);
   d("vane0.pc     0x%08x\n", pinwheel.vane0.pc);
-  d("vane0.insn   0x%08x ", pinwheel.vane0.active ? int(pinwheel.pbus_data) : 0);
-  print_rv(d, pinwheel.vane0.active ? uint32_t(pinwheel.pbus_data) : 0);
+  d("vane0.insn   0x%08x ", pinwheel.vane0.active ? int(pinwheel.code) : 0);
+  print_rv(d, pinwheel.vane0.active ? uint32_t(pinwheel.code) : 0);
   d("\n");
   d("vane0.enable %d\n",     pinwheel.vane0.active);
   d("vane0.active %d\n",     pinwheel.vane0.enable);
@@ -94,7 +95,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   d("vane1.hart   %d\n",     pinwheel.vane1.hart);
   d("vane1.pc     0x%08x\n", pinwheel.vane1.pc);
   d("vane1.insn   0x%08x ",  pinwheel.vane1.insn);
-  print_rv(d, pinwheel.vane1.active ? uint32_t(pinwheel.vane1.insn) : 0);
+  print_rv(d, pinwheel.vane1.insn);
   d("\n");
   d("vane1.enable %d\n",     pinwheel.vane1.active);
   d("vane1.active %d\n",     pinwheel.vane1.enable);
@@ -103,29 +104,34 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   d("vane2.hart   %d\n",     pinwheel.vane2.hart);
   d("vane2.pc     0x%08x\n", pinwheel.vane2.pc);
   d("vane2.insn   0x%08x ", pinwheel.vane2.insn);
-  print_rv(d, pinwheel.vane2.active ? uint32_t(pinwheel.vane2.insn) : 0);
+  print_rv(d, pinwheel.vane2.insn);
   d("\n");
   d("vane2.enable %d\n",     pinwheel.vane2.active);
   d("vane2.active %d\n",     pinwheel.vane2.enable);
   d("\n");
 
-  d("vane2.align  %d\n",     pinwheel.align);
-  d("vane2.alu    0x%08x\n", pinwheel.alu_out);
-  d("ra           0x%08x\n", pinwheel.ra);
-  d("rb           0x%08x\n", pinwheel.rb);
-  d("dbus_data    0x%08x\n", pinwheel.dbus_data);
-  d("pbus_data    0x%08x\n", pinwheel.pbus_data);
+  d("align        %d\n",     pinwheel.reg_addr);
+  d("alu          0x%08x\n", pinwheel.reg_alu);
+  d("ra           0x%08x\n", pinwheel.reg_a);
+  d("rb           0x%08x\n", pinwheel.reg_b);
+  d("dbus_data    0x%08x\n", pinwheel.data);
+  d("pbus_data    0x%08x\n", pinwheel.code);
   d("\n");
 
-  registers_base* harts[3];
+  vane* harts[Pinwheel::hart_count];
 
   harts[pinwheel.vane0.hart] = &pinwheel.vane0;
   harts[pinwheel.vane1.hart] = &pinwheel.vane1;
   harts[pinwheel.vane2.hart] = &pinwheel.vane2;
 
+  int hart_to_vane[Pinwheel::hart_count];
+  hart_to_vane[pinwheel.vane0.hart] = 0;
+  hart_to_vane[pinwheel.vane1.hart] = 1;
+  hart_to_vane[pinwheel.vane2.hart] = 2;
+
   for (int hart = 0; hart < 3; hart++) {
     auto r = &pinwheel.regfile[hart << 5];
-    d("hart %d vane %d", hart, harts[hart]->vane);
+    d("hart %d vane %d", hart, hart_to_vane[hart]);
     d("\n");
     d("r00 %08x  r01 %08x  r02 %08x  r03 %08x\n", r[ 0], r[ 1], r[ 2], r[ 3]);
     d("r04 %08x  r05 %08x  r06 %08x  r07 %08x\n", r[ 4], r[ 5], r[ 6], r[ 7]);
@@ -153,6 +159,8 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
     text_painter.render_string(view, screen_size, d.s.c_str(), 32 + 384, 32);
   }
 
+
+  dump_painter.dump(view, screen_size, 768, 32, 1, 1, 64, 32, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.data_mem);
 }
 
 //------------------------------------------------------------------------------

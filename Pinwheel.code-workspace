@@ -17,7 +17,11 @@
 			"mutex": "cpp",
 			"*.inc": "cpp",
 			"optional": "cpp",
-			"variant": "cpp"
+			"variant": "cpp",
+			"fstream": "cpp",
+			"memory_resource": "cpp",
+			"random": "cpp",
+			"*.def": "cpp"
 		}
 	},
 }

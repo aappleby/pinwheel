@@ -2,8 +2,8 @@
 # Rules
 
 default_gpp      = g++ -g -MMD -std=gnu++2a -rdynamic
-#build_mode       = -DCONFIG_RELEASE -O3
-build_mode       = -DCONFIG_DEBUG -O0
+build_mode       = -DCONFIG_RELEASE -O3
+#build_mode       = -DCONFIG_DEBUG -O0
 default_includes = -Isrc -Isubmodules -Isubmodules/MetroLib/src
 libs             = -lSDL2
 
@@ -28,6 +28,9 @@ rule compile_c
   command = gcc -g -MMD ${build_mode} ${default_includes} ${includes} -MF ${out}.d -c ${in} -o ${out}
   depfile = ${out}.d
   deps = gcc
+
+rule run_command
+  command = $command
 
 ################################################################################
 
@@ -57,7 +60,7 @@ build bin/pinwheel: link $
   submodules/bin/glad.a | firmware/bin/hello
 
 
-#build bin/pinwheel_test: link $
-#  obj/pinwheel_test.o
-#
-#build bin/pinwheel_test_pass: run_test bin/pinwheel_test
+build bin/pinwheel_test: link $
+  obj/pinwheel_test.o
+
+build bin/pinwheel_test_pass: run_test bin/pinwheel_test

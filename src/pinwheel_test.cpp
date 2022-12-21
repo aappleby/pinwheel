@@ -156,8 +156,11 @@ int main(int argc, const char** argv) {
 
   //test_elf(blob, sb.st_size, 1, 10);
 
+#ifdef CONFIG_RELEASE
   int reps = 1000;
-  //int reps = 1;
+#else
+  int reps = 1;
+#endif
   int max_cycles = 1425;
 
   LOG_B("Starting %s @ %d reps...\n", argv[0], reps);

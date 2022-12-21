@@ -1,0 +1,135 @@
+digraph G {
+    rankdir="LR"
+    ranksep=2
+    //splines=false
+
+    rank="same" {
+        vane0
+        pbus_l
+    }
+
+    rank="same" {
+        vane1
+        regfile_r
+    }
+
+    rank="same" {
+        vane2
+        reg_alu
+        reg_addr
+        dbus
+    }
+
+
+    rank="same" {
+        vane3
+        regfile_w
+        pbus_r
+    }
+
+    //----------
+
+    vane0 [shape="record" label="<top>vane0|<hart>hart|<pc>pc|<enable>enable|<active>active|<insn>insn|"]
+
+    vane0:hart   -> vane1:hart
+    vane0:pc     -> vane1:pc
+    vane0:enable -> vane1:enable
+    vane0:active -> vane1:active
+
+    //----------
+
+    vane1 [shape="record" label="<top>vane1|<hart>hart|<pc>pc|<enable>enable|<active>active|<insn>insn|"]
+
+    vane1:hart   -> vane2:hart
+    vane1:pc     -> alu:pc
+    vane1:pc     -> pc_gen:pc
+    vane1:enable -> vane2:enable
+    vane1:active -> vane2:active
+    vane1:active -> pc_gen:active
+    vane1:insn   -> vane2:insn
+    vane1:insn   -> addr_gen:insn
+    vane1:insn   -> alu:insn
+    vane1:insn   -> pc_gen:insn
+
+    //----------
+
+    vane2 [shape="record" label="<top>vane2|<hart>hart|<pc>pc|<enable>enable|<active>active|<insn>insn|"]
+
+    vane2:hart   -> vane3:hart
+    vane2:pc     -> vane3:pc
+    vane2:pc     -> pbus_r:addr
+    vane2:insn   -> writeback_mux:sel
+    vane2:insn   -> regfile_w:wren
+    vane2:insn   -> regfile_w:waddr
+    vane2:insn   -> unpack:insn
+    vane2:enable -> vane3:enable
+    vane2:enable -> OR:a
+    vane2:active -> OR:b
+
+    OR [shape="Mrecord" label="OR|{{<a>a|<b>b}|{<out>out}}|"]
+    OR:out -> vane3:active
+
+    //----------
+
+    vane3 [shape="record" label="<top>vane0|<hart>hart|<pc>pc|<enable>enable|<active>active|<insn>insn|"]
+
+    //----------
+
+    addr_gen [shape="Mrecord" label="<top>addr_gen|{{<insn>insn|<a>a}|<out>out}|"]
+    addr_gen:out -> dbus:addr
+    addr_gen:out -> reg_addr:d
+
+    //----------
+
+    pbus_l [shape="record" label="<top>pbus|{<raddr>raddr|<rdata>rdata}|"]
+    pbus_r [shape="record" label="<top>pbus|{<raddr>raddr|<rdata>rdata}|"]
+    pbus_l:rdata -> regfile_r:raddr1
+    pbus_l:rdata -> regfile_r:raddr2
+    pbus_l:rdata -> vane1:insn
+
+    //----------
+
+    dbus [shape="record" label="<top>dbus|{{<addr>addr|<wdata>wdata|<wmask>wmask}|<rdata>rdata}|"]
+    dbus:rdata -> unpack:data
+
+    //----------
+
+    regfile_r [shape="record" label="<top>regfile|{{<raddr1>raddr1|<raddr2>raddr2|<waddr>waddr|<wren>wren|<wdata>wdata}|{<rdata1>rdata1|<rdata2>rdata2}}|"]
+    regfile_w [shape="record" label="<top>regfile|{{<raddr1>raddr1|<raddr2>raddr2|<waddr>waddr|<wren>wren|<wdata>wdata}|{<rdata1>rdata1|<rdata2>rdata2}}|"];
+    regfile_r:rdata1 -> addr_gen:a
+    regfile_r:rdata2 -> dbus:wdata
+    regfile_r:rdata1 -> alu:a
+    regfile_r:rdata2 -> alu:b
+    regfile_r:rdata1 -> pc_gen:a
+    regfile_r:rdata2 -> pc_gen:b
+
+    //----------
+
+    reg_addr [shape="record" label="<top>reg_addr|{<d>d|<q>q}|"]
+    reg_addr:q -> unpack:addr
+
+    //----------
+
+    unpack  [shape="Mrecord" label="unpack|{{<insn>insn|<addr>addr|<data>data} | <out>out } |"]
+    unpack:out        -> writeback_mux:a
+
+    //----------
+
+    alu [shape="Mrecord" label="alu|{{<insn>insn|<pc>pc|<a>a|<b>b}|<out>out}|"]
+    alu:out -> reg_alu:d
+
+    //----------
+
+    pc_gen [shape="Mrecord" label="<top>pc_gen|{ {<pc>pc|<active>active|<insn>insn|<a>a|<b>b} | <out>out }|"]
+    pc_gen:out -> vane2:pc
+
+    //----------
+
+    reg_alu [shape="record" label="<top>reg_alu|{<d>d|<q>q}|"]
+    reg_alu:q         -> writeback_mux:b
+
+    //----------
+
+    writeback_mux [shape="Mrecord" label="mux|{{<sel>sel|<a>a|<b>b} | <out>out }|"]
+    writeback_mux:out -> regfile_w:wdata
+}

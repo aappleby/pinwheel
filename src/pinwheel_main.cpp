@@ -20,7 +20,6 @@ int main(int argc, const char** argv) {
   AppHost host(&app);
 
 #if 1
-
   const char* firmware_filename = "firmware/bin/hello";
 
   LOG_G("Loading firmware %s...\n", firmware_filename);
@@ -36,8 +35,8 @@ int main(int argc, const char** argv) {
   fclose(f);
 
   const char* argv2[2] = {
-    "+text_file=rv_tests/test_elf.text.vh",
-    "+data_file=rv_tests/test_elf.data.vh"
+    "+text_file=rv_tests/firmware.text.vh",
+    "+data_file=rv_tests/firmware.data.vh"
   };
   metron_init(2, argv2);
 
@@ -48,48 +47,27 @@ int main(int argc, const char** argv) {
     if (phdr.p_type & PT_LOAD) {
       if (phdr.p_vaddr == 0x00000000) {
         LOG_G("Code @ %p = %d bytes\n",blob + phdr.p_offset, phdr.p_filesz);
-        put_cache("rv_tests/test_elf.text.vh", blob + phdr.p_offset, phdr.p_filesz);
+        put_cache("rv_tests/firmware.text.vh", blob + phdr.p_offset, phdr.p_filesz);
       }
       if (phdr.p_vaddr == 0x80000000) {
         LOG_G("Data @ %p = %d bytes\n",blob + phdr.p_offset, phdr.p_filesz);
-        put_cache("rv_tests/test_elf.data.vh", blob + phdr.p_offset, phdr.p_filesz);
+        put_cache("rv_tests/firmware.data.vh", blob + phdr.p_offset, phdr.p_filesz);
       }
     }
   }
 
+#else
+
+  // Run an individual test
+  const char* argv2[2] = {
+    "+text_file=rv_tests/lb.text.vh",
+    "+data_file=rv_tests/lb.data.vh"
+  };
+  metron_init(2, argv2);
+
 #endif
 
   auto app_result = host.app_main(argc, argv);
-
-#if 0
-
-
-  test_elf(blob, sb.st_size, 1, 1000000000);
-
-  /*
-  int reps = 1000;
-  int max_cycles = 10000;
-
-  LOG_B("Starting %s @ %d reps...\n", argv[0], reps);
-
-  total_tocks = 0;
-  total_time = 0;
-
-  TestResults results;
-  results += test_instructions(reps, max_cycles);
-  results.dump();
-
-
-  return results.test_fail ? 0 : 1;
-  */
-
-  LOG_B("Total tocks %f\n", double(total_tocks));
-  LOG_B("Total time %f\n", double(total_time));
-  double rate = double(total_tocks) / double(total_time);
-  LOG_G("Sim rate %f mhz\n", rate / 1.0e6);
-
-  delete [] blob;
-#endif
 
   printf("main() done\n");
   return app_result;
