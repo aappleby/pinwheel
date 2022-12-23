@@ -58,14 +58,14 @@ TestResults test_instruction(const char* test_name, const int reps,
   double time_a, time_b;
 
   for (int rep = 0; rep < reps; rep++) {
-    top.tock(1);
+    top.tick(1);
     time -= timestamp();
     for (elapsed_cycles = 0; elapsed_cycles < max_cycles; elapsed_cycles++) {
-      top.tock(0);
+      top.tick(0);
       tocks++;
 
-      if (top.data_mem[0x3FC]) {
-        EXPECT_EQ(top.data_mem[0x3FC], 1, "FAIL @ %d", elapsed_cycles);
+      if (top.data.data[0x3FC]) {
+        EXPECT_EQ(top.data.data[0x3FC], 1, "FAIL @ %d", elapsed_cycles);
         break;
       }
     }
@@ -120,14 +120,14 @@ TestResults test_elf(uint8_t* blob, int size, int reps, int max_cycles) {
   int elapsed_cycles = 0;
 
   for (int rep = 0; rep < reps; rep++) {
-    top.tock(1);
+    top.tick(1);
     time -= timestamp();
     for (elapsed_cycles = 0; elapsed_cycles < max_cycles; elapsed_cycles++) {
-      top.tock(0);
+      top.tick(0);
       tocks++;
 
-      if (top.data_mem[0x3FC]) {
-        EXPECT_EQ(top.data_mem[0x3FC], 1, "FAIL @ %d", elapsed_cycles);
+      if (top.data.data[0x3FC]) {
+        EXPECT_EQ(top.data.data[0x3FC], 1, "FAIL @ %d", elapsed_cycles);
         break;
       }
     }

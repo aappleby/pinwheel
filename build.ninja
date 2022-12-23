@@ -45,12 +45,14 @@ build submodules/MetroLib/bin/CoreLib.a submodules/MetroLib/bin/AppLib.a : do_su
 build firmware/bin/hello : do_subninja | always
   dir = firmware
 
+build obj/pinwheel.o:      compile src/pinwheel.cpp
 build obj/pinwheel_main.o: compile src/pinwheel_main.cpp
 build obj/pinwheel_app.o:  compile src/pinwheel_app.cpp
 build obj/pinwheel_test.o: compile src/pinwheel_test.cpp
 build obj/rvdisasm.o:      compile src/rvdisasm.cpp
 
 build bin/pinwheel: link $
+  obj/pinwheel.o $
   obj/pinwheel_main.o $
   obj/pinwheel_app.o $
   obj/rvdisasm.o $
@@ -61,6 +63,7 @@ build bin/pinwheel: link $
 
 
 build bin/pinwheel_test: link $
+  obj/pinwheel.o $
   obj/pinwheel_test.o
 
 build bin/pinwheel_test_pass: run_test bin/pinwheel_test

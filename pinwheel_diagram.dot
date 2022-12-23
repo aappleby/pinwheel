@@ -1,7 +1,6 @@
 digraph G {
     rankdir="LR"
-    ranksep=2
-    //splines=false
+    ranksep=1.2
 
     rank="same" {
         vane0
@@ -20,11 +19,21 @@ digraph G {
         dbus
     }
 
-
     rank="same" {
         vane3
         regfile_w
         pbus_r
+    }
+
+    rank="same" {
+        take_branch
+        addr_gen
+    }
+
+    rank="same" {
+        alu
+        mask_gen
+        pc_gen
     }
 
     //----------
@@ -71,13 +80,28 @@ digraph G {
 
     //----------
 
+
     vane3 [shape="record" label="<top>vane0|<hart>hart|<pc>pc|<enable>enable|<active>active|<insn>insn|"]
+
+    //----------
+
+    take_branch [shape="Mrecord" label="<top>take_branch|{{<insn>insn|<a>a|<b>b}|<out>out}|"]
+
+    vane1:insn -> take_branch:insn
+    regfile_r:rdata1 -> take_branch:a
+    regfile_r:rdata2 -> take_branch:b
+    take_branch:out -> pc_gen:take_branch
 
     //----------
 
     addr_gen [shape="Mrecord" label="<top>addr_gen|{{<insn>insn|<a>a}|<out>out}|"]
     addr_gen:out -> dbus:addr
     addr_gen:out -> reg_addr:d
+
+    mask_gen [shape="Mrecord" label="<top>mask_gen|{{<insn>insn|<addr>addr}|<out>out}|"]
+    vane1:insn -> mask_gen:insn
+    addr_gen:out -> mask_gen:addr
+    mask_gen:out -> dbus:wmask
 
     //----------
 
@@ -101,7 +125,8 @@ digraph G {
     regfile_r:rdata1 -> alu:a
     regfile_r:rdata2 -> alu:b
     regfile_r:rdata1 -> pc_gen:a
-    regfile_r:rdata2 -> pc_gen:b
+
+    //----------
 
     //----------
 
@@ -120,7 +145,7 @@ digraph G {
 
     //----------
 
-    pc_gen [shape="Mrecord" label="<top>pc_gen|{ {<pc>pc|<active>active|<insn>insn|<a>a|<b>b} | <out>out }|"]
+    pc_gen [shape="Mrecord" label="<top>pc_gen|{ {<pc>pc|<active>active|<insn>insn|<a>a|<take_branch>take_branch} | <out>out }|"]
     pc_gen:out -> vane2:pc
 
     //----------
