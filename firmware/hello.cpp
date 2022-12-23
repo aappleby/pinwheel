@@ -97,6 +97,9 @@ int main(int argc, char** argv) {
   printf("decimal 1234567890 %d\n", 1234567890);
   printf("decimal -123456789 %d\n", -123456789);
   printf("hex     0x12345678 0x%x\n", 0x12345678);
+  printf("hex     0x1234     0x%x\n", 0x1234);
+  printf("pointer 0x12345678 0x%p\n", 0x12345678);
+  printf("pointer 0x00001234 0x%p\n", 0x00001234);
   printf("char    !@#$\\%^&*() %c%c%c%c%c%c%c%c%c%c\n", '!', '@', '#', '$', '%', '^', '&', '*', '(', ')');
 
   *(volatile uint32_t*)0xFFFFFFF0 = 1;

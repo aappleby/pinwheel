@@ -195,6 +195,10 @@ void Pinwheel::tick(logic<1> reset_in) {
   logic<32> wdata  = v2_op == OP_LOAD ? unpack(vane2.insn, temp_addr, data.out) : temp_alu;
   logic<32> alu_out = alu(vane1.insn, vane1.pc, regs.out_a, regs.out_b);
 
+  if ((addr == 0x40000000) && (mask & 1)) {
+    printf("%c", char(regs.out_b));
+  }
+
 
   auto old_vane1 = vane1;
 
