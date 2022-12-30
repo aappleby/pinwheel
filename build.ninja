@@ -19,7 +19,7 @@ rule lib
   command = ar rcs ${out} ${in}
 
 rule run_test
-  command = ${in} | grep "All tests pass." && touch ${out}
+  command = ${in} | grep "All tests pass."
 
 rule do_subninja
   command = ninja -C ${dir}
@@ -70,4 +70,7 @@ build bin/pinwheel_test: link $
   obj/pinwheel.o $
   obj/pinwheel_test.o
 
-build bin/pinwheel_test_pass: run_test bin/pinwheel_test
+build build_rv_tests : run_command | always
+  command = make -C rv_tests
+
+build bin/pinwheel_test_pass: run_test bin/pinwheel_test | build_rv_tests

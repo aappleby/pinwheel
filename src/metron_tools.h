@@ -543,7 +543,7 @@ void parse_hex(const char* src_filename, void* dst_data, int dst_size);
 // 'end' is INCLUSIVE
 
 struct file_cache {
-  const char* filename = nullptr;
+  char filename[256];
   uint8_t* blob = nullptr;
   int size = 0;
 };
@@ -565,10 +565,21 @@ inline file_cache* get_cache(const char* filename) {
 inline void put_cache(const char* filename, uint8_t* blob, int size) {
   auto cache = cache_inst();
   for (int i = 0; i < 32; i++) {
-    if (cache[i].filename == nullptr) {
-      cache[i] = { filename, blob, size };
+    if (cache[i].filename[0] == 0) {
+      strcpy(cache[i].filename, filename);
+      cache[i].blob = blob;
+      cache[i].size = size;
       return;
     }
+  }
+}
+
+inline void clear_cache() {
+  auto cache = cache_inst();
+  for (int i = 0; i < 32; i++) {
+    cache[i].filename[0] = 0;
+    cache[i].blob = nullptr;
+    cache[i].size = 0;
   }
 }
 

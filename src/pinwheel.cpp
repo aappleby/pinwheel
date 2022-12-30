@@ -320,7 +320,7 @@ void Pinwheel::tick(logic<1> reset_in) {
 
       //if (b4(addr, 28) != 0x8) printf("??? 0x%08x\n", (int)addr);
 
-      /*if (b4(addr, 28) == 0x8)*/ {
+      if (b4(addr, 28) == 0x8) {
         data_addr   = addr;
         data_wdata  = reg_b;
         data_wmask  = mask_gen(vane1.insn, data_addr);
