@@ -4,22 +4,16 @@
 #include "CoreLib/Dumper.h"
 #include "CoreLib/Check.h"
 
-/*
-      case 0: alu_out = a + b;                 break;
-      case 1: alu_out = a << b5(b);            break;
-      case 2: alu_out = signed(a) < signed(b); break;
-      case 3: alu_out = a < b;                 break;
-      case 4: alu_out = a ^ b;                 break;
-      case 5: alu_out = alu_alt ? signed(a) >> b5(b) : a >> b5(b); break;
-      case 6: alu_out = a | b;                 break;
-      case 7: alu_out = a & b;                 break;
-*/
-
 void print_rv(Dumper& d, uint32_t op_u32) {
   logic<32> op = op_u32;
 
+  if (op == 0) {
+    d(R"(<???>)");
+    return;
+  }
+
   if (b2(op) != 0b11) {
-    d("<bad opcode>");
+    d(R"(<???>)");
     return;
   }
 
@@ -173,8 +167,9 @@ void print_rv(Dumper& d, uint32_t op_u32) {
     //case 0b00001: d("LOADFP   "); break;
     //case 0b00010: d("CUSTOM0  "); break;
     default:
-      printf("what op is this??? %d 0x%08x\n", opcode, op.as_unsigned());
-      debugbreak();
+      d(R"(<???>)");
+      //printf("what op is this??? %d 0x%08x\n", opcode, op.as_unsigned());
+      //debugbreak();
       break;
   }
 }

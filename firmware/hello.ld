@@ -1,10 +1,9 @@
 MEMORY {
-  ROM (rx) : ORIGIN = 0x00000000, LENGTH = 64K
-  RAM (rw) : ORIGIN = 0x80000000, LENGTH = 64K
+  ROM (rxai!w) : ORIGIN = 0x00400000, LENGTH = 64K
+  RAM (wxa!ri) : ORIGIN = 0x80000000, LENGTH = 128K
 }
 
 _stack_top = ORIGIN(RAM) + LENGTH(RAM);
-PROVIDE( __global_pointer$ = 0x800 );
 
 SECTIONS {
   .text : {
@@ -20,6 +19,7 @@ SECTIONS {
     *(.RAM);
     *(.data);
     *(.data.*);
+    PROVIDE( __global_pointer$ = . + 0x800 );
     *(.sdata);
     *(.sdata.*);
     *(.rodata);

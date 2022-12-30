@@ -2,8 +2,8 @@
 # Rules
 
 default_gpp      = g++ -g -MMD -std=gnu++2a -rdynamic
-build_mode       = -DCONFIG_RELEASE -O3
-#build_mode       = -DCONFIG_DEBUG -O0
+#build_mode       = -DCONFIG_RELEASE -O3
+build_mode       = -DCONFIG_DEBUG -O0
 default_includes = -Isrc -Isubmodules -Isubmodules/MetroLib/src
 libs             = -lSDL2
 
@@ -50,12 +50,16 @@ build obj/pinwheel_main.o: compile src/pinwheel_main.cpp
 build obj/pinwheel_app.o:  compile src/pinwheel_app.cpp
 build obj/pinwheel_test.o: compile src/pinwheel_test.cpp
 build obj/rvdisasm.o:      compile src/rvdisasm.cpp
+build obj/sim_thread.o:    compile src/sim_thread.cpp
+build obj/pinwheel_sim.o:  compile src/pinwheel_sim.cpp
 
 build bin/pinwheel: link $
   obj/pinwheel.o $
   obj/pinwheel_main.o $
   obj/pinwheel_app.o $
+  obj/pinwheel_sim.o $
   obj/rvdisasm.o $
+  obj/sim_thread.o $
   submodules/MetroLib/bin/AppLib.a $
   submodules/MetroLib/bin/CoreLib.a $
   submodules/bin/imgui.a $

@@ -22,9 +22,37 @@ void BlockRam::tick(logic<32> addr, logic<32> wdata, logic<4> wmask) {
 //--------------------------------------------------------------------------------
 
 void BlockRegfile::tick(logic<10> raddr1, logic<10> raddr2, logic<10> waddr, logic<1> wren, logic<32> wdata) {
+  /*
+  if (raddr1 >= 32) {
+    printf("BlockRegfile::tick() - reading %d\n", (int)raddr1);
+  }
+  */
+
+  /*
+  if (b5(raddr1) == 0) {
+    printf("hart %d reading r0 on port 1\n", (int)b2(raddr1, 5));
+  }
+
+  if (b5(raddr2) == 0) {
+    printf("hart %d reading r0 on port 2\n", (int)b2(raddr2, 5));
+  }
+  */
+
   if (wren) data[waddr] = wdata;
   out_a = data[raddr1];
   out_b = data[raddr2];
+}
+
+//--------------------------------------------------------------------------------
+
+
+Pinwheel::Pinwheel() {
+}
+
+Pinwheel* Pinwheel::clone() {
+  Pinwheel* p = new Pinwheel();
+  memcpy(p, this, sizeof(*this));
+  return p;
 }
 
 //--------------------------------------------------------------------------------
@@ -39,11 +67,20 @@ void Pinwheel::reset() {
   value_plusargs("data_file=%s", s);
   readmemh(s, data.data);
 
+  vane0.pc = 0x00400000;
+  vane1.pc = 0x00400000;
+  vane2.pc = 0x00400000;
+
   vane0.hart   = 0;
   vane1.hart   = 1;
   vane2.hart   = 2;
 
+  //regs.data[ 0] = 0xCAFEBABE;
+  //regs.data[37] = 0xDEADBEEF;
+
   vane0.enable = 1;
+
+  debug_reg = 0;
 }
 
 //--------------------------------------------------------------------------------
@@ -130,7 +167,7 @@ logic<32> Pinwheel::pc_gen(logic<32> pc, logic<32> insn, logic<1> active, logic<
   logic<5> op = b5(insn, 2);
 
   if (!active) {
-    return 0;
+    return pc;
   } else if (op == OP_BRANCH) {
     logic<32> imm_b = cat(dup<20>(insn[31]), insn[7], b6(insn, 25), b4(insn, 8), b1(0));
     return pc + (take_branch ? imm_b : b32(4));
@@ -178,47 +215,190 @@ void Pinwheel::tick(logic<1> reset_in) {
     return;
   }
 
+  ticks++;
+
   //----------
 
-  logic<1> branch = take_branch(vane1.insn, regs.out_a, regs.out_b);
-  logic<32> next_pc = pc_gen(vane1.pc, vane1.insn, vane1.active, branch, regs.out_a);
+  const auto vane0 = this->vane0;
+  const auto vane1 = this->vane1;
+  const auto vane2 = this->vane2;
+  const auto temp_addr = this->temp_addr;
+  const auto temp_alu  = this->temp_alu;
 
-  logic<32> addr = addr_gen(vane1.insn, regs.out_a);
-  logic<4>  mask = mask_gen(vane1.insn, addr);
+  const auto& data = this->data;
+  const auto& code = this->code;
+  const auto& regs = this->regs;
 
-  logic<10> raddr1 = cat(vane0.hart, b5(code.out, 15));
-  logic<10> raddr2 = cat(vane0.hart, b5(code.out, 20));
+  logic<1>  take_branch = 0;
+  logic<32> next_pc     = vane1.pc;
 
-  logic<5>  v2_op  = b5(vane2.insn, 2);
-  logic<10> waddr  = cat(vane2.hart, b5(vane2.insn, 7));
-  logic<1>  wren   = waddr != 0 && v2_op != OP_STORE && v2_op != OP_BRANCH;
-  logic<32> wdata  = v2_op == OP_LOAD ? unpack(vane2.insn, temp_addr, data.out) : temp_alu;
-  logic<32> alu_out = alu(vane1.insn, vane1.pc, regs.out_a, regs.out_b);
+  logic<32> code_addr  = 0;
+  logic<32> code_rdata = 0;
 
-  if ((addr == 0x40000000) && (mask & 1)) {
-    printf("%c", char(regs.out_b));
+  logic<32> data_addr  = 0;
+  logic<32> data_wdata = 0;
+  logic<4>  data_wmask = 0;
+  logic<32> data_rdata = 0;
+
+  logic<10> reg_raddr1 = 0;
+  logic<10> reg_raddr2 = 0;
+  logic<10> reg_waddr  = 0;
+  logic<1>  reg_wren   = 0;
+  logic<32> reg_wdata  = 0;
+  logic<32> alu_out    = 0;
+
+  //----------
+
+  logic<5> raddr_a = b5(vane1.insn, 15);
+  logic<5> raddr_b = b5(vane1.insn, 20);
+
+  logic<32> reg_a = raddr_a ? regs.out_a : b32(0);
+  logic<32> reg_b = raddr_b ? regs.out_b : b32(0);
+
+  if (reg_a == 0xCAFEBABE) {
+    printf("???");
+  }
+  if (reg_b == 0xCAFEBABE) {
+    printf("???");
   }
 
+  //----------
+  // Bus read mux
 
-  auto old_vane1 = vane1;
+  switch(b4(temp_addr, 28)) {
+    case 0x0: data_rdata = code.out;   break;
+    case 0x1: data_rdata = regs.out_a; break;
+    case 0x2: break;
+    case 0x3: break;
+    case 0x4: break;
+    case 0x5: break;
+    case 0x6: break;
+    case 0x7: break;
+    case 0x8: data_rdata = data.out;   break;
+    case 0x9: break;
+    case 0xA: break;
+    case 0xB: break;
+    case 0xC: break;
+    case 0xD: break;
+    case 0xE: break;
+    case 0xF: data_rdata = debug_reg;  break;
+  }
 
-  vane1 = vane0;
-  vane1.insn = code.out;
+  //----------
 
-  vane0 = vane2;
-  vane0.active = vane2.enable | vane2.active;
+  this->bus_to_reg = 0;
+  this->reg_to_bus = 0;
 
-  code.tick(vane2.pc, 0, 0);
+  if (vane0.active) {
+    logic<5> vane0_op = b5(vane0.insn, 2);
 
-  vane2 = old_vane1;
-  vane2.pc  = next_pc;
+    reg_raddr1 = cat(vane0.hart, b5(code.out, 15));
+    reg_raddr2 = cat(vane0.hart, b5(code.out, 20));
+  }
+  else if (vane1.active) {
+    logic<5> op = b5(vane1.insn, 2);
 
-  data.tick(addr, regs.out_b, mask);
-  regs.tick(raddr1, raddr2, waddr, wren, wdata);
+    if (op == OP_LOAD) {
+      auto addr  = addr_gen(vane1.insn, reg_a);
 
-  temp_addr = addr;
+      if (b4(addr, 28) == 0x1) {
+        this->reg_to_bus = true;
+        reg_raddr1 = addr >> 2;
+        reg_raddr2 = 0;
+        //printf("hart %d reading regfile @ %d\n", (int)vane1.hart, (int)reg_raddr1);
+      }
+    }
+  }
 
-  temp_alu = alu_out;
+  if (vane1.active) {
+    logic<5> op = b5(vane1.insn, 2);
+
+    take_branch = this->take_branch(vane1.insn, reg_a, reg_b);
+
+    if (op == OP_LOAD || op == OP_STORE) {
+      auto addr  = addr_gen(vane1.insn, reg_a);
+
+      //if (b4(addr, 28) != 0x8) printf("??? 0x%08x\n", (int)addr);
+
+      /*if (b4(addr, 28) == 0x8)*/ {
+        data_addr   = addr;
+        data_wdata  = reg_b;
+        data_wmask  = mask_gen(vane1.insn, data_addr);
+      }
+
+      if (b4(addr, 28) == 0xF) {
+        debug_reg = reg_b;
+      }
+    }
+
+    alu_out     = alu(vane1.insn, vane1.pc, reg_a, reg_b);
+    next_pc     = pc_gen(vane1.pc, vane1.insn, vane1.active, take_branch, reg_a);
+  }
+
+  if (vane2.enable | vane2.active) {
+    logic<5> op = b5(vane2.insn, 2);
+
+    if (op != OP_STORE && op != OP_BRANCH) {
+      reg_waddr  = cat(vane2.hart, b5(vane2.insn, 7));
+      reg_wren   = reg_waddr != 0 && op != OP_STORE && op != OP_BRANCH;
+      reg_wdata  = op == OP_LOAD ? unpack(vane2.insn, temp_addr, data_rdata) : temp_alu;
+    }
+
+    code_addr  = vane2.pc;
+  }
+  else if (vane1.active) {
+    logic<5> op = b5(vane1.insn, 2);
+
+    if (op == OP_STORE) {
+      auto addr  = addr_gen(vane1.insn, reg_a);
+
+      if (b4(addr, 28) == 0x1) {
+        this->bus_to_reg = 1;
+        reg_waddr  = addr >> 2;
+        reg_wren   = 1;
+        reg_wdata  = reg_b;
+        //printf("hart %d wrting regfile @ %d\n", (int)vane1.hart, (int)reg_waddr);
+      }
+    }
+
+    code_addr = data_addr;
+  }
+  else {
+    code_addr = data_addr;
+  }
+
+  //----------
+
+  this->vane0 = vane2;
+  this->vane0.active = vane2.enable | vane2.active;
+
+  this->vane1 = vane0;
+
+  if (vane0.active) {
+    this->vane1.insn = code.out;
+  }
+  else {
+    this->vane1.insn = 0;
+  }
+
+  this->vane2 = vane1;
+  this->vane2.pc = next_pc;
+
+  this->temp_addr = data_addr;
+  this->temp_alu = alu_out;
+
+  this->code.tick(code_addr, 0, 0);
+  this->data.tick(data_addr, data_wdata, data_wmask);
+
+  if (this->bus_to_reg && (reg_waddr < 32)) {
+    printf("XXXXX\n");
+  }
+
+  if (this->reg_to_bus && (reg_raddr1 < 32)) {
+    printf("%ld XXXXX\n", ticks);
+  }
+
+  this->regs.tick(reg_raddr1, reg_raddr2, reg_waddr, reg_wren, reg_wdata);
 }
 
 //--------------------------------------------------------------------------------

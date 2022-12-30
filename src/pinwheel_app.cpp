@@ -15,6 +15,13 @@
 
 //------------------------------------------------------------------------------
 
+PinwheelApp::PinwheelApp() {
+  pinwheel_sim = new PinwheelSim();
+  sim_thread = new SimThread(pinwheel_sim);
+}
+
+//------------------------------------------------------------------------------
+
 const char* PinwheelApp::app_get_title() {
   return "Pinwheel Test App";
 }
@@ -23,11 +30,18 @@ const char* PinwheelApp::app_get_title() {
 
 void PinwheelApp::app_init(int screen_w, int screen_h) {
   dvec2 screen_size(screen_w, screen_h);
+
+  view_control.init(screen_size);
   text_painter.init();
   grid_painter.init(65536,65536);
-  dump_painter.init_hex();
-  view_control.init(screen_size);
+  code_painter.init_hex_u32();
+  data_painter.init_hex_u8();
+  console_painter.init_ascii();
+  box_painter.init();
 
+  sim_thread->start();
+
+  auto& pinwheel = pinwheel_sim->states.top();
   pinwheel.tick(true);
 }
 
@@ -35,16 +49,22 @@ void PinwheelApp::app_init(int screen_w, int screen_h) {
 
 void PinwheelApp::app_close()  {
   LOG_G("PinwheelApp::app_close()\n");
+  sim_thread->stop();
+  delete sim_thread;
+  delete pinwheel_sim;
+  LOG_G("PinwheelApp::app_close() done\n");
 }
 
 //------------------------------------------------------------------------------
 
-bool PinwheelApp::pause_when_idle() { return true; }
+bool PinwheelApp::pause_when_idle() { return false; }
 
 //------------------------------------------------------------------------------
 
 void PinwheelApp::app_update(dvec2 screen_size, double delta)  {
   SDL_Event event;
+
+
   while (SDL_PollEvent(&event)) {
 
 
@@ -55,9 +75,29 @@ void PinwheelApp::app_update(dvec2 screen_size, double delta)  {
         view_control.view_target_snap = Viewport::screenspace(screen_size);
         break;
       case SDLK_RIGHT:  {
-        for (int i = 0; i < 1000; i++) {
-          pinwheel.tick(0);
-        }
+        sim_thread->pause();
+        pinwheel_sim->states.push();
+
+        int steps = 1;
+        auto keyboard_state = SDL_GetKeyboardState(nullptr);
+        if (keyboard_state[SDL_SCANCODE_LSHIFT])  steps *= 100;
+        if (keyboard_state[SDL_SCANCODE_LALT])    steps *= 10;
+        if (keyboard_state[SDL_SCANCODE_LCTRL])   steps *= 3;
+        pinwheel_sim->steps += steps;
+
+        sim_thread->resume();
+        break;
+      }
+      case SDLK_LEFT: {
+        sim_thread->pause();
+        pinwheel_sim->states.pop();
+        sim_thread->resume();
+        break;
+      }
+      case SDLK_SPACE: {
+        sim_thread->pause();
+        pinwheel_sim->steps = 0;
+        sim_thread->resume();
         break;
       }
     }
@@ -75,15 +115,21 @@ void PinwheelApp::app_update(dvec2 screen_size, double delta)  {
     }
   }
   view_control.update(delta);
+
+  fflush(stdout);
 }
 
 //------------------------------------------------------------------------------
 
 void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
+  sim_thread->pause();
+
   auto& view = view_control.view_smooth_snap;
   grid_painter.render(view, screen_size);
 
   StringDumper d;
+
+  auto& pinwheel = pinwheel_sim->states.top();
 
   d("vane0.hart   %d\n",     pinwheel.vane0.hart);
   d("vane0.pc     0x%08x\n", pinwheel.vane0.pc);
@@ -112,8 +158,14 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   d("vane2.active %d\n",     pinwheel.vane2.enable);
   d("\n");
 
-  d("addr         0x%08x\n", pinwheel.temp_addr);
-  d("alu          0x%08x\n", pinwheel.temp_alu);
+  d("ticks        %lld\n",   pinwheel.ticks);
+  d("speed        %f\n",     double(sim_thread->sim_steps) / sim_thread->sim_time);
+  d("states       %d\n",     pinwheel_sim->states.state_count());
+  d("state bytes  %d\n",     pinwheel_sim->states.state_size_bytes());
+  d("temp_addr    0x%08x\n", pinwheel.temp_addr);
+  d("temp_alu     0x%08x\n", pinwheel.temp_alu);
+  d("reg_to_bus   %d\n",     pinwheel.reg_to_bus);
+  d("bus_to_reg   %d\n",     pinwheel.bus_to_reg);
   d("ra           0x%08x\n", pinwheel.regs.out_a);
   d("rb           0x%08x\n", pinwheel.regs.out_b);
   d("dbus_data    0x%08x\n", pinwheel.data.out);
@@ -133,16 +185,16 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
 
   for (int hart = 0; hart < 3; hart++) {
     auto r = &pinwheel.regs.data[hart << 5];
-    d("hart %d vane %d", hart, hart_to_vane[hart]);
+    d("hart %d vane %d pc 0x%08x", hart, hart_to_vane[hart], harts[hart]->pc);
     d("\n");
-    d("r00 %08x  r01 %08x  r02 %08x  r03 %08x\n", r[ 0], r[ 1], r[ 2], r[ 3]);
-    d("r04 %08x  r05 %08x  r06 %08x  r07 %08x\n", r[ 4], r[ 5], r[ 6], r[ 7]);
-    d("r08 %08x  r09 %08x  r10 %08x  r11 %08x\n", r[ 8], r[ 9], r[10], r[11]);
-    d("r12 %08x  r13 %08x  r14 %08x  r15 %08x\n", r[12], r[13], r[14], r[15]);
-    d("r16 %08x  r17 %08x  r18 %08x  r19 %08x\n", r[16], r[17], r[18], r[19]);
-    d("r20 %08x  r21 %08x  r22 %08x  r23 %08x\n", r[20], r[21], r[22], r[23]);
-    d("r24 %08x  r25 %08x  r26 %08x  r27 %08x\n", r[24], r[25], r[26], r[27]);
-    d("r28 %08x  r29 %08x  r30 %08x  r31 %08x\n", r[28], r[29], r[30], r[31]);
+    d("r00 %08X  r08 %08X  r16 %08X  r24 %08X\n", r[ 0], r[ 8], r[16], r[24]);
+    d("r01 %08X  r09 %08X  r17 %08X  r25 %08X\n", r[ 1], r[ 9], r[17], r[25]);
+    d("r02 %08X  r10 %08X  r18 %08X  r26 %08X\n", r[ 2], r[10], r[18], r[26]);
+    d("r03 %08X  r11 %08X  r19 %08X  r27 %08X\n", r[ 3], r[11], r[19], r[27]);
+    d("r04 %08X  r12 %08X  r20 %08X  r28 %08X\n", r[ 4], r[12], r[20], r[28]);
+    d("r05 %08X  r13 %08X  r21 %08X  r29 %08X\n", r[ 5], r[13], r[21], r[29]);
+    d("r06 %08X  r14 %08X  r22 %08X  r30 %08X\n", r[ 6], r[14], r[22], r[30]);
+    d("r07 %08X  r15 %08X  r23 %08X  r31 %08X\n", r[ 7], r[15], r[23], r[31]);
     d("\n");
   }
   text_painter.render_string(view, screen_size, d.s.c_str(), 32, 32);
@@ -151,9 +203,15 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   {
     d.clear();
 
-    for (int i = 0; i < 16; i++) {
-      auto op = pinwheel.code.data[(harts[0]->pc >> 2) + i];
-      d("0x%08x ", harts[0]->pc + i * 4);
+    for (int i = -4; i <= 16; i++) {
+      int offset = (harts[0]->pc & 0xFFFF) + (i * 4);
+      int op = 0;
+
+      if (offset < 0) op = 0;
+      else if (offset > (65536 - 4)) op = 0;
+      else op = pinwheel.code.data[offset >> 2];
+
+      d("%c0x%08x ", i == 0 ? '>' : ' ', harts[0]->pc + (i * 4));
       print_rv(d, op);
       d("\n");
     }
@@ -161,8 +219,24 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
     text_painter.render_string(view, screen_size, d.s.c_str(), 32 + 384, 32);
   }
 
+  pinwheel.code.data[16 * 31 - 1] = 0xDEADBEEF;
+  pinwheel.code.data[16 * 31 + 0] = 0xDEADBEEF;
 
-  dump_painter.dump(view, screen_size, 768, 32, 1, 1, 64, 32, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.data.data);
+  code_painter.highlight_x = ((harts[0]->pc & 0xFFFF) >> 2) % 16;
+  code_painter.highlight_y = ((harts[0]->pc & 0xFFFF) >> 2) / 16;
+
+
+  data_painter.dump2(view, screen_size, 1024, 32, 1, 1, 64, 32, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.data.data);
+  code_painter.dump2(view, screen_size, 1024, 512, 1, 1, 64, 32, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.code.data);
+
+  console_painter.dump2(view, screen_size, 32*14, 512, 1, 1, 80, 25, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console_buf);
+
+  //box_painter.push_corner_size(1024 + (harts[0]->pc % 64) * 14 - 1, 512 + (harts[0]->pc / 64) * 12, 12*4+2*3+2, 12, 0x8000FFFF);
+  //box_painter.push_corner_size(1024 + (harts[1]->pc % 64) * 14 - 1, 512 + (harts[1]->pc / 64) * 12, 12*4+2*3+2, 12, 0x80FFFF00);
+  //box_painter.push_corner_size(1024 + (harts[2]->pc % 64) * 14 - 1, 512 + (harts[2]->pc / 64) * 12, 12*4+2*3+2, 12, 0x80FF00FF);
+  box_painter.render(view, screen_size, 0, 0);
+
+  sim_thread->resume();
 }
 
 //------------------------------------------------------------------------------

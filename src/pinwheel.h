@@ -43,6 +43,11 @@ struct BlockRegfile {
 //------------------------------------------------------------------------------
 
 struct Pinwheel {
+
+  Pinwheel();
+  Pinwheel* clone();
+  size_t size_bytes() { return sizeof(*this); }
+
   static logic<32> unpack(logic<32> insn, logic<32> addr, logic<32> data);
   static logic<32> alu(logic<32> insn, logic<32> pc, logic<32> reg_a, logic<32> reg_b);
   static logic<1>  take_branch(logic<32> insn, logic<32> reg_a, logic<32> reg_b);
@@ -57,9 +62,13 @@ struct Pinwheel {
   static const int hart_count = 4;
   static const int vane_count = 4;
 
+  uint64_t ticks;
   BlockRam code;
   BlockRam data;
   BlockRegfile regs;
+
+  bool reg_to_bus;
+  bool bus_to_reg;
 
   logic<32> temp_addr; // Copy of address, used to realign data after read
   logic<32> temp_alu;  // Copy of alu output, used for register writeback
@@ -67,6 +76,12 @@ struct Pinwheel {
   Vane vane0;
   Vane vane1;
   Vane vane2;
+
+  logic<32> debug_reg;
+
+  char console_buf[80*50];
+  int console_x = 0;
+  int console_y = 0;
 };
 
 //------------------------------------------------------------------------------

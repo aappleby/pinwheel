@@ -21,7 +21,8 @@
 			"fstream": "cpp",
 			"memory_resource": "cpp",
 			"random": "cpp",
-			"*.def": "cpp"
+			"*.def": "cpp",
+			"bitset": "cpp"
 		}
 	},
 }

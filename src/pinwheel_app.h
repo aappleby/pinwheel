@@ -1,12 +1,19 @@
 #include "AppLib/App.h"
 
 #include "MetroLib/src/AppLib/GridPainter.h"
+#include "MetroLib/src/AppLib/BoxPainter.h"
 #include "MetroLib/src/AppLib/TextPainter.h"
 #include "MetroLib/src/AppLib/DumpPainter.h"
 #include "MetroLib/src/AppLib/Viewport.h"
+#include "MetroLib/src/CoreLib/StateStack.h"
+
 #include "pinwheel.h"
+#include "pinwheel_sim.h"
+#include "sim_thread.h"
 
 struct PinwheelApp : public App {
+
+  PinwheelApp();
 
   const char* app_get_title() override;
   void app_init(int screen_w, int screen_h) override;
@@ -18,9 +25,14 @@ struct PinwheelApp : public App {
   void app_render_ui(dvec2 screen_size, double delta) override;
 
   ViewController view_control;
-  TextPainter text_painter;
-  GridPainter grid_painter;
-  DumpPainter dump_painter;
+  TextPainter    text_painter;
+  GridPainter    grid_painter;
+  DumpPainter    code_painter;
+  DumpPainter    data_painter;
 
-  Pinwheel pinwheel;
+  DumpPainter    console_painter;
+  BoxPainter     box_painter;
+
+  PinwheelSim*   pinwheel_sim;
+  SimThread*     sim_thread;
 };

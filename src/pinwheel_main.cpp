@@ -6,7 +6,7 @@
 #include <sys/stat.h>
 //#include <arch/riscv/include/asm/elf.h>
 
-#include "Tests.h"
+#include "CoreLib/Tests.h"
 #include "pinwheel.h"
 #include "pinwheel_app.h"
 
@@ -19,7 +19,6 @@ int main(int argc, const char** argv) {
   PinwheelApp app;
   AppHost host(&app);
 
-#if 1
   const char* firmware_filename = "firmware/bin/hello";
 
   LOG_G("Loading firmware %s...\n", firmware_filename);
@@ -42,30 +41,21 @@ int main(int argc, const char** argv) {
 
   Elf32_Ehdr& header = *(Elf32_Ehdr*)blob;
 
+  app.pinwheel_sim->states.top().vane0.pc = header.e_entry;
+
   for (int i = 0; i < header.e_phnum; i++) {
     Elf32_Phdr& phdr = *(Elf32_Phdr*)(blob + header.e_phoff + header.e_phentsize * i);
     if (phdr.p_type & PT_LOAD) {
-      if (phdr.p_vaddr == 0x00000000) {
-        LOG_G("Code @ %p = %d bytes\n",blob + phdr.p_offset, phdr.p_filesz);
+      if (phdr.p_flags & PF_X) {
+        LOG_G("Code @ 0x%08x = %d bytes\n", phdr.p_vaddr, phdr.p_filesz);
         put_cache("rv_tests/firmware.text.vh", blob + phdr.p_offset, phdr.p_filesz);
       }
-      if (phdr.p_vaddr == 0x80000000) {
-        LOG_G("Data @ %p = %d bytes\n",blob + phdr.p_offset, phdr.p_filesz);
+      else if (phdr.p_flags & PF_W) {
+        LOG_G("Data @ 0x%08x = %d bytes\n", phdr.p_vaddr, phdr.p_filesz);
         put_cache("rv_tests/firmware.data.vh", blob + phdr.p_offset, phdr.p_filesz);
       }
     }
   }
-
-#else
-
-  // Run an individual test
-  const char* argv2[2] = {
-    "+text_file=rv_tests/lb.text.vh",
-    "+data_file=rv_tests/lb.data.vh"
-  };
-  metron_init(2, argv2);
-
-#endif
 
   auto app_result = host.app_main(argc, argv);
 
