@@ -19,18 +19,6 @@ double total_time = 0;
 
 //------------------------------------------------------------------------------
 
-void put_file_cache(const char* test_name) {
-  char buf1[256];
-  char buf2[256];
-  sprintf(buf1, "+text_file=rv_tests/%s.text.vh", test_name);
-  sprintf(buf2, "+data_file=rv_tests/%s.data.vh", test_name);
-  const char* argv2[2] = {buf1, buf2};
-
-  metron_init(2, argv2);
-}
-
-//------------------------------------------------------------------------------
-
 bool load_elf(const char* filename) {
   struct stat sb;
   if (stat(filename, &sb) == -1) {
@@ -126,7 +114,6 @@ TestResults test_instructions(int reps, int max_cycles) {
   const int instruction_count = sizeof(instructions) / sizeof(instructions[0]);
 
   for (int i = 0; i < instruction_count; i++) {
-    //put_file_cache(instructions[i]);
     clear_cache();
 
     char elf_name[256];
@@ -139,18 +126,6 @@ TestResults test_instructions(int reps, int max_cycles) {
 }
 
 //------------------------------------------------------------------------------
-
-TestResults test_elf(const char* filename, int reps, int max_cycles) {
-  TEST_INIT("Testing elf %s, %d reps up to %d cycles", filename, reps, max_cycles);
-
-  ASSERT_EQ(load_elf(filename), true);
-  run_test(filename, reps, max_cycles);
-
-  TEST_DONE();
-}
-
-//------------------------------------------------------------------------------
-//  const char* firmware_filename = "firmware/bin/hello";
 
 int main(int argc, const char** argv) {
 

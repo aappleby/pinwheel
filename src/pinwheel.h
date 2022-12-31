@@ -26,7 +26,8 @@ struct Vane {
 //------------------------------------------------------------------------------
 
 struct BlockRam {
-  void tick(logic<32> addr, logic<32> wdata, logic<4> wmask);
+  void tick_read (logic<32> raddr, logic<1> rden);
+  void tick_write(logic<32> waddr, logic<32> wdata, logic<4> wmask, logic<1> wren);
   uint32_t  data[16384];
   logic<32> out;
 };
@@ -34,7 +35,8 @@ struct BlockRam {
 //------------------------------------------------------------------------------
 
 struct BlockRegfile {
-  void tick(logic<10> raddr1, logic<10> raddr2, logic<10> waddr, logic<1> wren, logic<32> wdata);
+  void tick_read (logic<10> raddr1, logic<10> raddr2, logic<1> rden);
+  void tick_write(logic<10> waddr, logic<32> wdata, logic<1> wren);
   uint32_t data[1024];
   logic<32> out_a;
   logic<32> out_b;
@@ -50,8 +52,7 @@ struct Pinwheel {
 
   static logic<32> unpack(logic<32> insn, logic<32> addr, logic<32> data);
   static logic<32> alu(logic<32> insn, logic<32> pc, logic<32> reg_a, logic<32> reg_b);
-  static logic<1>  take_branch(logic<32> insn, logic<32> reg_a, logic<32> reg_b);
-  static logic<32> pc_gen(logic<32> pc, logic<32> insn, logic<1> active, logic<1> take_branch, logic<32> reg_a);
+  static logic<32> pc_gen(logic<32> pc, logic<32> insn, logic<1> active, logic<32> reg_a, logic<32> reg_b);
   static logic<32> addr_gen(logic<32> insn, logic<32> reg_a);
   static logic<4>  mask_gen(logic<32> insn, logic<32> addr);
 
@@ -67,11 +68,8 @@ struct Pinwheel {
   BlockRam data;
   BlockRegfile regs;
 
-  bool reg_to_bus;
-  bool bus_to_reg;
-
-  logic<32> temp_addr; // Copy of address, used to realign data after read
-  logic<32> temp_alu;  // Copy of alu output, used for register writeback
+  logic<32> vane2_mem_addr; // Copy of address, used to realign data after read
+  logic<32> vane2_alu_out;   // Copy of alu output, used for register writeback
 
   Vane vane0;
   Vane vane1;

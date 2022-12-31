@@ -162,10 +162,8 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   d("speed        %f\n",     double(sim_thread->sim_steps) / sim_thread->sim_time);
   d("states       %d\n",     pinwheel_sim->states.state_count());
   d("state bytes  %d\n",     pinwheel_sim->states.state_size_bytes());
-  d("temp_addr    0x%08x\n", pinwheel.temp_addr);
-  d("temp_alu     0x%08x\n", pinwheel.temp_alu);
-  d("reg_to_bus   %d\n",     pinwheel.reg_to_bus);
-  d("bus_to_reg   %d\n",     pinwheel.bus_to_reg);
+  d("temp_addr    0x%08x\n", pinwheel.vane2_mem_addr);
+  d("temp_alu     0x%08x\n", pinwheel.vane2_alu_out);
   d("ra           0x%08x\n", pinwheel.regs.out_a);
   d("rb           0x%08x\n", pinwheel.regs.out_b);
   d("dbus_data    0x%08x\n", pinwheel.data.out);
