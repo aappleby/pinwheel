@@ -41,7 +41,7 @@ int main(int argc, const char** argv) {
 
   Elf32_Ehdr& header = *(Elf32_Ehdr*)blob;
 
-  app.pinwheel_sim->states.top().vane0.pc = header.e_entry;
+  app.pinwheel_sim->states.top().vane0_pc = header.e_entry;
 
   for (int i = 0; i < header.e_phnum; i++) {
     Elf32_Phdr& phdr = *(Elf32_Phdr*)(blob + header.e_phoff + header.e_phentsize * i);

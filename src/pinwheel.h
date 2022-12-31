@@ -15,16 +15,6 @@ static const int OP_SYS     = 0b11100;
 
 //------------------------------------------------------------------------------
 
-struct Vane {
-  logic<5>  hart;
-  logic<32> pc;
-  logic<32> insn;
-  logic<1>  enable;
-  logic<1>  active;
-};
-
-//------------------------------------------------------------------------------
-
 struct BlockRam {
   void tick_read (logic<32> raddr, logic<1> rden);
   void tick_write(logic<32> waddr, logic<32> wdata, logic<4> wmask, logic<1> wren);
@@ -60,6 +50,10 @@ struct Pinwheel {
   void tock(logic<1> reset);
   void tick(logic<1> reset_in);
 
+  void tick_code();
+  void tick_data();
+  void tick_regfile();
+
   static const int hart_count = 4;
   static const int vane_count = 4;
 
@@ -68,12 +62,25 @@ struct Pinwheel {
   BlockRam data;
   BlockRegfile regs;
 
-  logic<32> vane2_mem_addr; // Copy of address, used to realign data after read
-  logic<32> vane2_alu_out;   // Copy of alu output, used for register writeback
+  logic<5>  vane0_hart;
+  logic<32> vane0_pc;
+  logic<32> vane0_insn;
+  logic<1>  vane0_enable;
+  logic<1>  vane0_active;
 
-  Vane vane0;
-  Vane vane1;
-  Vane vane2;
+  logic<5>  vane1_hart;
+  logic<32> vane1_pc;
+  logic<32> vane1_insn;
+  logic<1>  vane1_enable;
+  logic<1>  vane1_active;
+
+  logic<5>  vane2_hart;
+  logic<32> vane2_pc;
+  logic<32> vane2_insn;
+  logic<1>  vane2_enable;
+  logic<1>  vane2_active;
+  logic<32> vane2_mem_addr; // Copy of address, used to realign data after read
+  logic<32> vane2_alu_out;  // Copy of alu output, used for register writeback
 
   logic<32> debug_reg;
 

@@ -15,10 +15,10 @@ void PinwheelSim::step() {
     auto& pinwheel = states.top();
     pinwheel.tick(0);
 
-    logic<32> addr = pinwheel.addr_gen(pinwheel.vane1.insn, pinwheel.regs.out_a);
-    logic<4>  mask = pinwheel.mask_gen(pinwheel.vane1.insn, addr);
+    logic<32> addr = pinwheel.addr_gen(pinwheel.vane1_insn, pinwheel.regs.out_a);
+    logic<4>  mask = pinwheel.mask_gen(pinwheel.vane1_insn, addr);
 
-    if ((addr == 0x40000000) && (mask & 1) && (pinwheel.vane1.hart == 0)) {
+    if ((addr == 0x40000000) && (mask & 1) && (pinwheel.vane1_hart == 0)) {
       pinwheel.console_buf[pinwheel.console_y * 80 + pinwheel.console_x] = 0;
 
       auto c = char(pinwheel.regs.out_b);
