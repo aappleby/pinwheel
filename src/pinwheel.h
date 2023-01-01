@@ -81,6 +81,10 @@ struct Pinwheel {
   logic<32> vane2_mem_addr; // Copy of address, used to realign data after read
   logic<32> vane2_alu_out;  // Copy of alu output, used for register writeback
 
+  logic<10> writeback_addr;
+  logic<32> writeback_data;
+  logic<1>  writeback_wren;
+
   logic<32> debug_reg;
 
   char console_buf[80*50];

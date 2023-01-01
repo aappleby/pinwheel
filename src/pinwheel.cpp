@@ -214,8 +214,6 @@ void Pinwheel::tick(logic<1> reset_in) {
 
   //----------
 
-  //const auto vane0 = this->vane0;
-
   const auto vane0_hart   = this->vane0_hart;
   const auto vane0_pc     = this->vane0_pc;
   const auto vane0_enable = this->vane0_enable;
@@ -238,28 +236,13 @@ void Pinwheel::tick(logic<1> reset_in) {
   logic<5>  vane1_op = b5(vane1_insn, 2);
   logic<5>  vane2_op = b5(vane2_insn, 2);
 
-  // Mask out r0 if we read it from the regfile.
   logic<32> vane1_reg_a = b5(vane1_insn, 15) ? regs.out_a : b32(0);
   logic<32> vane1_reg_b = b5(vane1_insn, 20) ? regs.out_b : b32(0);
 
   logic<32> code_rdata = code.out;
   logic<32> data_rdata = data.out;
 
-  //----------
-  // Use the saved read address to select between possible data sources.
-
-  logic<32> bus_rdata;
-  switch(b4(vane2_mem_addr, 28)) {
-    case 0x0: bus_rdata = code_rdata; break;
-    case 0x1: bus_rdata = regs.out_a; break; // note we do _not_ mask out r0 if it's read over the bus
-    case 0x8: bus_rdata = data_rdata; break;
-    case 0xF: bus_rdata = debug_reg;  break;
-    default:  bus_rdata = DONTCARE;   break;
-  }
-
-  bus_rdata = unpack(vane2_insn, vane2_mem_addr, bus_rdata);
-
-  //----------
+  logic<32> bus_rdata = unpack(vane2_insn, vane2_mem_addr, data_rdata);
 
   logic<32> vane1_mem_addr  = addr_gen(vane1_insn, vane1_reg_a);
   logic<1>  vane1_mem_rden  = vane1_active && vane1_op == OP_LOAD;
@@ -267,140 +250,46 @@ void Pinwheel::tick(logic<1> reset_in) {
   logic<32> vane1_mem_wdata = vane1_reg_b;
   logic<4>  vane1_mem_wmask = mask_gen(vane1_insn, vane1_mem_addr);
 
-  logic<1> code_cs    = b4(vane1_mem_addr, 28) == 0x0;
   logic<1> data_cs    = b4(vane1_mem_addr, 28) == 0x8;
   logic<1> debug_cs   = b4(vane1_mem_addr, 28) == 0xF;
-  logic<1> regfile_cs = b4(vane1_mem_addr, 28) == 0x1;
 
-  {
-    this->data.tick_read (vane1_mem_addr, vane1_mem_rden && data_cs);
-    this->data.tick_write(vane1_mem_addr, vane1_mem_wdata, vane1_mem_wmask, vane1_mem_wren && data_cs);
+  logic<10> vane2_reg_waddr = cat(vane2_hart, b5(vane2_insn, 7));
+  logic<1>  vane2_reg_wren  = (vane2_enable | vane2_active) && vane2_reg_waddr != 0 && vane2_op != OP_STORE && vane2_op != OP_BRANCH;
+  logic<32> vane2_reg_wdata = vane2_op == OP_LOAD ? bus_rdata : vane2_alu_out;
 
-    if (vane1_mem_wren && debug_cs) this->debug_reg = vane1_mem_wdata;
+  logic<10> vane0_reg_raddr1 = cat(vane0_hart, b5(code_rdata, 15));
+  logic<10> vane0_reg_raddr2 = cat(vane0_hart, b5(code_rdata, 20));
+  logic<1>  vane0_reg_rden   = vane0_active;
 
-    // If vane 2 is active (or about to be active), it reads its next instruction.
-    // If not, vane 1 can read code memory over the memory bus.
+  this->debug_reg = vane1_mem_wren && debug_cs ? vane1_mem_wdata : debug_reg;
 
-    if (vane2_enable | vane2_active) {
-      this->code.tick_read(vane2_pc, true);
-    }
-    else {
-      this->code.tick_read(vane1_mem_addr, vane1_mem_rden && code_cs);
-    }
+  this->data.tick_read (vane1_mem_addr, vane1_mem_rden && data_cs);
+  this->data.tick_write(vane1_mem_addr, vane1_mem_wdata, vane1_mem_wmask, vane1_mem_wren && data_cs);
 
-    // Vane 1 can always write to code mem.
-    // We'll have to redo this if code mem only has one port...
-    this->code.tick_write(vane1_mem_addr, vane1_mem_wdata, vane1_mem_wmask, vane1_mem_wren && code_cs);
-  }
+  this->code.tick_read(vane2_pc, true);
+  this->regs.tick_write(vane2_reg_waddr, vane2_reg_wdata, vane2_reg_wren);
 
-  //----------
+  this->regs.tick_read(vane0_reg_raddr1, vane0_reg_raddr2, vane0_reg_rden);
 
-  {
-    // If vane 0 is active, we read the vane 0 instruction registers.
-    // If it's not active, vane 1 can read the regfile over the memory bus.
-
-    logic<10> vane0_reg_raddr1 = cat(vane0_hart, b5(code_rdata, 15));
-    logic<10> vane0_reg_raddr2 = cat(vane0_hart, b5(code_rdata, 20));
-    logic<1>  vane0_reg_rden   = vane0_active;
-
-    logic<10> vane1_reg_raddr1 = b10(vane1_mem_addr, 2);
-    logic<10> vane1_reg_raddr2 = DONTCARE;
-    logic<1>  vane1_reg_rden   = vane1_mem_rden && regfile_cs;
-
-    if (vane0_reg_rden) {
-      this->regs.tick_read(vane0_reg_raddr1, vane0_reg_raddr2, vane0_reg_rden);
-    }
-    else if (vane1_reg_rden) {
-      this->regs.tick_read(vane1_reg_raddr1, vane1_reg_raddr2, vane1_reg_rden);
-    }
-    else {
-      this->regs.tick_read(DONTCARE, DONTCARE, false);
-    }
-  }
-
-  //----------
-
-  {
-    // If vane 2 is active, it can write to the regfile.
-    // If it's not, vane 1 can write the regfile over the memory bus.
-
-    logic<10> vane2_reg_waddr = cat(vane2_hart, b5(vane2_insn, 7));
-    logic<1>  vane2_reg_wren  = (vane2_enable | vane2_active) && vane2_reg_waddr != 0 && vane2_op != OP_STORE && vane2_op != OP_BRANCH;
-    logic<32> vane2_reg_wdata = vane2_op == OP_LOAD ? bus_rdata : vane2_alu_out;
-
-    logic<10> vane1_reg_waddr = b10(vane1_mem_addr, 2);
-    logic<1>  vane1_reg_wren  = vane1_mem_wren && regfile_cs;
-    logic<32> vane1_reg_wdata = vane1_reg_b;
-
-    if (vane2_reg_wren) {
-      this->regs.tick_write(vane2_reg_waddr, vane2_reg_wdata, vane2_reg_wren);
-    }
-    else if (vane1_reg_wren) {
-      this->regs.tick_write(vane1_reg_waddr, vane1_reg_wdata, vane1_reg_wren);
-    }
-    else {
-      this->regs.tick_write(DONTCARE, DONTCARE, false);
-    }
-  }
-
-  //----------
-  // Hacky console implementation, not synthesizable
-
-  if ((vane1_mem_addr == 0x40000000) && (vane1_hart == 0)) {
-    console_buf[console_y * 80 + console_x] = 0;
-    auto c = char(vane1_reg_b);
-
-    if (c == '\n') {
-      console_x = 0;
-      console_y++;
-    }
-    else if (c == '\r') {
-      console_x = 0;
-    }
-    else {
-      console_buf[console_y * 80 + console_x] = c;
-      console_x++;
-    }
-
-    if (console_x == 80) {
-      console_x = 0;
-      console_y++;
-    }
-    if (console_y == 25) {
-      memcpy(console_buf, console_buf + 80, 80*24);
-      memset(console_buf + (80*24), 0, 80);
-      console_y = 24;
-    }
-    console_buf[console_y * 80 + console_x] = 30;
-  }
-
-  //----------
-
-  // Vane 0 becomes active if vane 2 was set to enable
   this->vane0_hart   = vane2_hart;
   this->vane0_pc     = vane2_pc;
   this->vane0_enable = vane2_enable;
   this->vane0_active = vane2_enable | vane2_active;
 
-  // Vane 1 picks up the instruction from the code bus
   this->vane1_hart   = vane0_hart;
   this->vane1_pc     = vane0_pc;
   this->vane1_insn   = code_rdata;
   this->vane1_enable = vane0_enable;
   this->vane1_active = vane0_active;
 
-  // Vane 2 updates the PC from vane 1
   this->vane2_hart   = vane1_hart;
   this->vane2_pc     = pc_gen(vane1_pc, vane1_insn, vane1_active, vane1_reg_a, vane1_reg_b);
   this->vane2_insn   = vane1_insn;
   this->vane2_enable = vane1_enable;
   this->vane2_active = vane1_active;
 
-
-  // Vane 2 stores a copy of the alu output from vane 1
   this->vane2_alu_out = alu(vane1_insn, vane1_pc, vane1_reg_a, vane1_reg_b);
 
-  // Vane 2 stores a copy of the memory address from vane 1
   this->vane2_mem_addr = vane1_mem_addr;
 }
 
