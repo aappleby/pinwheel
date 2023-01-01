@@ -15,11 +15,10 @@ void BlockRam::tick_write(logic<32> waddr, logic<32> wdata, logic<4> wmask, logi
   if (wren) {
     logic<32> old_data = data[b10(waddr, 2)];
     logic<32> new_data = wdata << (8 * b2(waddr));
-    if (!wmask[0]) new_data = (new_data & 0xFFFFFF00) | (old_data & 0x000000FF);
-    if (!wmask[1]) new_data = (new_data & 0xFFFF00FF) | (old_data & 0x0000FF00);
-    if (!wmask[2]) new_data = (new_data & 0xFF00FFFF) | (old_data & 0x00FF0000);
-    if (!wmask[3]) new_data = (new_data & 0x00FFFFFF) | (old_data & 0xFF000000);
-    data[b10(waddr, 2)] = new_data;
+    data[b10(waddr, 2)] = ((wmask[0] ? new_data : old_data) & 0x000000FF) |
+                          ((wmask[1] ? new_data : old_data) & 0x0000FF00) |
+                          ((wmask[2] ? new_data : old_data) & 0x00FF0000) |
+                          ((wmask[3] ? new_data : old_data) & 0xFF000000);
   }
 }
 
@@ -219,7 +218,6 @@ void Pinwheel::tick(logic<1> reset_in) {
 
   const auto vane0_hart   = this->vane0_hart;
   const auto vane0_pc     = this->vane0_pc;
-  const auto vane0_insn   = this->vane0_insn;
   const auto vane0_enable = this->vane0_enable;
   const auto vane0_active = this->vane0_active;
 
@@ -237,7 +235,6 @@ void Pinwheel::tick(logic<1> reset_in) {
 
   //----------
 
-  logic<5>  vane0_op = b5(vane0_insn, 2);
   logic<5>  vane1_op = b5(vane1_insn, 2);
   logic<5>  vane2_op = b5(vane2_insn, 2);
 
@@ -276,7 +273,6 @@ void Pinwheel::tick(logic<1> reset_in) {
   logic<1> regfile_cs = b4(vane1_mem_addr, 28) == 0x1;
 
   {
-
     this->data.tick_read (vane1_mem_addr, vane1_mem_rden && data_cs);
     this->data.tick_write(vane1_mem_addr, vane1_mem_wdata, vane1_mem_wmask, vane1_mem_wren && data_cs);
 
@@ -348,31 +344,61 @@ void Pinwheel::tick(logic<1> reset_in) {
   }
 
   //----------
+  // Hacky console implementation, not synthesizable
+
+  if ((vane1_mem_addr == 0x40000000) && (vane1_hart == 0)) {
+    console_buf[console_y * 80 + console_x] = 0;
+    auto c = char(vane1_reg_b);
+
+    if (c == '\n') {
+      console_x = 0;
+      console_y++;
+    }
+    else if (c == '\r') {
+      console_x = 0;
+    }
+    else {
+      console_buf[console_y * 80 + console_x] = c;
+      console_x++;
+    }
+
+    if (console_x == 80) {
+      console_x = 0;
+      console_y++;
+    }
+    if (console_y == 25) {
+      memcpy(console_buf, console_buf + 80, 80*24);
+      memset(console_buf + (80*24), 0, 80);
+      console_y = 24;
+    }
+    console_buf[console_y * 80 + console_x] = 30;
+  }
+
+  //----------
 
   // Vane 0 becomes active if vane 2 was set to enable
   this->vane0_hart   = vane2_hart;
   this->vane0_pc     = vane2_pc;
-  this->vane0_insn   = vane2_insn;
   this->vane0_enable = vane2_enable;
   this->vane0_active = vane2_enable | vane2_active;
 
   // Vane 1 picks up the instruction from the code bus
   this->vane1_hart   = vane0_hart;
   this->vane1_pc     = vane0_pc;
-  this->vane1_insn   = vane0_active ? code_rdata : b32(0);
+  this->vane1_insn   = code_rdata;
   this->vane1_enable = vane0_enable;
   this->vane1_active = vane0_active;
 
   // Vane 2 updates the PC from vane 1
   this->vane2_hart   = vane1_hart;
-  this->vane2_pc     = this->pc_gen(vane1_pc, vane1_insn, vane1_active, vane1_reg_a, vane1_reg_b);
+  this->vane2_pc     = pc_gen(vane1_pc, vane1_insn, vane1_active, vane1_reg_a, vane1_reg_b);
   this->vane2_insn   = vane1_insn;
   this->vane2_enable = vane1_enable;
   this->vane2_active = vane1_active;
 
 
   // Vane 2 stores a copy of the alu output from vane 1
-  this->vane2_alu_out = this->alu(vane1_insn, vane1_pc, vane1_reg_a, vane1_reg_b);
+  this->vane2_alu_out = alu(vane1_insn, vane1_pc, vane1_reg_a, vane1_reg_b);
 
   // Vane 2 stores a copy of the memory address from vane 1
   this->vane2_mem_addr = vane1_mem_addr;

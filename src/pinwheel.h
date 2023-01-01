@@ -64,7 +64,6 @@ struct Pinwheel {
 
   logic<5>  vane0_hart;
   logic<32> vane0_pc;
-  logic<32> vane0_insn;
   logic<1>  vane0_enable;
   logic<1>  vane0_active;
 
