@@ -24,7 +24,7 @@ void BlockRam::tick_write(logic<32> waddr, logic<32> wdata, logic<4> wmask, logi
 
 //--------------------------------------------------------------------------------
 
-void BlockRegfile::tick_read(logic<10> raddr1, logic<10> raddr2, logic<1> rden) {
+void Regfile::tick_read(logic<10> raddr1, logic<10> raddr2, logic<1> rden) {
   if (rden) {
     out_a = data[raddr1];
     out_b = data[raddr2];
@@ -35,7 +35,7 @@ void BlockRegfile::tick_read(logic<10> raddr1, logic<10> raddr2, logic<1> rden) 
   }
 }
 
-void BlockRegfile::tick_write(logic<10> waddr, logic<32> wdata, logic<1> wren) {
+void Regfile::tick_write(logic<10> waddr, logic<32> wdata, logic<1> wren) {
   if (wren) {
     data[waddr] = wdata;
   }
@@ -64,15 +64,7 @@ void Pinwheel::reset() {
   value_plusargs("data_file=%s", s);
   readmemh(s, data.data);
 
-  vane0_pc = 0x00400000;
-  vane1_pc = 0x00400000;
-  vane2_pc = 0x00400000;
-
-  vane0_hart = 0;
-  vane1_hart = 1;
-  vane2_hart = 2;
-
-  vane0_enable = 1;
+  pc = 0x00400000;
 
   debug_reg = 0;
 }
@@ -214,83 +206,46 @@ void Pinwheel::tick(logic<1> reset_in) {
 
   //----------
 
-  const auto vane0_hart   = this->vane0_hart;
-  const auto vane0_pc     = this->vane0_pc;
-  const auto vane0_enable = this->vane0_enable;
-  const auto vane0_active = this->vane0_active;
+  code.tick_read(pc, true);
 
-  const auto vane1_hart   = this->vane1_hart;
-  const auto vane1_pc     = this->vane1_pc;
-  const auto vane1_insn   = this->vane1_insn;
-  const auto vane1_enable = this->vane1_enable;
-  const auto vane1_active = this->vane1_active;
+  logic<32> insn = code.out;
 
-  const auto vane2_hart   = this->vane2_hart;
-  const auto vane2_pc     = this->vane2_pc;
-  const auto vane2_insn   = this->vane2_insn;
-  const auto vane2_enable = this->vane2_enable;
-  const auto vane2_active = this->vane2_active;
+  regs.tick_read(
+    cat(b5(0), b5(insn, 15)),
+    cat(b5(0), b5(insn, 20)),
+    true
+  );
 
-  //----------
+  logic<32> reg_a = regs.out_a;
+  logic<32> reg_b = regs.out_b;
 
-  logic<5>  vane1_op = b5(vane1_insn, 2);
-  logic<5>  vane2_op = b5(vane2_insn, 2);
+  logic<5>  op = b5(insn, 2);
 
-  logic<32> vane1_reg_a = b5(vane1_insn, 15) ? regs.out_a : b32(0);
-  logic<32> vane1_reg_b = b5(vane1_insn, 20) ? regs.out_b : b32(0);
+  logic<32> mem_addr  = addr_gen(insn, reg_a);
+  logic<1>  mem_rden  = op == OP_LOAD;
+  logic<1>  mem_wren  = op == OP_STORE;
+  logic<32> mem_wdata = reg_b;
+  logic<4>  mem_wmask = mask_gen(insn, mem_addr);
 
-  logic<32> code_rdata = code.out;
-  logic<32> data_rdata = data.out;
+  logic<1> data_cs    = b4(mem_addr, 28) == 0x8;
+  logic<1> debug_cs   = b4(mem_addr, 28) == 0xF;
 
-  logic<32> bus_rdata = unpack(vane2_insn, vane2_mem_addr, data_rdata);
+  data.tick_read (mem_addr, mem_rden && data_cs);
+  data.tick_write(mem_addr, mem_wdata, mem_wmask, mem_wren && data_cs);
 
-  logic<32> vane1_mem_addr  = addr_gen(vane1_insn, vane1_reg_a);
-  logic<1>  vane1_mem_rden  = vane1_active && vane1_op == OP_LOAD;
-  logic<1>  vane1_mem_wren  = vane1_active && vane1_op == OP_STORE;
-  logic<32> vane1_mem_wdata = vane1_reg_b;
-  logic<4>  vane1_mem_wmask = mask_gen(vane1_insn, vane1_mem_addr);
+  logic<32> bus_rdata = unpack(insn, mem_addr, data.out);
 
-  logic<1> data_cs    = b4(vane1_mem_addr, 28) == 0x8;
-  logic<1> debug_cs   = b4(vane1_mem_addr, 28) == 0xF;
+  logic<32> alu_out  = alu(insn, pc, reg_a, reg_b);
 
-  logic<10> vane2_reg_waddr = cat(vane2_hart, b5(vane2_insn, 7));
-  logic<1>  vane2_reg_wren  = (vane2_enable | vane2_active) && vane2_reg_waddr != 0 && vane2_op != OP_STORE && vane2_op != OP_BRANCH;
-  logic<32> vane2_reg_wdata = vane2_op == OP_LOAD ? bus_rdata : vane2_alu_out;
+  logic<10> reg_waddr = cat(b5(0), b5(insn, 7));
+  logic<1>  reg_wren  = reg_waddr != 0 && op != OP_STORE && op != OP_BRANCH;
+  logic<32> reg_wdata = op == OP_LOAD ? bus_rdata : alu_out;
 
-  logic<10> vane0_reg_raddr1 = cat(vane0_hart, b5(code_rdata, 15));
-  logic<10> vane0_reg_raddr2 = cat(vane0_hart, b5(code_rdata, 20));
-  logic<1>  vane0_reg_rden   = vane0_active;
+  debug_reg = mem_wren && debug_cs ? mem_wdata : debug_reg;
 
-  this->debug_reg = vane1_mem_wren && debug_cs ? vane1_mem_wdata : debug_reg;
+  regs.tick_write(reg_waddr, reg_wdata, reg_wren);
 
-  this->data.tick_read (vane1_mem_addr, vane1_mem_rden && data_cs);
-  this->data.tick_write(vane1_mem_addr, vane1_mem_wdata, vane1_mem_wmask, vane1_mem_wren && data_cs);
-
-  this->code.tick_read(vane2_pc, true);
-  this->regs.tick_write(vane2_reg_waddr, vane2_reg_wdata, vane2_reg_wren);
-
-  this->regs.tick_read(vane0_reg_raddr1, vane0_reg_raddr2, vane0_reg_rden);
-
-  this->vane0_hart   = vane2_hart;
-  this->vane0_pc     = vane2_pc;
-  this->vane0_enable = vane2_enable;
-  this->vane0_active = vane2_enable | vane2_active;
-
-  this->vane1_hart   = vane0_hart;
-  this->vane1_pc     = vane0_pc;
-  this->vane1_insn   = code_rdata;
-  this->vane1_enable = vane0_enable;
-  this->vane1_active = vane0_active;
-
-  this->vane2_hart   = vane1_hart;
-  this->vane2_pc     = pc_gen(vane1_pc, vane1_insn, vane1_active, vane1_reg_a, vane1_reg_b);
-  this->vane2_insn   = vane1_insn;
-  this->vane2_enable = vane1_enable;
-  this->vane2_active = vane1_active;
-
-  this->vane2_alu_out = alu(vane1_insn, vane1_pc, vane1_reg_a, vane1_reg_b);
-
-  this->vane2_mem_addr = vane1_mem_addr;
+  pc = pc_gen(pc, insn, true, reg_a, reg_b);
 }
 
 //--------------------------------------------------------------------------------

@@ -131,6 +131,8 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
 
   auto& pinwheel = pinwheel_sim->states.top();
 
+#if 0
+
   d("vane0.hart   %d\n",     pinwheel.vane0_hart);
   d("vane0.pc     0x%08x\n", pinwheel.vane0_pc);
   d("vane0.insn   0x%08x ", pinwheel.vane0_active ? int(pinwheel.code.out) : 0);
@@ -239,6 +241,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   //box_painter.push_corner_size(1024 + (harts[1]->pc % 64) * 14 - 1, 512 + (harts[1]->pc / 64) * 12, 12*4+2*3+2, 12, 0x80FFFF00);
   //box_painter.push_corner_size(1024 + (harts[2]->pc % 64) * 14 - 1, 512 + (harts[2]->pc / 64) * 12, 12*4+2*3+2, 12, 0x80FF00FF);
   box_painter.render(view, screen_size, 0, 0);
+#endif
 
   sim_thread->resume();
 }

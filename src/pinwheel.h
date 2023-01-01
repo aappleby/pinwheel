@@ -24,10 +24,10 @@ struct BlockRam {
 
 //------------------------------------------------------------------------------
 
-struct BlockRegfile {
+struct Regfile {
   void tick_read (logic<10> raddr1, logic<10> raddr2, logic<1> rden);
   void tick_write(logic<10> waddr, logic<32> wdata, logic<1> wren);
-  uint32_t data[1024];
+  uint32_t  data[1024];
   logic<32> out_a;
   logic<32> out_b;
 };
@@ -54,38 +54,14 @@ struct Pinwheel {
   void tick_data();
   void tick_regfile();
 
-  static const int hart_count = 4;
-  static const int vane_count = 4;
-
   uint64_t ticks;
+
+  logic<32> pc;
+  logic<32> debug_reg;
+
   BlockRam code;
   BlockRam data;
-  BlockRegfile regs;
-
-  logic<5>  vane0_hart;
-  logic<32> vane0_pc;
-  logic<1>  vane0_enable;
-  logic<1>  vane0_active;
-
-  logic<5>  vane1_hart;
-  logic<32> vane1_pc;
-  logic<32> vane1_insn;
-  logic<1>  vane1_enable;
-  logic<1>  vane1_active;
-
-  logic<5>  vane2_hart;
-  logic<32> vane2_pc;
-  logic<32> vane2_insn;
-  logic<1>  vane2_enable;
-  logic<1>  vane2_active;
-  logic<32> vane2_mem_addr; // Copy of address, used to realign data after read
-  logic<32> vane2_alu_out;  // Copy of alu output, used for register writeback
-
-  logic<10> writeback_addr;
-  logic<32> writeback_data;
-  logic<1>  writeback_wren;
-
-  logic<32> debug_reg;
+  Regfile  regs;
 
   char console_buf[80*50];
   int console_x = 0;
