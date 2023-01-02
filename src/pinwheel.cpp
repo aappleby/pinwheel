@@ -71,17 +71,19 @@ void Pinwheel::reset() {
 
 //--------------------------------------------------------------------------------
 
-logic<32> Pinwheel::unpack(logic<32> insn, logic<32> addr, logic<32> data) {
-  logic<2> align = b2(addr);
-  logic<3> f3 = b3(insn, 12);
+logic<32> Pinwheel::unpack(logic<3> f3, logic<32> addr, logic<32> data) {
+  logic<1> as_signed = 0;
+
+  if (addr[0]) data = data >> 8;
+  if (addr[1]) data = data >> 16;
 
   switch (f3) {
-    case 0:  return sign_extend<32>( b8(data, align << 3)); break;
-    case 1:  return sign_extend<32>(b16(data, align << 3)); break;
+    case 0:  return sign_extend<32>( b8(data)); break;
+    case 1:  return sign_extend<32>(b16(data)); break;
     case 2:  return data; break;
     case 3:  return data; break;
-    case 4:  return zero_extend<32>( b8(data, align << 3)); break;
-    case 5:  return zero_extend<32>(b16(data, align << 3)); break;
+    case 4:  return zero_extend<32>( b8(data)); break;
+    case 5:  return zero_extend<32>(b16(data)); break;
     case 6:  return data; break;
     case 7:  return data; break;
     default: return 0;
@@ -90,36 +92,29 @@ logic<32> Pinwheel::unpack(logic<32> insn, logic<32> addr, logic<32> data) {
 
 //--------------------------------------------------------------------------------
 
-logic<32> Pinwheel::alu(logic<32> insn, logic<32> pc, logic<32> reg_a, logic<32> reg_b) {
-  logic<5> op  = b5(insn, 2);
-  logic<3> f3  = b3(insn, 12);
-  logic<1> alt = b1(insn, 30);
+logic<32> Pinwheel::alu(logic<5> op, logic<3> f3, logic<7> f7, logic<32> imm, logic<32> pc, logic<32> reg_a, logic<32> reg_b) {
+  if (op == OP_ALU && f3 == 0 && f7 == 32) reg_b = -reg_b;
 
-  if (op == OP_ALU && f3 == 0 && alt) reg_b = -reg_b;
-
-  logic<32> imm_i = sign_extend<32>(b12(insn, 20));
-  logic<32> imm_u = b20(insn, 12) << 12;
-
-  logic<3>  alu_op;
-  logic<32> a, b;
+  logic<32> a = reg_a;
+  logic<32> b = op == OP_ALUI ? imm : reg_b;
 
   switch(op) {
-    case OP_ALU:     alu_op = f3;  a = reg_a; b = reg_b;   break;
-    case OP_ALUI:    alu_op = f3;  a = reg_a; b = imm_i;   break;
+    case OP_ALU:     break;
+    case OP_ALUI:    break;
     case OP_JAL:     return pc + 4;
     case OP_JALR:    return pc + 4;
-    case OP_LUI:     return imm_u;
-    case OP_AUIPC:   return pc + imm_u;
+    case OP_LUI:     return imm;
+    case OP_AUIPC:   return pc + imm;
     default:         return 0;
   }
 
-  switch (alu_op) {
+  switch (f3) {
     case 0:  return a + b; break;
     case 1:  return a << b5(b); break;
     case 2:  return signed(a) < signed(b); break;
     case 3:  return a < b; break;
     case 4:  return a ^ b; break;
-    case 5:  return alt ? signed(a) >> b5(b) : a >> b5(b); break;
+    case 5:  return f7 == 32 ? signed(a) >> b5(b) : a >> b5(b); break;
     case 6:  return a | b; break;
     case 7:  return a & b; break;
     default: return 0;
@@ -127,18 +122,13 @@ logic<32> Pinwheel::alu(logic<32> insn, logic<32> pc, logic<32> reg_a, logic<32>
 }
 
 //--------------------------------------------------------------------------------
+// graph match
 
-logic<32> Pinwheel::pc_gen(logic<32> pc, logic<32> insn, logic<1> active, logic<32> reg_a, logic<32> reg_b) {
-  if (!active) {
-    return pc;
-  }
-
-  logic<5> op  = b5(insn, 2);
+logic<32> Pinwheel::next_pc(logic<5> op, logic<3> f3, logic<32> imm, logic<32> pc, logic<32> reg_a, logic<32> reg_b) {
   logic<1> eq  = reg_a == reg_b;
   logic<1> slt = signed(reg_a) < signed(reg_b);
   logic<1> ult = reg_a < reg_b;
 
-  logic<3> f3 = b3(insn, 12);
   logic<1> take_branch;
   switch (f3) {
     case 0:  take_branch =   eq; break;
@@ -153,16 +143,13 @@ logic<32> Pinwheel::pc_gen(logic<32> pc, logic<32> insn, logic<1> active, logic<
   }
 
   if (op == OP_BRANCH) {
-    logic<32> imm_b = cat(dup<20>(insn[31]), insn[7], b6(insn, 25), b4(insn, 8), b1(0));
-    return pc + (take_branch ? imm_b : b32(4));
+    return take_branch ? pc + imm : pc + b32(4);
   }
   else if (op == OP_JAL) {
-    logic<32> imm_j = cat(dup<12>(insn[31]), b8(insn, 12), insn[20], b10(insn, 21), b1(0));
-    return pc + imm_j;
+    return pc + imm;
   }
   else if (op == OP_JALR) {
-    logic<32> imm_i = sign_extend<32>(b12(insn, 20));
-    return reg_a + imm_i;
+    return reg_a + imm;
   }
   else {
     return pc + 4;
@@ -171,27 +158,82 @@ logic<32> Pinwheel::pc_gen(logic<32> pc, logic<32> insn, logic<1> active, logic<
 
 //--------------------------------------------------------------------------------
 
-logic<32> Pinwheel::addr_gen(logic<32> insn, logic<32> reg_a) {
+logic<32> Pinwheel::decode_imm(logic<32> insn) {
   logic<5>  op    = b5(insn, 2);
+
   logic<32> imm_i = sign_extend<32>(b12(insn, 20));
   logic<32> imm_s = cat(dup<21>(insn[31]), b6(insn, 25), b5(insn, 7));
-  logic<32> addr  = reg_a + ((op == OP_STORE) ? imm_s : imm_i);
-  return addr;
+  logic<32> imm_u = b20(insn, 12) << 12;
+  logic<32> imm_b = cat(dup<20>(insn[31]), insn[7], b6(insn, 25), b4(insn, 8), b1(0));
+  logic<32> imm_j = cat(dup<12>(insn[31]), b8(insn, 12), insn[20], b10(insn, 21), b1(0));
+
+  switch(op) {
+    case OP_LOAD:   return imm_i;
+    case OP_ALUI:   return imm_i;
+    case OP_AUIPC:  return imm_u;
+    case OP_STORE:  return imm_s;
+    case OP_ALU:    return imm_i;
+    case OP_LUI:    return imm_u;
+    case OP_BRANCH: return imm_b;
+    case OP_JALR:   return imm_i;
+    case OP_JAL:    return imm_j;
+    default:        return 0;
+  }
+}
+
+//--------------------------------------------------------------------------------
+// graph match
+
+MemPort Pinwheel::mem_if(logic<5> op, logic<3> f3, logic<32> imm, logic<32> reg_a, logic<32> reg_b) {
+  logic<32> addr  = reg_a + imm;
+  logic<4>  mask  = 0;
+
+  if (f3 == 0) mask = 0b0001;
+  if (f3 == 1) mask = 0b0011;
+  if (f3 == 2) mask = 0b1111;
+
+  if (addr[0]) mask = mask << 1;
+  if (addr[1]) mask = mask << 2;
+
+  return {
+    addr,
+    op == OP_LOAD,
+    reg_b,
+    mask,
+    op == OP_STORE
+  };
+}
+
+//--------------------------------------------------------------------------------
+// graph match
+
+RegPortWrite Pinwheel::writeback(logic<5> op, logic<5> rd, logic<32> rdata, logic<32> alu) {
+  return {
+    cat(b5(0), rd),
+    op == OP_LOAD ? rdata : alu,
+    rd != 0 && op != OP_STORE && op != OP_BRANCH
+  };
 }
 
 //--------------------------------------------------------------------------------
 
-logic<4> Pinwheel::mask_gen(logic<32> insn, logic<32> addr) {
-  logic<5> op = b5(insn, 2);
-  if (op != OP_STORE) return 0;
+logic<32> Pinwheel::tick_bus(MemPort port) {
+  logic<1> data_cs    = b4(port.addr, 28) == 0x8;
+  logic<1> debug_cs   = b4(port.addr, 28) == 0xF;
 
-  logic<3> f3 = b3(insn, 12);
-  logic<2> align = b2(addr);
+  data.tick_write(port.addr, port.wdata, port.wmask, port.wren && data_cs);
+  data.tick_read (port.addr, port.rden && data_cs);
+  debug_reg = port.wren && debug_cs ? port.wdata : debug_reg;
 
-  if      (f3 == 0) return 0b0001 << align;
-  else if (f3 == 1) return 0b0011 << align;
-  else if (f3 == 2) return 0b1111;
-  else              return 0;
+  if (data_cs) {
+    return data.out;
+  }
+  else if (debug_cs) {
+    return debug_reg;
+  }
+  else {
+    return 0;
+  }
 }
 
 //--------------------------------------------------------------------------------
@@ -210,42 +252,25 @@ void Pinwheel::tick(logic<1> reset_in) {
 
   logic<32> insn = code.out;
 
-  regs.tick_read(
-    cat(b5(0), b5(insn, 15)),
-    cat(b5(0), b5(insn, 20)),
-    true
-  );
+  logic<5>  op  = b5(insn, 2);
+  logic<5>  rd  = b5(insn, 7);
+  logic<3>  f3  = b3(insn, 12);
+  logic<5>  ra  = b5(insn, 15);
+  logic<5>  rb  = b5(insn, 20);
+  logic<7>  f7  = b7(insn, 25);
+  logic<32> imm = decode_imm(insn);
 
-  logic<32> reg_a = regs.out_a;
-  logic<32> reg_b = regs.out_b;
+  regs.tick_read(b10(ra), b10(rb), true);
 
-  logic<5>  op = b5(insn, 2);
+  auto mem_port  = mem_if(op, f3, imm, regs.out_a, regs.out_b);
+  auto bus_out   = tick_bus(mem_port);
+  auto bus_rdata = unpack(f3, mem_port.addr, bus_out);
+  auto alu_out   = alu(op, f3, f7, imm, pc, regs.out_a, regs.out_b);
+  auto reg_write = writeback(op, rd, bus_rdata, alu_out);
 
-  logic<32> mem_addr  = addr_gen(insn, reg_a);
-  logic<1>  mem_rden  = op == OP_LOAD;
-  logic<1>  mem_wren  = op == OP_STORE;
-  logic<32> mem_wdata = reg_b;
-  logic<4>  mem_wmask = mask_gen(insn, mem_addr);
+  regs.tick_write(reg_write.addr, reg_write.wdata, reg_write.wren);
 
-  logic<1> data_cs    = b4(mem_addr, 28) == 0x8;
-  logic<1> debug_cs   = b4(mem_addr, 28) == 0xF;
-
-  data.tick_read (mem_addr, mem_rden && data_cs);
-  data.tick_write(mem_addr, mem_wdata, mem_wmask, mem_wren && data_cs);
-
-  logic<32> bus_rdata = unpack(insn, mem_addr, data.out);
-
-  logic<32> alu_out  = alu(insn, pc, reg_a, reg_b);
-
-  logic<10> reg_waddr = cat(b5(0), b5(insn, 7));
-  logic<1>  reg_wren  = reg_waddr != 0 && op != OP_STORE && op != OP_BRANCH;
-  logic<32> reg_wdata = op == OP_LOAD ? bus_rdata : alu_out;
-
-  debug_reg = mem_wren && debug_cs ? mem_wdata : debug_reg;
-
-  regs.tick_write(reg_waddr, reg_wdata, reg_wren);
-
-  pc = pc_gen(pc, insn, true, reg_a, reg_b);
+  pc = next_pc(op, f3, imm, pc, regs.out_a, regs.out_b);
 }
 
 //--------------------------------------------------------------------------------

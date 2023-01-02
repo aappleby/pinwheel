@@ -13,6 +13,57 @@ static const int OP_JALR    = 0b11001;
 static const int OP_JAL     = 0b11011;
 static const int OP_SYS     = 0b11100;
 
+enum RVOps {
+  RV_LB,
+  RV_LH,
+  RV_LW,
+  RV_LBU,
+  RV_LHU,
+  RV_SB,
+  RV_SH,
+  RV_SW,
+  RV_SLL,
+  RV_SLLI,
+
+  RV_SRL,
+  RV_SRLI,
+  RV_SRA,
+  RV_SRAI,
+  RV_ADD,
+  RV_ADDI,
+  RV_SUB,
+  RV_LUI,
+  RV_AUIPC,
+  RV_XOR,
+
+  RV_XORI,
+  RV_OR,
+  RV_ORI,
+  RV_AND,
+  RV_ANDI,
+  RV_SLT,
+  RV_SLTI,
+  RV_SLTU,
+  RV_SLTUI,
+  RV_BEQ,
+
+  RV_BNE,
+  RV_BLT,
+  RV_BGE,
+  RV_BLTU,
+  RV_BGEU,
+  RV_JAL,
+  RV_JALR
+};
+
+struct DecodedOp {
+  RVOps     op;
+  logic<32> imm;
+  logic<5>  ra;
+  logic<5>  rb;
+  logic<5>  rd;
+};
+
 //------------------------------------------------------------------------------
 
 struct BlockRam {
@@ -34,17 +85,35 @@ struct Regfile {
 
 //------------------------------------------------------------------------------
 
+struct MemPort {
+  logic<32> addr;
+  logic<1>  rden;
+  logic<32> wdata;
+  logic<4>  wmask;
+  logic<1>  wren;
+};
+
+struct RegPortWrite {
+  logic<10> addr;
+  logic<32> wdata;
+  logic<1>  wren;
+};
+
+//------------------------------------------------------------------------------
+
 struct Pinwheel {
 
   Pinwheel();
   Pinwheel* clone();
   size_t size_bytes() { return sizeof(*this); }
 
-  static logic<32> unpack(logic<32> insn, logic<32> addr, logic<32> data);
-  static logic<32> alu(logic<32> insn, logic<32> pc, logic<32> reg_a, logic<32> reg_b);
-  static logic<32> pc_gen(logic<32> pc, logic<32> insn, logic<1> active, logic<32> reg_a, logic<32> reg_b);
-  static logic<32> addr_gen(logic<32> insn, logic<32> reg_a);
-  static logic<4>  mask_gen(logic<32> insn, logic<32> addr);
+  static logic<32> unpack(logic<3> f3, logic<32> addr, logic<32> data);
+  static logic<32> alu(logic<5> op, logic<3> f3, logic<7> f7, logic<32> imm, logic<32> pc, logic<32> reg_a, logic<32> reg_b);
+  static logic<32> next_pc(logic<5> op, logic<3> f3, logic<32> imm, logic<32> pc, logic<32> reg_a, logic<32> reg_b);
+  static logic<32> decode_imm(logic<32> insn);
+
+  static MemPort mem_if(logic<5> op, logic<3> f3, logic<32> imm, logic<32> reg_a, logic<32> reg_b);
+  static RegPortWrite writeback(logic<5> op, logic<5> rd, logic<32> rdata, logic<32> alu);
 
   void reset();
   void tock(logic<1> reset);
@@ -52,6 +121,7 @@ struct Pinwheel {
 
   void tick_code();
   void tick_data();
+  logic<32> tick_bus(MemPort port);
   void tick_regfile();
 
   uint64_t ticks;

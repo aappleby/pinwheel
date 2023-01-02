@@ -1,259 +1,203 @@
 digraph G {
     rankdir="LR"
-    ranksep=1.2
+    ranksep=1.5
+
+    // Fetch, Decode, Execute, Memory, Write
+
+    pc_l [shape="record" label="<top>pc|{<d>d|<q>q}|"]
+    pc_r [shape="record" label="<top>pc|{<d>d|<q>q}|"]
+    code [shape="record" label="<top>code|{<addr>addr|<data>data}|"]
+    data [shape="record" label="<top>data|{{<addr>addr|<wdata>wdata|<wmask>wmask|<wren>wren}|<rdata>rdata}|"]
+
+    alu      [shape="Mrecord" label="alu|{{<op>op|<f3>f3|<f7>f7|<imm>imm|<pc>pc|<a>a|<b>b}|<out>out}|"]
+    next_pc  [shape="Mrecord" label="<top>next_pc|{ {<op>op|<f3>f3|<imm>imm|<pc>pc|<a>a|<b>b} | <out>out }|"]
+    mem_if   [shape="Mrecord" label="<top>mem_if|{{<op>op|<f3>f3|<imm>imm|<a>a|<b>b}|{<addr>addr|<wdata>wdata|<wmask>wmask|<wren>wren}}|"]
+
+    writeback [shape="Mrecord" label="<top>writeback|{{<op>op|<rd>rd|<rdata>rdata|<alu>alu}|{<addr>addr|<wdata>wdata|<wren>wren}}|"]
+
+    unpack [shape="Mrecord" label="<top>unpack|{{<f3>f3|<rdata>rdata}|{<out>out}}"]
+
+    decode_op [shape="Mrecord" label="<top>decode_op|{{<data>data}|{<op>op|<rd>rd|<f3>f3|<ra>ra|<rb>rb|<f7>f7}}|"]
+
+    decode_imm [shape="Mrecord" label="<top>decode_imm|{{<data>data}|{<imm>imm}}|"]
+
+    regfile_l [shape="record" label="<top>regfile|{{<raddr1>raddr1|<raddr2>raddr2|<waddr>waddr|<wdata>wdata|<wren>wren}|{<reg_a>reg_a|<reg_b>reg_b}}|"];
+    regfile_r [shape="record" label="<top>regfile|{{<raddr1>raddr1|<raddr2>raddr2|<waddr>waddr|<wdata>wdata|<wren>wren}|{<reg_a>reg_a|<reg_b>reg_b}}|"];
 
     rank="same" {
-        vane0
-        code_l
-    }
-
-    rank="same" {
-        vane1
-        regfile_l
-    }
-
-    rank="same" {
-        vane2
-        reg_alu
-        reg_addr
-        data
-    }
-
-    rank="same" {
-        vane3
         regfile_r
-        code_r
+        pc_r
     }
 
     rank="same" {
-        addr_gen
+        decode_op
+        decode_imm
+    }
+
+    code:data -> decode_op:data
+    code:data -> decode_imm:data
+
+
+    pc_l:q -> code:addr
+
+    next_pc:out -> pc_r:d
+
+    decode_op:op -> writeback:op
+    decode_op:op -> next_pc:op
+    decode_op:op -> alu:op
+    decode_op:op -> mem_if:op
+    decode_op:rd -> writeback:rd
+    decode_op:f3 -> mem_if:f3
+    decode_op:f3 -> next_pc:f3
+    decode_op:f3 -> alu:f3
+    decode_op:f3 -> unpack:f3
+    decode_op:ra -> regfile_l:raddr1
+    decode_op:rb -> regfile_l:raddr2
+    decode_op:f7 -> alu:f7
+
+    decode_imm:imm    -> mem_if:imm
+    decode_imm:imm    -> alu:imm
+    decode_imm:imm    -> next_pc:imm
+
+    writeback:addr  -> regfile_r:waddr
+    writeback:wdata -> regfile_r:wdata
+    writeback:wren  -> regfile_r:wren
+
+    mem_if:addr  -> data:addr
+    mem_if:wdata -> data:wdata
+    mem_if:wmask -> data:wmask
+    mem_if:wren  -> data:wren
+
+    data:rdata -> unpack:rdata
+
+    unpack:out -> writeback:rdata
+
+    regfile_l:reg_a -> alu:a
+    regfile_l:reg_b -> alu:b
+
+    regfile_l:reg_a -> mem_if:a
+    regfile_l:reg_b -> mem_if:b
+    regfile_l:reg_a -> next_pc:a
+    regfile_l:reg_b -> next_pc:b
+
+    alu:out -> writeback:alu
+
+
+    /*
+    rank="same" {
+        pc_1
+        code_1
+        insn_1
+        alu_out_1
+        data_1
+        //regfile_1
+    }
+
+    rank="same" {
+        pc_2
+        insn_2
+        //alu_out_2
+        //code_2
+        //data_2
+        regfile_2
+    }
+
+    rank="same" {
+        pc_3
+        insn_3
+        alu_out_3
+        code_3
+        data_3
+        //regfile_3
     }
 
     rank="same" {
         alu
-        mask_gen
         pc_gen
+        addr_gen
     }
 
     //----------
 
-    vane0 [shape="record" label="<top>vane0|<hart>hart|<pc>pc|<enable>enable|<active>active|<insn>insn|"]
+    pc_1 [shape="record" label="<top>pc_1|{<d>d|<q>q}|"]
+    pc_2 [shape="record" label="<top>pc_2|{<d>d|<q>q}|"]
+    pc_3 [shape="record" label="<top>pc_3|{<d>d|<q>q}|"]
 
-    vane0:hart   -> vane1:hart
-    vane0:pc     -> vane1:pc
-    vane0:enable -> vane1:enable
-    vane0:active -> vane1:active
+    insn_1 [shape="record" label="<top>insn_1|{<d>d|<q>q}|"]
+    insn_2 [shape="record" label="<top>insn_2|{<d>d|<q>q}|"]
+    insn_3 [shape="record" label="<top>insn_3|{<d>d|<q>q}|"]
 
-    //----------
+    alu_out_1 [shape="record" label="<top>alu_out_1|{<d>d|<q>q}|"]
+    //alu_out_2 [shape="record" label="<top>alu_out_2|{<d>d|<q>q}|"]
+    alu_out_3 [shape="record" label="<top>alu_out_3|{<d>d|<q>q}|"]
 
-    vane1 [shape="record" label="<top>vane1|<hart>hart|<pc>pc|<enable>enable|<active>active|<insn>insn|"]
+    code_1 [shape="record" label="<top>code_1|{<raddr>raddr|<rdata>rdata}|"]
+    //code_2 [shape="record" label="<top>code_2|{<raddr>raddr|<rdata>rdata}|"]
+    code_3 [shape="record" label="<top>code_3|{<raddr>raddr|<rdata>rdata}|"]
 
-    vane1:hart   -> vane2:hart
-    vane1:pc     -> alu:pc
-    vane1:pc     -> pc_gen:pc
-    vane1:enable -> vane2:enable
-    vane1:active -> vane2:active
-    vane1:active -> pc_gen:active
-    vane1:insn   -> vane2:insn
-    vane1:insn   -> addr_gen:insn
-    vane1:insn   -> alu:insn
-    vane1:insn   -> pc_gen:insn
+    data_1 [shape="record" label="<top>data_1|{{<addr>addr|<wdata>wdata|<wren>wren}|<rdata>rdata}|"]
+    //data_2 [shape="record" label="<top>data_2|{{<addr>addr|<wdata>wdata|<wren>wren}|<rdata>rdata}|"]
+    data_3 [shape="record" label="<top>data_3|{{<addr>addr|<wdata>wdata|<wren>wren}|<rdata>rdata}|"]
 
-    //----------
+    //regfile_1 [shape="record" label="<top>regfile_1|{{<raddr1>raddr1|<raddr2>raddr2|<waddr>waddr|<wdata>wdata|<wren>wren}|{<rdata1>rdata1|<rdata2>rdata2}}|"];
+    regfile_2 [shape="record" label="<top>regfile_2|{{<raddr1>raddr1|<raddr2>raddr2|<waddr>waddr|<wdata>wdata|<wren>wren}|{<rdata1>rdata1|<rdata2>rdata2}}|"];
+    //regfile_3 [shape="record" label="<top>regfile_3|{{<raddr1>raddr1|<raddr2>raddr2|<waddr>waddr|<wdata>wdata|<wren>wren}|{<rdata1>rdata1|<rdata2>rdata2}}|"];
 
-    vane2 [shape="record" label="<top>vane2|<hart>hart|<pc>pc|<enable>enable|<active>active|<insn>insn|"]
 
-    vane2:hart   -> vane3:hart
-    vane2:pc     -> vane3:pc
-    vane2:pc     -> code_r:addr
-    vane2:insn   -> writeback_mux:sel
-    vane2:insn   -> regfile_r:wren
-    vane2:insn   -> regfile_r:waddr
-    vane2:insn   -> unpack:insn
-    vane2:enable -> vane3:enable
-    vane2:enable -> OR:a
-    vane2:active -> OR:b
+    alu      [shape="Mrecord" label="alu|{{<insn>insn|<pc>pc|<a>a|<b>b}|<out>out}|"]
+    pc_gen   [shape="Mrecord" label="<top>pc_gen|{ {<insn>insn|<pc>pc|<a>a|<b>b} | <out>out }|"]
+    addr_gen [shape="Mrecord" label="<top>addr_gen|{{<insn>insn|<a>a|<b>b}|{<addr>addr|<wdata>wdata|<wren>wren}}|"]
 
-    OR [shape="Mrecord" label="OR|{{<a>a|<b>b}|{<out>out}}|"]
-    OR:out -> vane3:active
+    writeback [shape="Mrecord" label="<top>writeback|{{<insn>insn|<alu>alu|<data>data}|{<addr>addr|<wdata>wdata|<wren>wren}}|"]
+
+    decode1 [shape="Mrecord" label="<top>decode|{{<insn>insn}|{<ra>ra|<rb>rb}}|"]
+
+    decode2 [shape="Mrecord" label="<top>decode|{{<insn>insn}|{<alu_op>alu_op|<branch>branch|<mode>mode}}|"]
 
     //----------
 
-    vane3 [shape="record" label="<top>vane0|<hart>hart|<pc>pc|<enable>enable|<active>active|<insn>insn|"]
+    pc_1:q       -> pc_2:d [label="32"]
+    insn_1:q     -> writeback:insn [label="32"]
+    alu_out_1:q  -> writeback:alu  [label="32"]
+    code_1:rdata -> decode1:insn
+    code_1:rdata -> insn_2:d [label="32"]
+    data_1:rdata -> writeback:data [label="32"]
 
     //----------
 
-    addr_gen [shape="Mrecord" label="<top>addr_gen|{{<insn>insn|<a>a}|<out>out}|"]
-    addr_gen:out -> data:addr
-    addr_gen:out -> reg_addr:d
+    decode1:ra -> regfile_2:raddr1 [label="5"]
+    decode1:rb -> regfile_2:raddr2 [label="5"]
 
-    mask_gen [shape="Mrecord" label="<top>mask_gen|{{<insn>insn|<addr>addr}|<out>out}|"]
-    vane1:insn -> mask_gen:insn
-    addr_gen:out -> mask_gen:addr
-    mask_gen:out -> data:wmask
+    writeback:addr   -> regfile_2:waddr [label="5"]
+    writeback:wdata  -> regfile_2:wdata [label="32"]
+    writeback:wren   -> regfile_2:wren  [label="1"]
 
     //----------
 
-    code_l [shape="record" label="<top>code|{{<raddr>raddr|<rden>rden|<waddr>waddr|<wdata>wdata|<wmask>wmask|<wren>wren}|<rdata>rdata}|"]
-    code_r [shape="record" label="<top>code|{{<raddr>raddr|<rden>rden|<waddr>waddr|<wdata>wdata|<wmask>wmask|<wren>wren}|<rdata>rdata}|"]
-    code_l:rdata -> regfile_l:raddr1
-    code_l:rdata -> regfile_l:raddr2
-    code_l:rdata -> vane1:insn
-    vane0:active -> vane0_reg_rden
-
-    code_l:out -> code_rdata
-    data:out -> data_rdata
-
-    code_rdata -> bus_rdata
-    regfile_l:raddr1 -> bus_rdata
-    data_rdata -> bus_rdata
-    debug_reg -> bus_rdata
-
-    vane0:insn -> vane0_op
-    vane1:insn -> vane1_op
-    vane2:insn -> vane2_op
-
-    vane1:insn     -> vane1_reg_a
-    regfile_l:rdata1->vane1_reg_a
-
-    vane1:insn     -> vane1_reg_b
-    regfile_l:rdata1->vane1_reg_b
-
-    vane0:hart   -> vane0_reg_raddr1
-    code_l:rdata -> vane0_reg_raddr1
-    vane0:hart   -> vane0_reg_raddr2
-    code_l:rdata -> vane0_reg_raddr2
-
-    vane1:insn -> vane1_mem_addr
-    vane1_reg_a -> vane1_mem_addr
-
-    vane1:active -> vane1_mem_rden
-    vane1_op     -> vane1_mem_rden
-    vane1:active -> vane1_mem_wren
-    vane1_op     -> vane1_mem_wren
-
-    vane1_reg_b -> vane1_mem_wdata
-    vane1:insn -> vane1_mem_wmask
-    vane1_mem_addr -> vane1_mem_wmask
-
-    vane1_mem_addr -> code_cs
-    vane1_mem_addr -> data_cs
-    vane1_mem_addr -> debug_cs
-    vane1_mem_addr -> regfile_cs
-
-    vane1_mem_addr -> data_r:addr
-    vane1_mem_rden -> data_r:cs
-    data_cs        -> data_r:cs
-
-    vane1_mem_wren  -> debug_reg
-    debug_cs        -> debug_reg
-    vane1_mem_wdata -> debug_reg
-
-    vane0:hart -> vane0_reg_raddr1
-    code_rdata -> vane0_reg_raddr1
-    vane0:hart -> vane0_reg_raddr2
-    code_rdata -> vane0_reg_raddr2
-    vane0:active -> vane0_reg_rden
-
-    vane1_mem_addr -> vane1_reg_raddr
-    vane1_mem_rden -> vane1_reg_rden
-    regfile_cs     -> vane1_reg_rden
-
-    vane0_reg_raddr1 -> regfile_l:raddr1
-    vane0_reg_raddr2 -> regfile_l:raddr2
-    vane0_reg_rden   -> regfile_l:rden
-
-    vane2:hart -> vane2_reg_waddr
-    vane2:insn -> vane2_reg_waddr
-    vane2:enable -> vane2_reg_wren
-    vane2:active -> vane2_reg_wren
-    vane2_reg_waddr -> vane2_reg_wren
-    vane2_op -> vane2_reg_wren
-
-    vane2_op      -> vane2_reg_wdata
-    bus_rdata     -> vane2_reg_wdata
-    vane2_alu_out -> vane2_reg_wdata
-
-    vane1_mem_waddr -> vane1_reg_waddr
-    vane1_mem_wren -> vane1_reg_wren
-    regfile_cs -> vane1_reg_wren
-    vane1_reg_b -> vane1_reg_wdata
-
-    vane2_reg_waddr -> regfile_r:waddr
-    vane2_reg_wdata -> regfile_r:wdata
-    vane2_reg_wren  -> regfile_r:wren
-
-    vane1_reg_waddr -> regfile_r:waddr
-    vane1_reg_wdata -> regfile_r:wdata
-    vane1_reg_wren  -> regfile_r:wren
-
-    vane2:enable -> code_r:rden
-    vane2:active -> code_r:rden
-    vane2:pc     -> code_r:raddr
-
-    vane1_mem_addr -> code_r:raddr
-    vane1_mem_rden -> code_r:rden
-    code_cs        -> code_r:rden
-
-    vane1_mem_addr  -> code_r:waddr
-    vane1_mem_wdata -> code_r:wdata
-    vane1_mem_wren  -> code_r:wren
-    code_cs         -> code_r:wren
-
-    vane2:enable -> vane0:active
-    vane2:active -> vane0:active
-
-    vane0:active -> vane1:insn
-    code_rdata -> vane1:insn
-
-
-
+    pc_2:q           -> alu:pc   [label="32"]
+    pc_2:q           -> pc_gen:pc   [label="32"]
+    insn_2:q         -> decode2:insn [label="32"]
+    insn_2:q         -> insn_3:d
+    regfile_2:rdata1 -> alu:a    [label="32"]
+    regfile_2:rdata2 -> alu:b    [label="32"]
+    regfile_2:rdata1 -> pc_gen:a    [label="32"]
+    regfile_2:rdata2 -> pc_gen:b    [label="32"]
+    regfile_2:rdata1 -> addr_gen:a [label="32"]
+    regfile_2:rdata2 -> addr_gen:b [label="32"]
 
     //----------
 
-    data [shape="record" label="<top>data|{{<raddr>raddr|<rden>rden|<waddr>waddr|<wdata>wdata|<wmask>wmask|<wren>wren}|<rdata>rdata}|"]
-    data:rdata -> unpack:data
+    decode2:alu_op   -> alu:insn [label="5"]
+    decode2:branch   -> pc_gen:insn [label="5"]
+    decode2:mode     -> addr_gen:insn  [label="5"]
 
     //----------
 
-    regfile_l [shape="record" label="<top>regfile|{{<raddr1>raddr1|<raddr2>raddr2|<waddr>waddr|<wren>wren|<wdata>wdata}|{<rdata1>rdata1|<rdata2>rdata2}}|"]
-    regfile_r [shape="record" label="<top>regfile|{{<raddr1>raddr1|<raddr2>raddr2|<waddr>waddr|<wren>wren|<wdata>wdata}|{<rdata1>rdata1|<rdata2>rdata2}}|"];
-    regfile_l:rdata1 -> addr_gen:a
-    regfile_l:rdata2 -> data:wdata
-    regfile_l:rdata1 -> alu:a
-    regfile_l:rdata2 -> alu:b
-    regfile_l:rdata1 -> pc_gen:a
-    regfile_l:rdata2 -> pc_gen:b
-
-    //----------
-
-    //----------
-
-    reg_addr [shape="record" label="<top>reg_addr|{<d>d|<q>q}|"]
-    reg_addr:q -> unpack:addr
-
-    //----------
-
-    unpack  [shape="Mrecord" label="unpack|{{<insn>insn|<addr>addr|<data>data} | <out>out } |"]
-    unpack:out        -> writeback_mux:a
-
-    //----------
-
-    alu [shape="Mrecord" label="alu|{{<insn>insn|<pc>pc|<a>a|<b>b}|<out>out}|"]
-    alu:out -> reg_alu:d
-
-    //----------
-
-    pc_gen [shape="Mrecord" label="<top>pc_gen|{ {<pc>pc|<active>active|<insn>insn|<a>a|<b>b} | <out>out }|"]
-    pc_gen:out -> vane2:pc
-
-    //----------
-
-    reg_alu [shape="record" label="<top>reg_alu|{<d>d|<q>q}|"]
-    reg_alu:q         -> writeback_mux:b
-
-    //----------
-
-    writeback_mux [shape="Mrecord" label="mux|{{<sel>sel|<a>a|<b>b} | <out>out }|"]
-    writeback_mux:out -> regfile_r:wdata
+    alu:out        -> alu_out_3:d [label="32"]
+    pc_gen:out     -> pc_3:d
+    pc_gen:out     -> code_3:raddr [label="32"]
+    addr_gen:addr  -> data_3:addr  [label="14"]
+    addr_gen:wdata -> data_3:wdata [label="32"]
+    addr_gen:wren  -> data_3:wren  [label="1"]
+    */
 }
