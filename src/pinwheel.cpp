@@ -93,10 +93,10 @@ logic<32> Pinwheel::unpack(logic<3> f3, logic<32> addr, logic<32> data) {
 //--------------------------------------------------------------------------------
 
 logic<32> Pinwheel::alu(logic<5> op, logic<3> f3, logic<7> f7, logic<32> imm, logic<32> pc, logic<32> reg_a, logic<32> reg_b) {
-  if (op == OP_ALU && f3 == 0 && f7 == 32) reg_b = -reg_b;
 
   logic<32> a = reg_a;
   logic<32> b = op == OP_ALUI ? imm : reg_b;
+  if (op == OP_ALU && f3 == 0 && f7 == 32) b = -b;
 
   switch(op) {
     case OP_ALU:     break;

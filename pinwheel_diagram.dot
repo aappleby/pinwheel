@@ -1,6 +1,8 @@
 digraph G {
     rankdir="LR"
     ranksep=1.5
+    //nodesep=0.6
+    //splines=polyline
 
     // Fetch, Decode, Execute, Memory, Write
 
@@ -15,7 +17,7 @@ digraph G {
 
     writeback [shape="Mrecord" label="<top>writeback|{{<op>op|<rd>rd|<rdata>rdata|<alu>alu}|{<addr>addr|<wdata>wdata|<wren>wren}}|"]
 
-    unpack [shape="Mrecord" label="<top>unpack|{{<f3>f3|<rdata>rdata}|{<out>out}}"]
+    unpack [shape="Mrecord" label="<top>unpack|{{<f3>f3|<rdata>rdata}|{<out>out}}|"]
 
     decode_op [shape="Mrecord" label="<top>decode_op|{{<data>data}|{<op>op|<rd>rd|<f3>f3|<ra>ra|<rb>rb|<f7>f7}}|"]
 
@@ -39,6 +41,8 @@ digraph G {
 
 
     pc_l:q -> code:addr
+    pc_l:q -> next_pc:pc
+    pc_l:q -> alu:pc
 
     next_pc:out -> pc_r:d
 
