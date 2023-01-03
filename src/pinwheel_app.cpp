@@ -42,7 +42,7 @@ void PinwheelApp::app_init(int screen_w, int screen_h) {
   sim_thread->start();
 
   auto& pinwheel = pinwheel_sim->states.top();
-  pinwheel.tick(true);
+  pinwheel.tick_singlecycle(true);
 }
 
 //------------------------------------------------------------------------------

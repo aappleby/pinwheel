@@ -22,7 +22,8 @@
 			"memory_resource": "cpp",
 			"random": "cpp",
 			"*.def": "cpp",
-			"bitset": "cpp"
+			"bitset": "cpp",
+			"chrono": "cpp"
 		}
 	},
 }

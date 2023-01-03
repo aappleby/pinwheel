@@ -9,11 +9,11 @@ digraph G {
     pc_l [shape="record" label="<top>pc|{<d>d|<q>q}|"]
     pc_r [shape="record" label="<top>pc|{<d>d|<q>q}|"]
     code [shape="record" label="<top>code|{<addr>addr|<data>data}|"]
-    data [shape="record" label="<top>data|{{<addr>addr|<wdata>wdata|<wmask>wmask|<wren>wren}|<rdata>rdata}|"]
+    bus  [shape="record" label="<top>bus|{{<addr>addr|<wdata>wdata|<wmask>wmask|<wren>wren}|<rdata>rdata}|"]
 
     alu      [shape="Mrecord" label="alu|{{<op>op|<f3>f3|<f7>f7|<imm>imm|<pc>pc|<a>a|<b>b}|<out>out}|"]
     next_pc  [shape="Mrecord" label="<top>next_pc|{ {<op>op|<f3>f3|<imm>imm|<pc>pc|<a>a|<b>b} | <out>out }|"]
-    mem_if   [shape="Mrecord" label="<top>mem_if|{{<op>op|<f3>f3|<imm>imm|<a>a|<b>b}|{<addr>addr|<wdata>wdata|<wmask>wmask|<wren>wren}}|"]
+    bus_if   [shape="Mrecord" label="<top>bus_if|{{<op>op|<f3>f3|<imm>imm|<a>a|<b>b}|{<addr>addr|<wdata>wdata|<wmask>wmask|<wren>wren}}|"]
 
     writeback [shape="Mrecord" label="<top>writeback|{{<op>op|<rd>rd|<rdata>rdata|<alu>alu}|{<addr>addr|<wdata>wdata|<wren>wren}}|"]
 
@@ -49,9 +49,9 @@ digraph G {
     decode_op:op -> writeback:op
     decode_op:op -> next_pc:op
     decode_op:op -> alu:op
-    decode_op:op -> mem_if:op
+    decode_op:op -> bus_if:op
     decode_op:rd -> writeback:rd
-    decode_op:f3 -> mem_if:f3
+    decode_op:f3 -> bus_if:f3
     decode_op:f3 -> next_pc:f3
     decode_op:f3 -> alu:f3
     decode_op:f3 -> unpack:f3
@@ -59,7 +59,7 @@ digraph G {
     decode_op:rb -> regfile_l:raddr2
     decode_op:f7 -> alu:f7
 
-    decode_imm:imm    -> mem_if:imm
+    decode_imm:imm    -> bus_if:imm
     decode_imm:imm    -> alu:imm
     decode_imm:imm    -> next_pc:imm
 
@@ -67,20 +67,20 @@ digraph G {
     writeback:wdata -> regfile_r:wdata
     writeback:wren  -> regfile_r:wren
 
-    mem_if:addr  -> data:addr
-    mem_if:wdata -> data:wdata
-    mem_if:wmask -> data:wmask
-    mem_if:wren  -> data:wren
+    bus_if:addr  -> bus:addr
+    bus_if:wdata -> bus:wdata
+    bus_if:wmask -> bus:wmask
+    bus_if:wren  -> bus:wren
 
-    data:rdata -> unpack:rdata
+    bus:rdata -> unpack:rdata
 
     unpack:out -> writeback:rdata
 
     regfile_l:reg_a -> alu:a
     regfile_l:reg_b -> alu:b
 
-    regfile_l:reg_a -> mem_if:a
-    regfile_l:reg_b -> mem_if:b
+    regfile_l:reg_a -> bus_if:a
+    regfile_l:reg_b -> bus_if:b
     regfile_l:reg_a -> next_pc:a
     regfile_l:reg_b -> next_pc:b
 
