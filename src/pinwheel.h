@@ -56,35 +56,38 @@ struct Pinwheel {
   size_t size_bytes() { return sizeof(*this); }
 
   void reset();
-  static logic<32> tock_imm(logic<32> insn);
+  static logic<32> decode_imm(logic<32> insn);
 
-  void tick_fetch  (logic<1> reset, logic<32> pc, logic<32> insn, logic<32> reg_a, logic<32> reg_b);
-  void tick_write  (logic<32> insn, logic<32> addr, logic<32> alu_out, logic<32> data_out);
-  void tick_memory (logic<32> insn, logic<32> reg_a, logic<32> reg_b);
-  void tick_execute(logic<32> pc, logic<32> insn, logic<32> reg_a, logic<32> reg_b);
-  void tick_decode (logic<32> code_out, logic<32> pc);
+  void tick_fetch  (logic<1> reset, logic<32> old_pc2, logic<32> old_insn1, logic<32> old_ra, logic<32> old_rb);
+  void tick_write  (logic<1> reset);
+  void tick_memory (logic<1> reset);
+  void tick_execute(logic<1> reset);
+  void tick_decode (logic<1> reset);
+
+  logic<32> tock_memory();
+  logic<32> tock_code();
 
   void tick_onecycle(logic<1> reset_in);
   void tick_twocycle(logic<1> reset_in);
 
-  uint64_t ticks;
+  logic<32> pc1;
+  logic<32> pc2;
 
-  logic<32> pc_old;
-
-  logic<32> insn_1;
-  logic<32> insn_2;
+  logic<32> insn1;
+  logic<32> insn2;
   logic<32> bus_addr;
   logic<32> alu_out;
-  logic<32> bus_out;
+  logic<32> debug_reg;
 
   BlockRam code;
   BlockRam data;
   Regfile  regfile;
 
-  logic<32> debug_reg;
   char console_buf[80*50];
   int console_x = 0;
   int console_y = 0;
+
+  uint64_t ticks;
 };
 
 //------------------------------------------------------------------------------
