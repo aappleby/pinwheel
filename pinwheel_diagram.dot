@@ -1,7 +1,7 @@
 digraph G {
     rankdir="LR"
     ranksep=1.5
-    //nodesep=0.6
+    //nodesep=0.2
     //splines=polyline
 
     // Fetch, Decode, Execute, Memory, Write
@@ -25,16 +25,6 @@ digraph G {
 
     regfile_l [shape="record" label="<top>regfile|{{<raddr1>raddr1|<raddr2>raddr2|<waddr>waddr|<wdata>wdata|<wren>wren}|{<reg_a>reg_a|<reg_b>reg_b}}|"];
     regfile_r [shape="record" label="<top>regfile|{{<raddr1>raddr1|<raddr2>raddr2|<waddr>waddr|<wdata>wdata|<wren>wren}|{<reg_a>reg_a|<reg_b>reg_b}}|"];
-
-    rank="same" {
-        regfile_r
-        pc_r
-    }
-
-    rank="same" {
-        decode_op
-        decode_imm
-    }
 
     code:data -> decode_op:data
     code:data -> decode_imm:data

@@ -57,26 +57,45 @@ struct Pinwheel {
 
   static logic<32> tock_unpack(logic<3> f3, logic<32> addr, logic<32> data);
   static logic<32> tock_alu(logic<5> op, logic<3> f3, logic<7> f7, logic<32> imm, logic<32> pc, logic<32> reg_a, logic<32> reg_b);
-  static logic<32> tock_pc(logic<5> op, logic<3> f3, logic<32> imm, logic<32> pc, logic<32> reg_a, logic<32> reg_b);
+  static logic<32> tock_pc(logic<1> reset, logic<5> op, logic<3> f3, logic<32> imm, logic<32> pc, logic<32> reg_a, logic<32> reg_b);
   static logic<32> tock_imm(logic<32> insn);
 
-  static MemPort tock_bus(logic<5> op, logic<3> f3, logic<32> imm, logic<32> reg_a, logic<32> reg_b);
+  static MemPort get_bus(logic<5> op, logic<3> f3, logic<32> imm, logic<32> reg_a, logic<32> reg_b);
   static RegPortWrite tock_wb(logic<5> op, logic<5> rd, logic<32> rdata, logic<32> alu);
 
-  void reset();
-  void tick_singlecycle(logic<1> reset_in);
+  void tick_fetch  (logic<1> reset, logic<32> pc, logic<32> insn, logic<32> reg_a, logic<32> reg_b);
+  void tick_write  (logic<32> insn, logic<32> addr, logic<32> alu_out, logic<32> data_out);
+  void tick_memory (logic<32> insn, logic<32> reg_a, logic<32> reg_b);
+  void tick_execute(logic<32> pc, logic<32> insn, logic<32> reg_a, logic<32> reg_b);
+  void tick_decode (logic<32> code_out, logic<32> pc);
 
-  logic<32> tick_bus(MemPort port);
+  void reset();
+
+  void      tick_bus(MemPort port);
+  logic<32> tock_bus(MemPort port);
+
+
+
+
+  void tick_onecycle(logic<1> reset_in);
+  void tick_twocycle(logic<1> reset_in);
+
 
   uint64_t ticks;
 
-  logic<32> pc;
-  logic<32> debug_reg;
+  logic<32> pc_1;
+  logic<32> pc_2;
+  logic<32> insn_1;
+  logic<32> insn_2;
+  logic<32> bus_addr;
+  logic<32> alu_out;
+  logic<32> bus_out;
 
   BlockRam code;
   BlockRam data;
   Regfile  regfile;
 
+  logic<32> debug_reg;
   char console_buf[80*50];
   int console_x = 0;
   int console_y = 0;

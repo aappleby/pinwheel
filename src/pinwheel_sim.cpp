@@ -13,7 +13,7 @@ bool PinwheelSim::busy() const {
 void PinwheelSim::step() {
   if (steps) {
     auto& pinwheel = states.top();
-    pinwheel.tick_singlecycle(0);
+    pinwheel.tick_onecycle(0);
     steps--;
   }
 }
