@@ -131,6 +131,8 @@ void Pinwheel::tick_fetch(logic<1> reset, logic<32> old_pc2, logic<32> old_insn1
 
 void Pinwheel::tick_decode(logic<1> reset) {
   if (reset) {
+    pc2 = 0x00400000 - 4;
+    insn1 = 0;
   }
   else {
     pc2 = pc1;
@@ -146,6 +148,12 @@ void Pinwheel::tick_decode(logic<1> reset) {
 //--------------------------------------------------------------------------------
 
 void Pinwheel::tick_execute(logic<1> reset) {
+  if (reset) {
+    insn2 = 0;
+    alu_out = 0;
+    return;
+  }
+
   logic<5>  op  = b5(insn1, 2);
   logic<3>  f3  = b3(insn1, 12);
   logic<7>  f7  = b7(insn1, 25);
@@ -304,7 +312,6 @@ void Pinwheel::tick_onecycle(logic<1> reset_in) {
 void Pinwheel::tick_twocycle(logic<1> reset_in) {
   if (reset_in) {
     reset();
-    tick_fetch  (reset_in, pc2, insn1, regfile.out_a, regfile.out_b);
     ticks = 0;
   }
   else {

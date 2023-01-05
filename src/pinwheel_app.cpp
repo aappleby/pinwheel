@@ -42,7 +42,7 @@ void PinwheelApp::app_init(int screen_w, int screen_h) {
   sim_thread->start();
 
   auto& pinwheel = pinwheel_sim->states.top();
-  pinwheel.tick_onecycle(true);
+  pinwheel.tick_twocycle(true);
 }
 
 //------------------------------------------------------------------------------
@@ -154,22 +154,22 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   d("speed        %f\n",     double(sim_thread->sim_steps) / sim_thread->sim_time);
   d("states       %d\n",     pinwheel_sim->states.state_count());
   d("state bytes  %d\n",     pinwheel_sim->states.state_size_bytes());
-#if 0
   //Vane* harts[Pinwheel::hart_count];
 
   //harts[pinwheel.vane0_hart] = &pinwheel_vane0;
   //harts[pinwheel.vane1.hart] = &pinwheel.vane1;
   //harts[pinwheel.vane2.hart] = &pinwheel.vane2;
 
-  int hart_to_vane[Pinwheel::hart_count];
-  hart_to_vane[pinwheel.vane0_hart] = 0;
-  hart_to_vane[pinwheel.vane1_hart] = 1;
-  hart_to_vane[pinwheel.vane2_hart] = 2;
+  //int hart_to_vane[Pinwheel::hart_count];
+  //hart_to_vane[pinwheel.vane0_hart] = 0;
+  //hart_to_vane[pinwheel.vane1_hart] = 1;
+  //hart_to_vane[pinwheel.vane2_hart] = 2;
 
+  d("\n");
   for (int hart = 0; hart < 3; hart++) {
-    auto r = &pinwheel.regs.data[hart << 5];
+    auto r = &pinwheel.regfile.data[hart << 5];
     //d("hart %d vane %d pc 0x%08x", hart, hart_to_vane[hart], harts[hart]->pc);
-    d("hart %d vane %d", hart, hart_to_vane[hart]);
+    d("hart %d", hart);
     d("\n");
     d("r00 %08X  r08 %08X  r16 %08X  r24 %08X\n", r[ 0], r[ 8], r[16], r[24]);
     d("r01 %08X  r09 %08X  r17 %08X  r25 %08X\n", r[ 1], r[ 9], r[17], r[25]);
@@ -181,7 +181,6 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
     d("r07 %08X  r15 %08X  r23 %08X  r31 %08X\n", r[ 7], r[15], r[23], r[31]);
     d("\n");
   }
-#endif
 
   text_painter.render_string(view, screen_size, d.s.c_str(), 32, 32);
 

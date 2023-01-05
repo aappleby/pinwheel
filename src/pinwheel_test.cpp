@@ -78,11 +78,9 @@ TestResults run_test(const char* test_name, int reps, int max_cycles) {
   Pinwheel top;
 
   for (int rep = 0; rep < reps; rep++) {
-    //top.tick_onecycle(1);
     top.tick_twocycle(1);
     time -= timestamp();
     for (elapsed_cycles = 0; elapsed_cycles < max_cycles; elapsed_cycles++) {
-      //top.tick_onecycle(0);
       top.tick_twocycle(0);
       tocks++;
 
