@@ -44,13 +44,17 @@ Pinwheel* Pinwheel::clone() {
 //--------------------------------------------------------------------------------
 
 void Pinwheel::reset() {
-  pc1 = 0;
-  pc2 = 0x00400000 - 4;
-  insn1 = 0;
-  insn2 = 0;
-  bus_addr = 0;
-  alu_out = 0;
-  debug_reg = 0;
+  //pc1 = 0;
+  //pc2 = 0x00400000 - 4;
+  //insn1 = 0;
+  //insn2 = 0;
+  //bus_addr = 0;
+  //alu_out = 0;
+  //debug_reg = 0;
+
+  memset(&code, 0, sizeof(code));
+  memset(&data, 0, sizeof(data));
+  memset(&regfile, 0, sizeof(regfile));
 
   std::string s;
   value_plusargs("text_file=%s", s);
@@ -59,7 +63,10 @@ void Pinwheel::reset() {
   value_plusargs("data_file=%s", s);
   readmemh(s, data.data);
 
-  memset(&regfile, 0, sizeof(regfile));
+  memset(console_buf, 0, sizeof(console_buf));
+  console_x = 0;
+  console_y = 0;
+  ticks = 0;
 }
 
 //--------------------------------------------------------------------------------
@@ -95,7 +102,7 @@ void Pinwheel::tick_fetch(logic<1> reset, logic<32> old_pc2, logic<32> old_insn1
 
   logic<32> next_pc;
   if (reset || old_pc2 == 0) {
-    next_pc = old_pc2;
+    next_pc = 0;
   }
   else {
     logic<1> eq  = old_ra == old_rb;
@@ -216,6 +223,36 @@ void Pinwheel::tick_memory(logic<1> reset) {
     debug_reg = (op == OP_STORE) && debug_cs ? regfile.out_b : debug_reg;
     bus_addr = addr;
   }
+
+  if ((addr == 0x40000000) && (mask & 1) && (op == OP_STORE)) {
+    console_buf[console_y * 80 + console_x] = 0;
+    auto c = char(regfile.out_b);
+
+    if (c == 0) c = '?';
+
+    if (c == '\n') {
+      console_x = 0;
+      console_y++;
+    }
+    else if (c == '\r') {
+      console_x = 0;
+    }
+    else {
+      console_buf[console_y * 80 + console_x] = c;
+      console_x++;
+    }
+
+    if (console_x == 80) {
+      console_x = 0;
+      console_y++;
+    }
+    if (console_y == 25) {
+      memcpy(console_buf, console_buf + 80, 80*24);
+      memset(console_buf + (80*24), 0, 80);
+      console_y = 24;
+    }
+    console_buf[console_y * 80 + console_x] = 30;
+  }
 }
 
 //----------
@@ -319,23 +356,22 @@ void Pinwheel::tick_onecycle(logic<1> reset_in) {
 void Pinwheel::tick_twocycle(logic<1> reset_in) {
   if (reset_in) {
     reset();
-    ticks = 0;
   }
-  else {
-    logic<32> old_pc2   = pc2;
-    logic<32> old_insn1 = insn1;
-    logic<32> old_ra    = regfile.out_a;
-    logic<32> old_rb    = regfile.out_b;
 
-    tick_write  (reset_in);
-    tick_memory (reset_in);
-    tick_execute(reset_in);
-    tick_decode (reset_in);
-    tick_fetch  (reset_in, old_pc2, old_insn1, old_ra, old_rb);
+  logic<32> old_pc2   = pc2;
+  logic<32> old_insn1 = insn1;
+  logic<32> old_ra    = regfile.out_a;
+  logic<32> old_rb    = regfile.out_b;
 
+  tick_write  (reset_in);
+  tick_memory (reset_in);
+  tick_execute(reset_in);
+  tick_decode (reset_in);
+  tick_fetch  (reset_in, old_pc2, old_insn1, old_ra, old_rb);
+
+  if (!reset_in) {
     ticks = ticks + 1;
   }
-
 }
 
 //--------------------------------------------------------------------------------

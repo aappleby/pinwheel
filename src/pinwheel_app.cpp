@@ -42,6 +42,12 @@ void PinwheelApp::app_init(int screen_w, int screen_h) {
   sim_thread->start();
 
   auto& pinwheel = pinwheel_sim->states.top();
+
+  uint8_t* dontcare = (uint8_t*)(&pinwheel);
+  for (int i = 0; i < sizeof(pinwheel); i++) {
+    dontcare[i] = rand();
+  }
+
   pinwheel.tick_twocycle(true);
 }
 
