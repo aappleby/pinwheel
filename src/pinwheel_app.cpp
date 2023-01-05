@@ -139,23 +139,20 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
 
 
   d("pc1          0x%08x\n", pinwheel.pc1);
+  d("code.out     0x%08x\n", pinwheel.code.out);
   d("pc2          0x%08x\n", pinwheel.pc2);
   d("insn1        0x%08x ", pinwheel.insn1);
   print_rv(d, uint32_t(pinwheel.insn1));
   d("\n");
-
+  d("reg_a        0x%08x\n", pinwheel.regfile.out_a);
+  d("reg_b        0x%08x\n", pinwheel.regfile.out_b);
   d("insn2        0x%08x ", pinwheel.insn2);
   print_rv(d, uint32_t(pinwheel.insn2));
   d("\n");
-  d("bus_addr     0x%08x\n", pinwheel.bus_addr);
-  d("alu_out      0x%08x\n", pinwheel.alu_out);
-  d("reg_a        0x%08x\n", pinwheel.regfile.out_a);
-  d("reg_b        0x%08x\n", pinwheel.regfile.out_b);
-  d("\n");
-  d("code.out     0x%08x\n", pinwheel.code.out);
+  d("result       0x%08x\n", pinwheel.result);
   d("data.out     0x%08x\n", pinwheel.data.out);
-  d("debug_reg    0x%08x\n", pinwheel.debug_reg);
   d("\n");
+  d("debug_reg    0x%08x\n", pinwheel.debug_reg);
   d("ticks        %lld\n",   pinwheel.ticks);
   d("speed        %f\n",     double(sim_thread->sim_steps) / sim_thread->sim_time);
   d("states       %d\n",     pinwheel_sim->states.state_count());

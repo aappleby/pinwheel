@@ -75,8 +75,7 @@ struct Pinwheel {
 
   logic<32> insn1;
   logic<32> insn2;
-  logic<32> bus_addr;
-  logic<32> alu_out;
+  logic<32> result;
 
   BlockRam  code;
   BlockRam  data;

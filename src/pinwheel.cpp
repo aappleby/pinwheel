@@ -44,14 +44,6 @@ Pinwheel* Pinwheel::clone() {
 //--------------------------------------------------------------------------------
 
 void Pinwheel::reset() {
-  //pc1 = 0;
-  //pc2 = 0x00400000 - 4;
-  //insn1 = 0;
-  //insn2 = 0;
-  //bus_addr = 0;
-  //alu_out = 0;
-  //debug_reg = 0;
-
   memset(&code, 0, sizeof(code));
   memset(&data, 0, sizeof(data));
   memset(&regfile, 0, sizeof(regfile));
@@ -157,7 +149,7 @@ void Pinwheel::tick_decode(logic<1> reset) {
 void Pinwheel::tick_execute(logic<1> reset) {
   if (reset) {
     insn2 = 0;
-    alu_out = 0;
+    result = 0;
     return;
   }
 
@@ -169,10 +161,12 @@ void Pinwheel::tick_execute(logic<1> reset) {
   insn2 = insn1;
 
   switch(op) {
-    case OP_JAL:     alu_out = pc2 + 4;   return;
-    case OP_JALR:    alu_out = pc2 + 4;   return;
-    case OP_LUI:     alu_out = imm;      return;
-    case OP_AUIPC:   alu_out = pc2 + imm; return;
+    case OP_JAL:     result = pc2 + 4;   return;
+    case OP_JALR:    result = pc2 + 4;   return;
+    case OP_LUI:     result = imm;       return;
+    case OP_AUIPC:   result = pc2 + imm; return;
+    case OP_LOAD:    result = regfile.out_a + imm; return;
+    case OP_STORE:   result = regfile.out_a + imm; return;
   }
 
   logic<32> alu_a = regfile.out_a;
@@ -180,15 +174,15 @@ void Pinwheel::tick_execute(logic<1> reset) {
   if (op == OP_ALU && f3 == 0 && f7 == 32) alu_b = -alu_b;
 
   switch (f3) {
-    case 0:  alu_out = alu_a + alu_b; break;
-    case 1:  alu_out = alu_a << b5(alu_b); break;
-    case 2:  alu_out = signed(alu_a) < signed(alu_b); break;
-    case 3:  alu_out = alu_a < alu_b; break;
-    case 4:  alu_out = alu_a ^ alu_b; break;
-    case 5:  alu_out = f7 == 32 ? signed(alu_a) >> b5(alu_b) : alu_a >> b5(alu_b); break;
-    case 6:  alu_out = alu_a | alu_b; break;
-    case 7:  alu_out = alu_a & alu_b; break;
-    default: alu_out = 0;
+    case 0:  result = alu_a + alu_b; break;
+    case 1:  result = alu_a << b5(alu_b); break;
+    case 2:  result = signed(alu_a) < signed(alu_b); break;
+    case 3:  result = alu_a < alu_b; break;
+    case 4:  result = alu_a ^ alu_b; break;
+    case 5:  result = f7 == 32 ? signed(alu_a) >> b5(alu_b) : alu_a >> b5(alu_b); break;
+    case 6:  result = alu_a | alu_b; break;
+    case 7:  result = alu_a & alu_b; break;
+    default: result = 0;
   }
 }
 
@@ -217,11 +211,9 @@ void Pinwheel::tick_memory(logic<1> reset) {
 
   if (reset) {
     debug_reg = 0;
-    bus_addr = 0;
   }
   else {
     debug_reg = (op == OP_STORE) && debug_cs ? regfile.out_b : debug_reg;
-    bus_addr = addr;
   }
 
   if ((addr == 0x40000000) && (mask & 1) && (op == OP_STORE)) {
@@ -258,8 +250,8 @@ void Pinwheel::tick_memory(logic<1> reset) {
 //----------
 
 logic<32> Pinwheel::tock_memory() {
-  logic<1> data_cs    = b4(bus_addr, 28) == 0x8;
-  logic<1> debug_cs   = b4(bus_addr, 28) == 0xF;
+  logic<1> data_cs    = b4(result, 28) == 0x8;
+  logic<1> debug_cs   = b4(result, 28) == 0xF;
 
   if (data_cs)  {
     return data.out;
@@ -281,8 +273,8 @@ void Pinwheel::tick_write(logic<1> reset) {
 
   logic<32> data_out = tock_memory();
 
-  if (bus_addr[0]) data_out = data_out >> 8;
-  if (bus_addr[1]) data_out = data_out >> 16;
+  if (result[0]) data_out = data_out >> 8;
+  if (result[1]) data_out = data_out >> 16;
 
   logic<32> unpacked;
   switch (f3) {
@@ -298,7 +290,7 @@ void Pinwheel::tick_write(logic<1> reset) {
   }
 
   auto writeback_addr = cat(b5(0), rd);
-  auto writeback_wdata = op == OP_LOAD ? unpacked : alu_out;
+  auto writeback_wdata = op == OP_LOAD ? unpacked : result;
   auto writeback_wren = rd != 0 && op != OP_STORE && op != OP_BRANCH;
 
   regfile.tick_write(writeback_addr, writeback_wdata, writeback_wren);
