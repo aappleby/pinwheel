@@ -207,8 +207,15 @@ void Pinwheel::tick_memory(logic<1> reset) {
 
   data.tick_write(addr, regfile.out_b, mask, (op == OP_STORE) && data_cs);
   data.tick_read (addr);
-  debug_reg = (op == OP_STORE) && debug_cs ? regfile.out_b : debug_reg;
-  bus_addr = addr;
+
+  if (reset) {
+    debug_reg = 0;
+    bus_addr = 0;
+  }
+  else {
+    debug_reg = (op == OP_STORE) && debug_cs ? regfile.out_b : debug_reg;
+    bus_addr = addr;
+  }
 }
 
 //----------
