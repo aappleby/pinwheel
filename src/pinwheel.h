@@ -77,11 +77,11 @@ struct Pinwheel {
   logic<32> insn2;
   logic<32> bus_addr;
   logic<32> alu_out;
-  logic<32> debug_reg;
 
-  BlockRam code;
-  BlockRam data;
-  Regfile  regfile;
+  BlockRam  code;
+  BlockRam  data;
+  logic<32> debug_reg;
+  Regfile   regfile;
 
   char console_buf[80*50];
   int console_x = 0;

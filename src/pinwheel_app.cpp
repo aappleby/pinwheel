@@ -131,47 +131,30 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
 
   auto& pinwheel = pinwheel_sim->states.top();
 
-#if 0
 
-  d("vane0.hart   %d\n",     pinwheel.vane0_hart);
-  d("vane0.pc     0x%08x\n", pinwheel.vane0_pc);
-  d("vane0.insn   0x%08x ", pinwheel.vane0_active ? int(pinwheel.code.out) : 0);
-  print_rv(d, pinwheel.vane0_active ? uint32_t(pinwheel.code.out) : 0);
-  d("\n");
-  d("vane0.enable %d\n",     pinwheel.vane0_active);
-  d("vane0.active %d\n",     pinwheel.vane0_enable);
+  d("pc1          0x%08x\n", pinwheel.pc1);
+  d("pc2          0x%08x\n", pinwheel.pc2);
+  d("insn1        0x%08x ", pinwheel.insn1);
+  print_rv(d, uint32_t(pinwheel.insn1));
   d("\n");
 
-  d("vane1.hart   %d\n",     pinwheel.vane1_hart);
-  d("vane1.pc     0x%08x\n", pinwheel.vane1_pc);
-  d("vane1.insn   0x%08x ",  pinwheel.vane1_insn);
-  print_rv(d, pinwheel.vane1_active ? uint32_t(pinwheel.vane1_insn) : 0);
+  d("insn2        0x%08x ", pinwheel.insn2);
+  print_rv(d, uint32_t(pinwheel.insn2));
   d("\n");
-  d("vane1.enable %d\n",     pinwheel.vane1_active);
-  d("vane1.active %d\n",     pinwheel.vane1_enable);
+  d("bus_addr     0x%08x\n", pinwheel.bus_addr);
+  d("alu_out      0x%08x\n", pinwheel.alu_out);
+  d("reg_a        0x%08x\n", pinwheel.regfile.out_a);
+  d("reg_b        0x%08x\n", pinwheel.regfile.out_b);
   d("\n");
-
-  d("vane2.hart   %d\n",     pinwheel.vane2_hart);
-  d("vane2.pc     0x%08x\n", pinwheel.vane2_pc);
-  d("vane2.insn   0x%08x ",  pinwheel.vane2_insn);
-  print_rv(d, pinwheel.vane2_active ? uint32_t(pinwheel.vane2_insn) : 0);
+  d("code.out     0x%08x\n", pinwheel.code.out);
+  d("data.out     0x%08x\n", pinwheel.data.out);
+  d("debug_reg    0x%08x\n", pinwheel.debug_reg);
   d("\n");
-  d("vane2.enable %d\n",     pinwheel.vane2_active);
-  d("vane2.active %d\n",     pinwheel.vane2_enable);
-  d("\n");
-
   d("ticks        %lld\n",   pinwheel.ticks);
   d("speed        %f\n",     double(sim_thread->sim_steps) / sim_thread->sim_time);
   d("states       %d\n",     pinwheel_sim->states.state_count());
   d("state bytes  %d\n",     pinwheel_sim->states.state_size_bytes());
-  d("temp_addr    0x%08x\n", pinwheel.vane2_mem_addr);
-  d("temp_alu     0x%08x\n", pinwheel.vane2_alu_out);
-  d("ra           0x%08x\n", pinwheel.regs.out_a);
-  d("rb           0x%08x\n", pinwheel.regs.out_b);
-  d("dbus_data    0x%08x\n", pinwheel.data.out);
-  d("pbus_data    0x%08x\n", pinwheel.code.out);
-  d("\n");
-
+#if 0
   //Vane* harts[Pinwheel::hart_count];
 
   //harts[pinwheel.vane0_hart] = &pinwheel_vane0;
@@ -198,8 +181,11 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
     d("r07 %08X  r15 %08X  r23 %08X  r31 %08X\n", r[ 7], r[15], r[23], r[31]);
     d("\n");
   }
+#endif
+
   text_painter.render_string(view, screen_size, d.s.c_str(), 32, 32);
 
+#if 0
   logic<32> hart0_pc = 0;
   if (pinwheel.vane0_hart == 0) hart0_pc = pinwheel.vane0_pc;
   if (pinwheel.vane1_hart == 0) hart0_pc = pinwheel.vane1_pc;
@@ -224,12 +210,13 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
 
     text_painter.render_string(view, screen_size, d.s.c_str(), 32 + 384, 32);
   }
+#endif
 
   pinwheel.code.data[16 * 31 - 1] = 0xDEADBEEF;
   pinwheel.code.data[16 * 31 + 0] = 0xDEADBEEF;
 
-  code_painter.highlight_x = ((hart0_pc & 0xFFFF) >> 2) % 16;
-  code_painter.highlight_y = ((hart0_pc & 0xFFFF) >> 2) / 16;
+  code_painter.highlight_x = ((/*hart0_pc*/pinwheel.pc2 & 0xFFFF) >> 2) % 16;
+  code_painter.highlight_y = ((/*hart0_pc*/pinwheel.pc2 & 0xFFFF) >> 2) / 16;
 
 
   data_painter.dump2(view, screen_size, 1024, 32, 1, 1, 64, 32, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.data.data);
@@ -241,7 +228,6 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   //box_painter.push_corner_size(1024 + (harts[1]->pc % 64) * 14 - 1, 512 + (harts[1]->pc / 64) * 12, 12*4+2*3+2, 12, 0x80FFFF00);
   //box_painter.push_corner_size(1024 + (harts[2]->pc % 64) * 14 - 1, 512 + (harts[2]->pc / 64) * 12, 12*4+2*3+2, 12, 0x80FF00FF);
   box_painter.render(view, screen_size, 0, 0);
-#endif
 
   sim_thread->resume();
 }
