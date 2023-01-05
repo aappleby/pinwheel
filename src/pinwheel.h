@@ -83,8 +83,8 @@ struct Pinwheel {
 
   uint64_t ticks;
 
-  logic<32> pc_1;
-  logic<32> pc_2;
+  logic<32> pc_old;
+
   logic<32> insn_1;
   logic<32> insn_2;
   logic<32> bus_addr;

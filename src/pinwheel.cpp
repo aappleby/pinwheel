@@ -53,8 +53,7 @@ void Pinwheel::reset() {
   value_plusargs("data_file=%s", s);
   readmemh(s, data.data);
 
-  pc_1 = 0x00000000;
-  pc_2 = 0x00400000;
+  pc_old = 0x00400000;
 
   debug_reg = 0;
 }
@@ -260,8 +259,8 @@ void Pinwheel::tick_fetch(logic<1> reset, logic<32> pc, logic<32> insn, logic<32
   logic<3>  f3  = b3(insn, 12);
   logic<32> imm = tock_imm(insn);
 
-  pc_2 = tock_pc(reset, op, f3, imm, pc, reg_a, reg_b);
-  code.tick_read(pc_2);
+  pc_old = tock_pc(reset, op, f3, imm, pc, reg_a, reg_b);
+  code.tick_read(pc_old);
 }
 
 //--------------------------------------------------------------------------------
@@ -283,7 +282,7 @@ void Pinwheel::tick_onecycle(logic<1> reset_in) {
 
   ticks++;
 
-  code.tick_read(pc_2);
+  code.tick_read(pc_old);
 
   logic<5>  op  = b5(code.out, 2);
   logic<5>  rd  = b5(code.out, 7);
@@ -308,13 +307,13 @@ void Pinwheel::tick_onecycle(logic<1> reset_in) {
 
   tock_bus(bus_port);
 
-  auto alu_out   = tock_alu(op, f3, f7, imm, pc_2, regfile.out_a, regfile.out_b);
+  auto alu_out   = tock_alu(op, f3, f7, imm, pc_old, regfile.out_a, regfile.out_b);
   auto unpacked  = tock_unpack(f3, bus_port.addr, bus_out);
   auto writeback = tock_wb(op, rd, unpacked, alu_out);
 
   regfile.tick_write(writeback.addr, writeback.wdata, writeback.wren);
 
-  pc_2 = tock_pc(reset_in, op, f3, imm, pc_2, regfile.out_a, regfile.out_b);
+  pc_old = tock_pc(reset_in, op, f3, imm, pc_old, regfile.out_a, regfile.out_b);
 }
 
 //--------------------------------------------------------------------------------
@@ -327,19 +326,25 @@ void Pinwheel::tick_twocycle(logic<1> reset_in) {
   uint64_t phase = ticks % 2;
 
   if (reset_in) {
-    tick_fetch  (reset_in, pc_2, insn_1, regfile.out_a, regfile.out_b);
+    tick_fetch  (reset_in, pc_old, insn_1, regfile.out_a, regfile.out_b);
     ticks = 0;
   }
   else {
+
+    logic<32> prev_pc   = pc_old;
+    logic<32> prev_insn = insn_1;
+    logic<32> prev_ra   = regfile.out_a;
+    logic<32> prev_rb   = regfile.out_b;
+
     tick_write(insn_1, bus_addr, alu_out, bus_out);
     tick_memory (insn_1, regfile.out_a, regfile.out_b);
-    tick_execute(pc_2, insn_1, regfile.out_a, regfile.out_b);
-    tick_decode(code.out, pc_2);
+    tick_execute(pc_old, insn_1, regfile.out_a, regfile.out_b);
+    tick_decode(code.out, pc_old);
 
     if (phase == 0) {
     }
     else if (phase == 1) {
-      tick_fetch  (reset_in, pc_2, insn_1, regfile.out_a, regfile.out_b);
+      tick_fetch  (reset_in, prev_pc, prev_insn, prev_ra, prev_rb);
     }
 
     ticks = ticks + 1;
