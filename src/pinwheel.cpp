@@ -28,8 +28,8 @@ void Regfile::tick_read(logic<10> raddr1, logic<10> raddr2) {
   assert(raddr1 < 1024);
   assert(raddr2 < 1024);
 
-  out_a = data[raddr1];
-  out_b = data[raddr2];
+  out_rs1 = data[raddr1];
+  out_rs2 = data[raddr2];
 }
 
 void Regfile::tick_write(logic<10> waddr, logic<32> wdata, logic<1> wren) {
@@ -53,16 +53,14 @@ Pinwheel* Pinwheel::clone() {
 void Pinwheel::reset() {
   debug_reg = 0;
 
-  hart1 = 1;
-  //pc1 = 0x00400000 - 4;
-  pc1 = 0;
+  hart_a = 1;
+  pc_a   = 0;
+  insn_a = 0;
+  result_a = 0;
 
-  hart2 = 0;
-  pc2 = 0x00400000 - 4;
-
-  insn1 = 0;
-  insn2 = 0;
-  result = 0;
+  hart_b   = 0;
+  pc_b     = 0x00400000 - 4;
+  insn_b   = 0;
 
   writeback_addr = 0;
   writeback_data = 0;
@@ -156,7 +154,7 @@ logic<32> Pinwheel::execute_system(logic<32> insn) const {
   switch(f3) {
     case 0:               break;
     case RV32I_F3_CSRRW:  break;
-    case RV32I_F3_CSRRS:  if (csr == 0xF14) result = hart2; break;
+    case RV32I_F3_CSRRS:  if (csr == 0xF14) result = hart_b; break;
     case RV32I_F3_CSRRC:  break;
     case 4:               break;
     case RV32I_F3_CSRRWI: break;
@@ -207,13 +205,13 @@ void Pinwheel::tick_twocycle(logic<1> reset_in) const {
   if (reset_in) {
   }
 
-  auto old_hart1  = hart1;
-  auto old_hart2  = hart2;
-  auto old_pc1    = pc1;
-  auto old_pc2    = pc2;
-  auto old_insn1  = insn1;
-  auto old_insn2  = insn2;
-  auto old_result = result;
+  auto old_hart1  = hart_a;
+  auto old_hart2  = hart_b;
+  auto old_pc1    = pc_a;
+  auto old_pc2    = pc_b;
+  auto old_insn1  = insn_b;
+  auto old_insn2  = insn_a;
+  auto old_result = result_a;
 
   auto old_debug_reg = debug_reg;
 
@@ -221,8 +219,8 @@ void Pinwheel::tick_twocycle(logic<1> reset_in) const {
   auto next_ra = b5(old_code_out, 15);
   auto next_rb = b5(old_code_out, 20);
 
-  auto old_reg_a = regfile.out_a;
-  auto old_reg_b = regfile.out_b;
+  auto old_reg_a = regfile.out_rs1;
+  auto old_reg_b = regfile.out_rs2;
 
   auto old_op1  = b5(old_insn1, 2);
   auto old_f31  = b3(old_insn1, 12);
@@ -234,6 +232,10 @@ void Pinwheel::tick_twocycle(logic<1> reset_in) const {
   auto old_f32  = b3(old_insn2, 12);
 
   logic<32> old_addr = old_reg_a + old_imm1;
+
+  logic<1> old_data_wrcs    = b4(old_addr, 28) == 0x8;
+  logic<1> old_debug_wrcs   = b4(old_addr, 28) == 0xF;
+  logic<1> old_console_wrcs = b4(old_addr, 28) == 0x4;
 
   //----------
   // Next PC
@@ -287,7 +289,7 @@ void Pinwheel::tick_twocycle(logic<1> reset_in) const {
     case 5:  unpacked = zero_extend<32>(b16(old_data_out)); break;
   }
 
-  self.writeback_addr = cat(b5(hart1), old_rd2);
+  self.writeback_addr = cat(b5(hart_a), old_rd2);
   self.writeback_data = old_op2 == OP_LOAD ? unpacked : old_result;
   self.writeback_wren = old_rd2 != 0 && old_op2 != OP_STORE && old_op2 != OP_BRANCH;
 
@@ -307,10 +309,10 @@ void Pinwheel::tick_twocycle(logic<1> reset_in) const {
 
   logic<32> new_result;
   switch(old_op1) {
-    case OP_JAL:           new_result = pc2 + 4;   break;
-    case OP_JALR:          new_result = pc2 + 4;   break;
+    case OP_JAL:           new_result = pc_b + 4;   break;
+    case OP_JALR:          new_result = pc_b + 4;   break;
     case OP_LUI:           new_result = old_imm1;       break;
-    case OP_AUIPC:         new_result = pc2 + old_imm1; break;
+    case OP_AUIPC:         new_result = pc_b + old_imm1; break;
     case OP_LOAD:          new_result = old_addr; break;
     case OP_STORE:         new_result = old_addr; break;
     case RV32I_OP_CUSTOM0: {
@@ -322,13 +324,13 @@ void Pinwheel::tick_twocycle(logic<1> reset_in) const {
     default:               new_result = self.execute_alu   (old_insn1, old_reg_a, old_reg_b); break;
   }
 
-  self.insn2  = old_insn1;
-  self.result = new_result;
+  self.insn_a  = old_insn1;
+  self.result_a = new_result;
 
   //----------
   // Fetch
 
-  self.pc1    = new_pc1;
+  self.pc_a    = new_pc1;
   self.code.tick_read(new_pc1);
 
   //----------
@@ -342,10 +344,6 @@ void Pinwheel::tick_twocycle(logic<1> reset_in) const {
 
   if (old_addr[0]) mask = mask << 1;
   if (old_addr[1]) mask = mask << 2;
-
-  logic<1> old_data_wrcs    = b4(old_addr, 28) == 0x8;
-  logic<1> old_debug_wrcs   = b4(old_addr, 28) == 0xF;
-  logic<1> old_console_wrcs = b4(old_addr, 28) == 0x4;
 
   self.data.tick_write(old_addr, old_reg_b, mask, (old_op1 == OP_STORE) && old_data_wrcs);
   self.data.tick_read (old_addr);
@@ -362,14 +360,14 @@ void Pinwheel::tick_twocycle(logic<1> reset_in) const {
   //----------
   // Decode
 
-  self.pc2    = old_pc1;
-  self.insn1  = old_pc1 == 0 ? b32(0) : old_code_out;
+  self.pc_b    = old_pc1;
+  self.insn_b  = old_pc1 == 0 ? b32(0) : old_code_out;
   self.regfile.tick_read(cat(b5(old_hart1), next_ra), cat(b5(old_hart1), next_rb));
 
   //----------
 
-  self.hart1  = old_hart2;
-  self.hart2  = old_hart1;
+  self.hart_a  = old_hart2;
+  self.hart_b  = old_hart1;
 
   //----------
 

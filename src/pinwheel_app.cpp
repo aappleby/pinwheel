@@ -139,22 +139,22 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   auto& pinwheel = pinwheel_sim->states.top();
 
 
-  d("hart1        %d\n", pinwheel.hart1);
-  d("pc1          0x%08x\n", pinwheel.pc1);
-  d("code.out     0x%08x\n", pinwheel.code.out);
+  d("hart_a        %d\n", pinwheel.hart_a);
+  d("pc_a          0x%08x\n", pinwheel.pc_a);
+  d("code.out      0x%08x\n", pinwheel.code.out);
+  d("insn_a        0x%08x ", pinwheel.insn_a);
+  print_rv(d, uint32_t(pinwheel.insn_a));
   d("\n");
-  d("hart2        %d\n", pinwheel.hart2);
-  d("pc2          0x%08x\n", pinwheel.pc2);
-  d("insn1        0x%08x ", pinwheel.insn1);
-  print_rv(d, uint32_t(pinwheel.insn1));
+  d("result       0x%08x\n", pinwheel.result_a);
   d("\n");
-  d("reg_a        0x%08x\n", pinwheel.regfile.out_a);
-  d("reg_b        0x%08x\n", pinwheel.regfile.out_b);
+  d("hart_b        %d\n", pinwheel.hart_b);
+  d("pc_b          0x%08x\n", pinwheel.pc_b);
+  d("insn_b        0x%08x ", pinwheel.insn_b);
+  print_rv(d, uint32_t(pinwheel.insn_b));
   d("\n");
-  d("insn2        0x%08x ", pinwheel.insn2);
-  print_rv(d, uint32_t(pinwheel.insn2));
+  d("reg rs1      0x%08x\n", pinwheel.regfile.out_rs1);
+  d("reg rs2      0x%08x\n", pinwheel.regfile.out_rs2);
   d("\n");
-  d("result       0x%08x\n", pinwheel.result);
   d("data.out     0x%08x\n", pinwheel.data.out);
   d("\n");
   d("wb addr      0x%08x\n", pinwheel.writeback_addr);
@@ -226,8 +226,8 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   //pinwheel.code.data[16 * 31 - 1] = 0xDEADBEEF;
   //pinwheel.code.data[16 * 31 + 0] = 0xDEADBEEF;
 
-  code_painter.highlight_x = ((/*hart0_pc*/pinwheel.pc2 & 0xFFFF) >> 2) % 16;
-  code_painter.highlight_y = ((/*hart0_pc*/pinwheel.pc2 & 0xFFFF) >> 2) / 16;
+  code_painter.highlight_x = ((/*hart0_pc*/pinwheel.pc_b & 0xFFFF) >> 2) % 16;
+  code_painter.highlight_y = ((/*hart0_pc*/pinwheel.pc_b & 0xFFFF) >> 2) / 16;
 
 
   data_painter.dump2(view, screen_size, 1024, 32, 1, 1, 64, 32, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.data.data);

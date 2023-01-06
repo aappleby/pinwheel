@@ -23,7 +23,21 @@
 			"random": "cpp",
 			"*.def": "cpp",
 			"bitset": "cpp",
-			"chrono": "cpp"
+			"chrono": "cpp",
+			"*.ipp": "cpp",
+			"bit": "cpp",
+			"compare": "cpp",
+			"exception": "cpp",
+			"algorithm": "cpp",
+			"functional": "cpp",
+			"iterator": "cpp",
+			"limits": "cpp",
+			"numeric": "cpp",
+			"ratio": "cpp",
+			"streambuf": "cpp",
+			"tuple": "cpp",
+			"type_traits": "cpp",
+			"valarray": "cpp"
 		}
 	},
 }

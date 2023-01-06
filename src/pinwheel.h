@@ -28,8 +28,8 @@ struct Regfile {
   void tick_read (logic<10> raddr1, logic<10> raddr2);
   void tick_write(logic<10> waddr, logic<32> wdata, logic<1> wren);
   uint32_t  data[1024];
-  logic<32> out_a;
-  logic<32> out_b;
+  logic<32> out_rs1;
+  logic<32> out_rs2;
 };
 
 //------------------------------------------------------------------------------
@@ -68,14 +68,14 @@ struct Pinwheel {
 
   void tick_twocycle(logic<1> reset_in) const;
 
-  logic<5>  hart1;
-  logic<5>  hart2;
-  logic<32> pc1;
-  logic<32> pc2;
+  logic<5>  hart_a;
+  logic<32> pc_a;
+  logic<32> insn_a;
+  logic<32> result_a;
 
-  logic<32> insn1;
-  logic<32> insn2;
-  logic<32> result;
+  logic<5>  hart_b;
+  logic<32> pc_b;
+  logic<32> insn_b;
 
   logic<10> writeback_addr;
   logic<32> writeback_data;
