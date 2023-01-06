@@ -58,18 +58,18 @@ struct Pinwheel {
   void reset();
   static logic<32> decode_imm(logic<32> insn);
 
-  void tick_fetch  (logic<1> reset, logic<32> old_pc2, logic<32> old_insn1, logic<32> old_ra, logic<32> old_rb);
-  void tick_write  (logic<1> reset);
-  void tick_memory (logic<1> reset);
-  void tick_execute(logic<1> reset);
-  void tick_decode (logic<1> reset);
+  void tick_fetch  (logic<5> old_hart2, logic<32> old_pc2, logic<32> old_insn1, logic<32> old_ra, logic<32> old_rb);
+  void tick_decode ();
+  void tick_execute();
+  void tick_memory ();
+  void tick_write  ();
 
-  logic<32> tock_memory();
-  logic<32> tock_code();
+  logic<32> get_memory();
 
-  void tick_onecycle(logic<1> reset_in);
   void tick_twocycle(logic<1> reset_in);
 
+  logic<5>  hart1;
+  logic<5>  hart2;
   logic<32> pc1;
   logic<32> pc2;
 
@@ -77,9 +77,14 @@ struct Pinwheel {
   logic<32> insn2;
   logic<32> result;
 
+  logic<10> writeback_addr;
+  logic<32> writeback_data;
+  logic<1>  writeback_wren;
+
+  logic<32> debug_reg;
+
   BlockRam  code;
   BlockRam  data;
-  logic<32> debug_reg;
   Regfile   regfile;
 
   char console_buf[80*50];

@@ -138,19 +138,27 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   auto& pinwheel = pinwheel_sim->states.top();
 
 
+  d("hart1        %d\n", pinwheel.hart1);
   d("pc1          0x%08x\n", pinwheel.pc1);
   d("code.out     0x%08x\n", pinwheel.code.out);
+  d("\n");
+  d("hart2        %d\n", pinwheel.hart2);
   d("pc2          0x%08x\n", pinwheel.pc2);
   d("insn1        0x%08x ", pinwheel.insn1);
   print_rv(d, uint32_t(pinwheel.insn1));
   d("\n");
   d("reg_a        0x%08x\n", pinwheel.regfile.out_a);
   d("reg_b        0x%08x\n", pinwheel.regfile.out_b);
+  d("\n");
   d("insn2        0x%08x ", pinwheel.insn2);
   print_rv(d, uint32_t(pinwheel.insn2));
   d("\n");
   d("result       0x%08x\n", pinwheel.result);
   d("data.out     0x%08x\n", pinwheel.data.out);
+  d("\n");
+  d("wb addr      0x%08x\n", pinwheel.writeback_addr);
+  d("wb data      0x%08x\n", pinwheel.writeback_data);
+  d("wb wren      0x%08x\n", pinwheel.writeback_wren);
   d("\n");
   d("debug_reg    0x%08x\n", pinwheel.debug_reg);
   d("ticks        %lld\n",   pinwheel.ticks);
@@ -169,7 +177,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   //hart_to_vane[pinwheel.vane2_hart] = 2;
 
   d("\n");
-  for (int hart = 0; hart < 3; hart++) {
+  for (int hart = 0; hart < 4; hart++) {
     auto r = &pinwheel.regfile.data[hart << 5];
     //d("hart %d vane %d pc 0x%08x", hart, hart_to_vane[hart], harts[hart]->pc);
     d("hart %d", hart);
