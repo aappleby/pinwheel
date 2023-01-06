@@ -62,11 +62,11 @@ struct Pinwheel {
 
   logic<32> get_memory();
 
-  void execute_alu();
-  void execute_custom();
-  void execute_system();
+  logic<32> execute_alu   (logic<32> insn, logic<32> reg_a, logic<32> reg_b) const;
+  logic<32> execute_custom(logic<32> insn);
+  logic<32> execute_system(logic<32> insn) const;
 
-  void tick_twocycle(logic<1> reset_in);
+  void tick_twocycle(logic<1> reset_in) const;
 
   logic<5>  hart1;
   logic<5>  hart2;
