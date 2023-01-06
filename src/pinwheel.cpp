@@ -70,9 +70,6 @@ void Pinwheel::reset() {
 
   debug_reg = 0;
 
-  force_jump = 0;
-  jump_dest = 0;
-
   memset(&code, 0, sizeof(code));
   memset(&data, 0, sizeof(data));
   memset(&regfile, 0, sizeof(regfile));
@@ -145,15 +142,8 @@ logic<32> Pinwheel::execute_alu(logic<32> insn, logic<32> reg_a, logic<32> reg_b
 
 logic<32> Pinwheel::execute_custom(logic<32> insn, logic<32> reg_a) {
   //printf("custom op! 0x%08x\n", (uint32_t)regfile.out_a);
-  // This doesn't work quite right.
-  // Probably need to stash it in a register until the other thread hits fetch state
 
-  //pc1 = regfile.out_a;
-
-  printf("%08d> force_jump @ execute from 0x%08x to 0x%08x\n", (int)ticks, (uint32_t)pc1, (uint32_t)reg_a);
-  force_jump = 1;
-  jump_dest = reg_a;
-  return pc1;
+  return reg_a;
 }
 
 //--------------------------------------------------------------------------------
@@ -215,8 +205,6 @@ void Pinwheel::tick_twocycle(logic<1> reset_in) const {
   Pinwheel& self = const_cast<Pinwheel&>(*this);
 
   if (reset_in) {
-    self.force_jump = 0;
-    self.jump_dest = 0;
   }
 
   auto old_hart1  = hart1;
@@ -228,8 +216,6 @@ void Pinwheel::tick_twocycle(logic<1> reset_in) const {
   auto old_result = result;
 
   auto old_debug_reg = debug_reg;
-  auto old_force_jump = force_jump;
-  auto old_jump_dest = jump_dest;
 
   auto old_code_out = code.out;
   auto next_ra = b5(old_code_out, 15);
@@ -250,36 +236,7 @@ void Pinwheel::tick_twocycle(logic<1> reset_in) const {
   logic<32> old_addr = old_reg_a + old_imm1;
 
   //----------
-  // Write
-
-  logic<1> old_data_rdcs    = b4(old_result, 28) == 0x8;
-  logic<1> old_debug_rdcs   = b4(old_result, 28) == 0xF;
-
-  logic<32> old_data_out = 0;
-  if      (old_data_rdcs)  old_data_out = data.out;
-  else if (old_debug_rdcs) old_data_out = debug_reg;
-
-  if (old_result[0]) old_data_out = old_data_out >> 8;
-  if (old_result[1]) old_data_out = old_data_out >> 16;
-
-  logic<32> unpacked = old_data_out;
-
-  switch (old_f32) {
-    case 0:  unpacked = sign_extend<32>( b8(old_data_out)); break;
-    case 1:  unpacked = sign_extend<32>(b16(old_data_out)); break;
-    case 4:  unpacked = zero_extend<32>( b8(old_data_out)); break;
-    case 5:  unpacked = zero_extend<32>(b16(old_data_out)); break;
-  }
-
-  self.writeback_addr = cat(b5(hart1), old_rd2);
-  self.writeback_data = old_op2 == OP_LOAD ? unpacked : old_result;
-  self.writeback_wren = old_rd2 != 0 && old_op2 != OP_STORE && old_op2 != OP_BRANCH;
-
-  // This MUST come before self.regfile.tick_read.
-  self.regfile.tick_write(writeback_addr, writeback_data, writeback_wren);
-
-  //----------
-  // Fetch
+  // Next PC
 
   logic<32> new_pc1 = 0;
   if (old_pc2) {
@@ -307,6 +264,70 @@ void Pinwheel::tick_twocycle(logic<1> reset_in) const {
       default:         new_pc1 = old_pc2 + 4; break;
     }
   }
+
+  //----------
+  // Write
+
+  logic<1> old_data_rdcs    = b4(old_result, 28) == 0x8;
+  logic<1> old_debug_rdcs   = b4(old_result, 28) == 0xF;
+
+  logic<32> old_data_out = 0;
+  if      (old_data_rdcs)  old_data_out = data.out;
+  else if (old_debug_rdcs) old_data_out = debug_reg;
+
+  if (old_result[0]) old_data_out = old_data_out >> 8;
+  if (old_result[1]) old_data_out = old_data_out >> 16;
+
+  logic<32> unpacked = old_data_out;
+
+  switch (old_f32) {
+    case 0:  unpacked = sign_extend<32>( b8(old_data_out)); break;
+    case 1:  unpacked = sign_extend<32>(b16(old_data_out)); break;
+    case 4:  unpacked = zero_extend<32>( b8(old_data_out)); break;
+    case 5:  unpacked = zero_extend<32>(b16(old_data_out)); break;
+  }
+
+  self.writeback_addr = cat(b5(hart1), old_rd2);
+  self.writeback_data = old_op2 == OP_LOAD ? unpacked : old_result;
+  self.writeback_wren = old_rd2 != 0 && old_op2 != OP_STORE && old_op2 != OP_BRANCH;
+
+  if (old_op2 == RV32I_OP_CUSTOM0) {
+    // Swap result and the PC that we'll use to fetch.
+    // Execute phase should've deposited the new PC in result
+    //printf("%08d> force_jump @ write from 0x%08x to 0x%08x\n", (int)ticks, (uint32_t)pc2, (uint32_t)old_result);
+    self.writeback_data = new_pc1;
+    new_pc1 = old_result;
+  }
+
+  // This MUST come before self.regfile.tick_read.
+  self.regfile.tick_write(writeback_addr, writeback_data, writeback_wren);
+
+  //----------
+  // Execute
+
+  logic<32> new_result;
+  switch(old_op1) {
+    case OP_JAL:           new_result = pc2 + 4;   break;
+    case OP_JALR:          new_result = pc2 + 4;   break;
+    case OP_LUI:           new_result = old_imm1;       break;
+    case OP_AUIPC:         new_result = pc2 + old_imm1; break;
+    case OP_LOAD:          new_result = old_addr; break;
+    case OP_STORE:         new_result = old_addr; break;
+    case RV32I_OP_CUSTOM0: {
+      //printf("%08d> force_jump @ execute from 0x%08x to 0x%08x\n", (int)ticks, (uint32_t)pc1, (uint32_t)old_reg_a);
+      new_result = old_reg_a;
+      break;
+    }
+    case OP_SYSTEM:        new_result = self.execute_system(old_insn1); break;
+    default:               new_result = self.execute_alu   (old_insn1, old_reg_a, old_reg_b); break;
+  }
+
+  self.insn2  = old_insn1;
+  self.result = new_result;
+
+  //----------
+  // Fetch
+
   self.pc1    = new_pc1;
   self.code.tick_read(new_pc1);
 
@@ -339,22 +360,6 @@ void Pinwheel::tick_twocycle(logic<1> reset_in) const {
   }
 
   //----------
-  // Execute
-
-  logic<32> new_result;
-  switch(old_op1) {
-    case OP_JAL:           new_result = pc2 + 4;   break;
-    case OP_JALR:          new_result = pc2 + 4;   break;
-    case OP_LUI:           new_result = old_imm1;       break;
-    case OP_AUIPC:         new_result = pc2 + old_imm1; break;
-    case OP_LOAD:          new_result = old_addr; break;
-    case OP_STORE:         new_result = old_addr; break;
-    case RV32I_OP_CUSTOM0: new_result = self.execute_custom(old_insn1, old_reg_a); break;
-    case OP_SYSTEM:        new_result = self.execute_system(old_insn1); break;
-    default:               new_result = self.execute_alu   (old_insn1, old_reg_a, old_reg_b); break;
-  }
-
-  //----------
   // Decode
 
   self.pc2    = old_pc1;
@@ -365,8 +370,6 @@ void Pinwheel::tick_twocycle(logic<1> reset_in) const {
 
   self.hart1  = old_hart2;
   self.hart2  = old_hart1;
-  self.insn2  = old_insn1;
-  self.result = new_result;
 
   //----------
 

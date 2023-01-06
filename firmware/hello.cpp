@@ -49,22 +49,17 @@ uint32_t start_hart1(uint32_t address) {
 
 //------------------------------------------------------------------------------
 
-static int put_count = 0;
-
-void putchar(char c) {
-  *(volatile uint32_t*)0x40000000 = c;
-  put_count++;
-}
+volatile uint32_t& out_c = *(volatile uint32_t*)0x40000000;
 
 void puts(const char* s) {
   while(*s) {
-    putchar(*s);
+    out_c = *s;
     s++;
   }
 }
 
 void putnx(uint8_t x) {
-  putchar((x > 9 ? 'A' - 10 : '0') + x);
+  out_c = (x > 9 ? 'A' - 10 : '0') + x;
 }
 
 void putbx(uint8_t x) {
@@ -73,25 +68,52 @@ void putbx(uint8_t x) {
 }
 
 void putdx(uint32_t x) {
-  putbx((x >> 24) & 0xFF);
-  putbx((x >> 16) & 0xFF);
-  putbx((x >>  8) & 0xFF);
-  putbx((x >>  0) & 0xFF);
+  for (int i = 28; i >= 0; i -= 4) {
+    putnx((x >> i) & 0xF);
+  }
 }
 
 void putx(uint32_t x) {
-  if (x >= 16) putx(x >> 4);
-  putnx(x & 0xF);
+  if (x == 0) {
+    out_c = '0';
+    return;
+  }
+
+  uint32_t t = x;
+  int c = 0;
+  while(t > 0xF) {
+    t >>= 4;
+    c += 4;
+  }
+
+  for (int i = c - 4; i >= 0; i -= 4) {
+    putnx((x >> i) & 0xF);
+  }
 }
 
 void putd(int d) {
-  if (d < 0) {
-    putchar('-');
-    putd(-d);
+  if (d == 0) {
+    out_c = '0';
+    return;
   }
-  else {
-    if (d > 10) putd(d / 10);
-    putchar('0' + (d % 10));
+
+  if (d < 0) {
+    out_c = '-';
+    d = -d;
+  }
+
+  int count = 0;
+  uint8_t buf[16];
+
+  while(d >= 10) {
+    buf[count++] = (d % 10);
+    d = d / 10;
+  }
+
+  buf[count++] = d;
+
+  for (int i = count - 1; i >= 0; i--) {
+    out_c = '0' + buf[i];
   }
 }
 
@@ -101,19 +123,19 @@ void printf(const char* format, ...) {
   while(*format) {
     if (*format == '\\') {
       format++;
-      putchar(*format++);
+      out_c = *format++;
     }
     else if (*format == '%') {
       format++;
       switch(*format++) {
-      case 'c': putchar((char)va_arg(args, int)); break;
+      case 'c': out_c = (char)va_arg(args, int); break;
       case 'd': putd(va_arg(args, int)); break;
       case 'x': putx(va_arg(args, uint32_t)); break;
       case 'p': putdx(va_arg(args, uint32_t)); break;
       case 's': puts(va_arg(args, const char*)); break;
       }
     } else {
-      putchar(*format++);
+      out_c = *format++;
     }
   }
 }
@@ -124,17 +146,17 @@ extern "C"
 __attribute__((naked, __section__(".start")))
 void _start() {
   __asm__(R"(
-    .option push
-    .option norelax
+  .option push
+  .option norelax
     la gp, __global_pointer$
     la sp, _stack_top
     csrr t0, mhartid
     sll t0, t0, 9
     sub sp, sp, t0
-    main_loop:
+  main_loop:
     call main
     j main_loop
-    .option pop
+  .option pop
   )");
 }
 
@@ -145,7 +167,7 @@ int main(int argc, char** argv) {
 
   if (hart != 0) {
     for (int i = 0; true; i++) {
-      printf("<<%d>>", i);
+      printf("<%d>", i);
     }
   }
 
@@ -166,16 +188,16 @@ int main(int argc, char** argv) {
   printf("running hart 1 for a bit\n");
   static uint32_t hart1_pc = 0x00400000 - 4;
   start_hart1(hart1_pc);
-  for (volatile int i = 0; i < 1000; i++) {}
+  for (volatile int i = 0; i < 100; i++) {}
   hart1_pc = start_hart1(0);
   printf("\n");
   printf("running hart 1 done\n");
   printf("hart1_pc = 0x%p\n", hart1_pc);
 
+  /*
   for (int hart = 1; hart < 4; hart++) {
     //uint32_t* r = (uint32_t*)(0x10000000 + (hart*128));
     printf("hart %d\n", hart);
-    /*
     printf("r00 %p  r08 %p  r16 %p  r24 %p\n", r[ 0], r[ 8], r[16], r[24]);
     printf("r01 %p  r09 %p  r17 %p  r25 %p\n", r[ 1], r[ 9], r[17], r[25]);
     printf("r02 %p  r10 %p  r18 %p  r26 %p\n", r[ 2], r[10], r[18], r[26]);
@@ -184,10 +206,9 @@ int main(int argc, char** argv) {
     printf("r05 %p  r13 %p  r21 %p  r29 %p\n", r[ 5], r[13], r[21], r[29]);
     printf("r06 %p  r14 %p  r22 %p  r30 %p\n", r[ 6], r[14], r[22], r[30]);
     printf("r07 %p  r15 %p  r23 %p  r31 %p\n", r[ 7], r[15], r[23], r[31]);
-    */
   }
+  */
 
-  printf("printed %d\n", put_count);
   printf("\n");
 
 

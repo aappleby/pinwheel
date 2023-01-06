@@ -82,8 +82,8 @@ struct Pinwheel {
   logic<1>  writeback_wren;
 
   logic<32> debug_reg;
-  logic<1>  force_jump;
-  logic<32> jump_dest;
+  //logic<1>  force_jump;
+  //logic<32> jump_dest;
 
   BlockRam  code;
   BlockRam  data;
