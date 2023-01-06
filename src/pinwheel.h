@@ -11,7 +11,7 @@ static const int OP_LUI     = 0b01101;
 static const int OP_BRANCH  = 0b11000;
 static const int OP_JALR    = 0b11001;
 static const int OP_JAL     = 0b11011;
-static const int OP_SYS     = 0b11100;
+static const int OP_SYSTEM  = 0b11100;
 
 //------------------------------------------------------------------------------
 
@@ -58,13 +58,13 @@ struct Pinwheel {
   void reset();
   static logic<32> decode_imm(logic<32> insn);
 
-  void tick_fetch  (logic<5> old_hart2, logic<32> old_pc2, logic<32> old_insn1, logic<32> old_ra, logic<32> old_rb);
-  void tick_decode ();
-  void tick_execute();
-  void tick_memory ();
-  void tick_write  ();
+  void tick_console();
 
   logic<32> get_memory();
+
+  void execute_alu();
+  void execute_custom();
+  void execute_system();
 
   void tick_twocycle(logic<1> reset_in);
 
@@ -82,6 +82,8 @@ struct Pinwheel {
   logic<1>  writeback_wren;
 
   logic<32> debug_reg;
+  logic<1>  force_jump;
+  logic<32> jump_dest;
 
   BlockRam  code;
   BlockRam  data;

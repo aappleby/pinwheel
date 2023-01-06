@@ -35,7 +35,8 @@ void PinwheelApp::app_init(int screen_w, int screen_h) {
   text_painter.init();
   grid_painter.init(65536,65536);
   code_painter.init_hex_u32();
-  data_painter.init_hex_u8();
+  //data_painter.init_hex_u8();
+  data_painter.init_hex_u32();
   console_painter.init_ascii();
   box_painter.init();
 
@@ -222,8 +223,8 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   }
 #endif
 
-  pinwheel.code.data[16 * 31 - 1] = 0xDEADBEEF;
-  pinwheel.code.data[16 * 31 + 0] = 0xDEADBEEF;
+  //pinwheel.code.data[16 * 31 - 1] = 0xDEADBEEF;
+  //pinwheel.code.data[16 * 31 + 0] = 0xDEADBEEF;
 
   code_painter.highlight_x = ((/*hart0_pc*/pinwheel.pc2 & 0xFFFF) >> 2) % 16;
   code_painter.highlight_y = ((/*hart0_pc*/pinwheel.pc2 & 0xFFFF) >> 2) / 16;

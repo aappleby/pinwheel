@@ -31,6 +31,22 @@ void* get_gp() {
   )");
 }
 
+__attribute__ ((naked)) int get_hart()
+{
+  asm(R"(
+    csrr a0, mhartid
+    ret
+  )");
+}
+
+__attribute__((naked))
+uint32_t start_hart1(uint32_t address) {
+  __asm__(R"(
+    .insn r 0x0B, 0, 0, a0, a0, x0
+    ret
+  )");
+}
+
 //------------------------------------------------------------------------------
 
 static int put_count = 0;
@@ -112,6 +128,9 @@ void _start() {
     .option norelax
     la gp, __global_pointer$
     la sp, _stack_top
+    csrr t0, mhartid
+    sll t0, t0, 9
+    sub sp, sp, t0
     main_loop:
     call main
     j main_loop
@@ -122,6 +141,16 @@ void _start() {
 //------------------------------------------------------------------------------
 
 int main(int argc, char** argv) {
+  int hart = get_hart();
+
+  if (hart != 0) {
+    for (int i = 0; true; i++) {
+      printf("<<%d>>", i);
+    }
+  }
+
+
+  printf("hart    %d\n", hart);
   printf("main    0x%p\n", main);
   printf("stack   0x%p\n", get_sp());
   printf("global  0x%p\n", get_gp());
@@ -134,48 +163,14 @@ int main(int argc, char** argv) {
   printf("pointer 0x00001234 0x%p\n", 0x00001234);
   printf("char    !@#$\\%^&*() %c%c%c%c%c%c%c%c%c%c\n", '!', '@', '#', '$', '%', '^', '&', '*', '(', ')');
 
-  //for (int i = 32; i < 64; i++) {
-  //  *(uint32_t*)(0x10000000 + (i * 4)) = 0xF00DCAFE;
-  //}
-  *(uint32_t*)(0x10000080) = 0xF00DCAFE;
-  *(uint32_t*)(0x10000084) = 0xF00DCAFE;
-  *(uint32_t*)(0x10000088) = 0xF00DCAFE;
-  *(uint32_t*)(0x1000008C) = 0xF00DCAFE;
-  *(uint32_t*)(0x10000090) = 0xF00DCAFE;
-  *(uint32_t*)(0x10000094) = 0xF00DCAFE;
-  *(uint32_t*)(0x10000098) = 0xF00DCAFE;
-  *(uint32_t*)(0x1000009C) = 0xF00DCAFE;
-  *(uint32_t*)(0x100000A0) = 0xF00DCAFE;
-  *(uint32_t*)(0x100000A4) = 0xF00DCAFE;
-  *(uint32_t*)(0x100000A8) = 0xF00DCAFE;
-  *(uint32_t*)(0x100000AC) = 0xF00DCAFE;
-  *(uint32_t*)(0x100000B0) = 0xF00DCAFE;
-  *(uint32_t*)(0x100000B4) = 0xF00DCAFE;
-  *(uint32_t*)(0x100000B8) = 0xF00DCAFE;
-  *(uint32_t*)(0x100000BC) = 0xF00DCAFE;
-  *(uint32_t*)(0x100000C0) = 0xF00DCAFE;
-  *(uint32_t*)(0x100000C4) = 0xF00DCAFE;
-  *(uint32_t*)(0x100000C8) = 0xF00DCAFE;
-  *(uint32_t*)(0x100000CC) = 0xF00DCAFE;
-  *(uint32_t*)(0x100000D0) = 0xF00DCAFE;
-  *(uint32_t*)(0x100000D4) = 0xF00DCAFE;
-  *(uint32_t*)(0x100000D8) = 0xF00DCAFE;
-  *(uint32_t*)(0x100000DC) = 0xF00DCAFE;
-  *(uint32_t*)(0x100000E0) = 0xF00DCAFE;
-  *(uint32_t*)(0x100000E4) = 0xF00DCAFE;
-  *(uint32_t*)(0x100000E8) = 0xF00DCAFE;
-  *(uint32_t*)(0x100000EC) = 0xF00DCAFE;
-  *(uint32_t*)(0x100000F0) = 0xF00DCAFE;
-  *(uint32_t*)(0x100000F4) = 0xF00DCAFE;
-  *(uint32_t*)(0x100000F8) = 0xF00DCAFE;
-  *(uint32_t*)(0x100000FC) = 0xF00DCAFE;
-
-  /*
-  uint32_t* hart2_regs = (uint32_t*)(0x10000000 + (2*128));
-  for (int i = 0; i < 32; i++) {
-    hart2_regs[i] = 0x01010101 * i;
-  }
-  */
+  printf("running hart 1 for a bit\n");
+  static uint32_t hart1_pc = 0x00400000 - 4;
+  start_hart1(hart1_pc);
+  for (volatile int i = 0; i < 1000; i++) {}
+  hart1_pc = start_hart1(0);
+  printf("\n");
+  printf("running hart 1 done\n");
+  printf("hart1_pc = 0x%p\n", hart1_pc);
 
   for (int hart = 1; hart < 4; hart++) {
     //uint32_t* r = (uint32_t*)(0x10000000 + (hart*128));
@@ -192,20 +187,9 @@ int main(int argc, char** argv) {
     */
   }
 
-  /*
-  for (int i = 0; i < 64; i++) {
-    printf("hart %d reg %d 0x%p\n", (i >> 5), (i & 31), *(uint32_t*)(0x10000000 + (i*4)));
-    if ((i & 7) == 7) printf("\n");
-  }
-
-  for (int i = 0; i < 64; i++) {
-    printf("hart %d reg %d 0x%p\n", (i >> 5), (i & 31), *(uint32_t*)(0x10000000 + (i*4)));
-    if ((i & 7) == 7) printf("\n");
-  }
-  */
-
   printf("printed %d\n", put_count);
   printf("\n");
+
 
   *(volatile uint32_t*)0xFFFFFFF0 = 1;
   return 0;
