@@ -58,12 +58,12 @@ struct Pinwheel {
   void reset();
   static logic<32> decode_imm(logic<32> insn);
 
-  void tick_console();
+  void tick_console(logic<32> reg_b);
 
   logic<32> get_memory();
 
   logic<32> execute_alu   (logic<32> insn, logic<32> reg_a, logic<32> reg_b) const;
-  logic<32> execute_custom(logic<32> insn);
+  logic<32> execute_custom(logic<32> insn, logic<32> reg_a);
   logic<32> execute_system(logic<32> insn) const;
 
   void tick_twocycle(logic<1> reset_in) const;

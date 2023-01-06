@@ -143,16 +143,16 @@ logic<32> Pinwheel::execute_alu(logic<32> insn, logic<32> reg_a, logic<32> reg_b
 
 //--------------------------------------------------------------------------------
 
-logic<32> Pinwheel::execute_custom(logic<32> insn) {
+logic<32> Pinwheel::execute_custom(logic<32> insn, logic<32> reg_a) {
   //printf("custom op! 0x%08x\n", (uint32_t)regfile.out_a);
   // This doesn't work quite right.
   // Probably need to stash it in a register until the other thread hits fetch state
 
   //pc1 = regfile.out_a;
 
-  printf("%08d> force_jump @ execute from 0x%08x to 0x%08x\n", (int)ticks, (uint32_t)pc1, (uint32_t)regfile.out_a);
+  printf("%08d> force_jump @ execute from 0x%08x to 0x%08x\n", (int)ticks, (uint32_t)pc1, (uint32_t)reg_a);
   force_jump = 1;
-  jump_dest = regfile.out_a;
+  jump_dest = reg_a;
   return pc1;
 }
 
@@ -178,9 +178,9 @@ logic<32> Pinwheel::execute_system(logic<32> insn) const {
 
 //--------------------------------------------------------------------------------
 
-void Pinwheel::tick_console() {
+void Pinwheel::tick_console(logic<32> reg_b) {
   console_buf[console_y * 80 + console_x] = 0;
-  auto c = char(regfile.out_b);
+  auto c = char(reg_b);
 
   if (c == 0) c = '?';
 
@@ -232,9 +232,11 @@ void Pinwheel::tick_twocycle(logic<1> reset_in) const {
   auto old_jump_dest = jump_dest;
 
   auto old_code_out = code.out;
+  auto next_ra = b5(old_code_out, 15);
+  auto next_rb = b5(old_code_out, 20);
 
-  auto old_ra     = regfile.out_a;
-  auto old_rb     = regfile.out_b;
+  auto old_reg_a = regfile.out_a;
+  auto old_reg_b = regfile.out_b;
 
   auto old_op1  = b5(old_insn1, 2);
   auto old_f31  = b3(old_insn1, 12);
@@ -245,99 +247,45 @@ void Pinwheel::tick_twocycle(logic<1> reset_in) const {
   auto old_rd2  = b5(old_insn2, 7);
   auto old_f32  = b3(old_insn2, 12);
 
+  logic<32> old_addr = old_reg_a + old_imm1;
+
   //----------
   // Write
 
-  logic<1> data_cs    = b4(old_result, 28) == 0x8;
-  logic<1> debug_cs   = b4(old_result, 28) == 0xF;
+  logic<1> old_data_rdcs    = b4(old_result, 28) == 0x8;
+  logic<1> old_debug_rdcs   = b4(old_result, 28) == 0xF;
+
   logic<32> old_data_out = 0;
-  if      (data_cs)  old_data_out = data.out;
-  else if (debug_cs) old_data_out = debug_reg;
+  if      (old_data_rdcs)  old_data_out = data.out;
+  else if (old_debug_rdcs) old_data_out = debug_reg;
+
   if (old_result[0]) old_data_out = old_data_out >> 8;
   if (old_result[1]) old_data_out = old_data_out >> 16;
 
-  logic<32> unpacked;
+  logic<32> unpacked = old_data_out;
+
   switch (old_f32) {
     case 0:  unpacked = sign_extend<32>( b8(old_data_out)); break;
     case 1:  unpacked = sign_extend<32>(b16(old_data_out)); break;
-    case 2:  unpacked = old_data_out; break;
-    case 3:  unpacked = old_data_out; break;
     case 4:  unpacked = zero_extend<32>( b8(old_data_out)); break;
     case 5:  unpacked = zero_extend<32>(b16(old_data_out)); break;
-    case 6:  unpacked = old_data_out; break;
-    case 7:  unpacked = old_data_out; break;
-    default: unpacked = 0; break;
   }
 
   self.writeback_addr = cat(b5(hart1), old_rd2);
-  self.writeback_data = old_op2 == OP_LOAD ? unpacked : result;
+  self.writeback_data = old_op2 == OP_LOAD ? unpacked : old_result;
   self.writeback_wren = old_rd2 != 0 && old_op2 != OP_STORE && old_op2 != OP_BRANCH;
+
+  // This MUST come before self.regfile.tick_read.
   self.regfile.tick_write(writeback_addr, writeback_data, writeback_wren);
 
   //----------
-  // Memory
-
-  {
-    logic<32> addr  = regfile.out_a + old_imm1;
-    logic<4>  mask  = 0;
-
-    if (old_f31 == 0) mask = 0b0001;
-    if (old_f31 == 1) mask = 0b0011;
-    if (old_f31 == 2) mask = 0b1111;
-
-    if (addr[0]) mask = mask << 1;
-    if (addr[1]) mask = mask << 2;
-
-    logic<1> data_cs    = b4(addr, 28) == 0x8;
-    logic<1> debug_cs   = b4(addr, 28) == 0xF;
-    logic<1> console_cs = b4(addr, 28) == 0x4;
-
-    self.data.tick_write(addr, regfile.out_b, mask, (old_op1 == OP_STORE) && data_cs);
-    self.data.tick_read (addr);
-
-    self.debug_reg = (old_op1 == OP_STORE) && debug_cs ? regfile.out_b : old_debug_reg;
-
-    if (console_cs && old_op1 == OP_STORE) {
-      self.tick_console();
-    }
-  }
-
-  //----------
-  // Execute
-
-  switch(old_op1) {
-    case OP_JAL:           self.result = pc2 + 4;   break;
-    case OP_JALR:          self.result = pc2 + 4;   break;
-    case OP_LUI:           self.result = old_imm1;       break;
-    case OP_AUIPC:         self.result = pc2 + old_imm1; break;
-    case OP_LOAD:          self.result = regfile.out_a + old_imm1; break;
-    case OP_STORE:         self.result = regfile.out_a + old_imm1; break;
-    case RV32I_OP_CUSTOM0: self.result = self.execute_custom(old_insn1); break;
-    case OP_SYSTEM:        self.result = self.execute_system(old_insn1); break;
-    default:               self.result = execute_alu(old_insn1, regfile.out_a, regfile.out_b); break;
-  }
-
-  //----------
-  // Decode
-
-  /*
-  if (force_jump) {
-    printf("%08d> force_jump @ fetch from 0x%08x to 0x%08x\n", (int)ticks, (uint32_t)pc1, (uint32_t)jump_dest);
-  }
-  */
-
-  logic<5> next_ra = b5(code.out, 15);
-  logic<5> next_rb = b5(code.out, 20);
-  self.regfile.tick_read(cat(b5(hart1), next_ra), cat(b5(hart1), next_rb));
-
-  //----------
+  // Fetch
 
   logic<32> new_pc1 = 0;
-
   if (old_pc2) {
-    logic<1> eq  = old_ra == old_rb;
-    logic<1> slt = signed(old_ra) < signed(old_rb);
-    logic<1> ult = old_ra < old_rb;
+    logic<1> eq  = old_reg_a == old_reg_b;
+    logic<1> slt = signed(old_reg_a) < signed(old_reg_b);
+    logic<1> ult = old_reg_a < old_reg_b;
 
     logic<1> take_branch;
     switch (old_f31) {
@@ -355,22 +303,70 @@ void Pinwheel::tick_twocycle(logic<1> reset_in) const {
     switch (old_op1) {
       case OP_BRANCH:  new_pc1 = take_branch ? old_pc2 + old_imm1 : old_pc2 + b32(4); break;
       case OP_JAL:     new_pc1 = old_pc2 + old_imm1; break;
-      case OP_JALR:    new_pc1 = old_ra + old_imm1; break;
+      case OP_JALR:    new_pc1 = old_addr; break;
       default:         new_pc1 = old_pc2 + 4; break;
     }
   }
-
-
+  self.pc1    = new_pc1;
   self.code.tick_read(new_pc1);
 
   //----------
+  // Memory
 
-  self.hart1 = old_hart2;
-  self.hart2 = old_hart1;
-  self.pc1   = new_pc1;
-  self.pc2   = old_pc1;
-  self.insn1 = old_pc1 == 0 ? b32(0) : old_code_out;
-  self.insn2 = old_insn1;
+  logic<4>  mask  = 0;
+
+  if (old_f31 == 0) mask = 0b0001;
+  if (old_f31 == 1) mask = 0b0011;
+  if (old_f31 == 2) mask = 0b1111;
+
+  if (old_addr[0]) mask = mask << 1;
+  if (old_addr[1]) mask = mask << 2;
+
+  logic<1> old_data_wrcs    = b4(old_addr, 28) == 0x8;
+  logic<1> old_debug_wrcs   = b4(old_addr, 28) == 0xF;
+  logic<1> old_console_wrcs = b4(old_addr, 28) == 0x4;
+
+  self.data.tick_write(old_addr, old_reg_b, mask, (old_op1 == OP_STORE) && old_data_wrcs);
+  self.data.tick_read (old_addr);
+
+  //----------
+  // Debug reg
+
+  self.debug_reg = (old_op1 == OP_STORE) && old_debug_wrcs ? old_reg_b : old_debug_reg;
+
+  if (old_console_wrcs && old_op1 == OP_STORE) {
+    self.tick_console(old_reg_b);
+  }
+
+  //----------
+  // Execute
+
+  logic<32> new_result;
+  switch(old_op1) {
+    case OP_JAL:           new_result = pc2 + 4;   break;
+    case OP_JALR:          new_result = pc2 + 4;   break;
+    case OP_LUI:           new_result = old_imm1;       break;
+    case OP_AUIPC:         new_result = pc2 + old_imm1; break;
+    case OP_LOAD:          new_result = old_addr; break;
+    case OP_STORE:         new_result = old_addr; break;
+    case RV32I_OP_CUSTOM0: new_result = self.execute_custom(old_insn1, old_reg_a); break;
+    case OP_SYSTEM:        new_result = self.execute_system(old_insn1); break;
+    default:               new_result = self.execute_alu   (old_insn1, old_reg_a, old_reg_b); break;
+  }
+
+  //----------
+  // Decode
+
+  self.pc2    = old_pc1;
+  self.insn1  = old_pc1 == 0 ? b32(0) : old_code_out;
+  self.regfile.tick_read(cat(b5(old_hart1), next_ra), cat(b5(old_hart1), next_rb));
+
+  //----------
+
+  self.hart1  = old_hart2;
+  self.hart2  = old_hart1;
+  self.insn2  = old_insn1;
+  self.result = new_result;
 
   //----------
 
