@@ -2,17 +2,6 @@
 #include "metron_tools.h"
 #include "constants.h"
 
-static const int OP_LOAD    = 0b00000;
-static const int OP_ALUI    = 0b00100;
-static const int OP_AUIPC   = 0b00101;
-static const int OP_STORE   = 0b01000;
-static const int OP_ALU     = 0b01100;
-static const int OP_LUI     = 0b01101;
-static const int OP_BRANCH  = 0b11000;
-static const int OP_JALR    = 0b11001;
-static const int OP_JAL     = 0b11011;
-static const int OP_SYSTEM  = 0b11100;
-
 //------------------------------------------------------------------------------
 
 struct BlockRam {
@@ -69,21 +58,22 @@ struct Pinwheel {
   void tick_twocycle(logic<1> reset_in) const;
 
   logic<5>  hart_a;
+  logic<5>  hart_c;
+  logic<5>  hart_d;
   logic<32> pc_a;
-  logic<32> insn_a;
-  logic<32> result_a;
 
   logic<5>  hart_b;
   logic<32> pc_b;
   logic<32> insn_b;
 
-  logic<10> writeback_addr;
-  logic<32> writeback_data;
-  logic<1>  writeback_wren;
+  logic<32> insn_c;
+  logic<32> result_c;
+
+  logic<10> wb_addr_d;
+  logic<32> wb_data_d;
+  logic<1>  wb_wren_d;
 
   logic<32> debug_reg;
-  //logic<1>  force_jump;
-  //logic<32> jump_dest;
 
   BlockRam  code;
   BlockRam  data;

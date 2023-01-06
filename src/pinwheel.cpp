@@ -54,17 +54,21 @@ void Pinwheel::reset() {
   debug_reg = 0;
 
   hart_a = 1;
-  pc_a   = 0;
-  insn_a = 0;
-  result_a = 0;
-
   hart_b   = 0;
-  pc_b     = 0x00400000 - 4;
-  insn_b   = 0;
+  hart_c = 0;
+  hart_d = 0;
 
-  writeback_addr = 0;
-  writeback_data = 0;
-  writeback_wren = 0;
+  pc_a = 0;
+  pc_b = 0x00400000 - 4;
+
+  insn_b = 0;
+  insn_c = 0;
+
+  result_c = 0;
+
+  wb_addr_d = 0;
+  wb_data_d = 0;
+  wb_wren_d = 0;
 
   debug_reg = 0;
 
@@ -96,16 +100,16 @@ logic<32> Pinwheel::decode_imm(logic<32> insn) {
   logic<32> imm_j = cat(dup<12>(insn[31]), b8(insn, 12), insn[20], b10(insn, 21), b1(0));
 
   switch(op) {
-    case OP_LOAD:   return imm_i;
-    case OP_ALUI:   return imm_i;
-    case OP_AUIPC:  return imm_u;
-    case OP_STORE:  return imm_s;
-    case OP_ALU:    return imm_i;
-    case OP_LUI:    return imm_u;
-    case OP_BRANCH: return imm_b;
-    case OP_JALR:   return imm_i;
-    case OP_JAL:    return imm_j;
-    default:        return 0;
+    case RV32I_OP_LOAD:   return imm_i;
+    case RV32I_OP_OPIMM:  return imm_i;
+    case RV32I_OP_AUIPC:  return imm_u;
+    case RV32I_OP_STORE:  return imm_s;
+    case RV32I_OP_OP:     return imm_i;
+    case RV32I_OP_LUI:    return imm_u;
+    case RV32I_OP_BRANCH: return imm_b;
+    case RV32I_OP_JALR:   return imm_i;
+    case RV32I_OP_JAL:    return imm_j;
+    default:              return 0;
   }
 }
 
@@ -118,8 +122,8 @@ logic<32> Pinwheel::execute_alu(logic<32> insn, logic<32> reg_a, logic<32> reg_b
   logic<32> imm = decode_imm(insn);
 
   logic<32> alu_a = reg_a;
-  logic<32> alu_b = op == OP_ALUI ? imm : reg_b;
-  if (op == OP_ALU && f3 == 0 && f7 == 32) alu_b = -alu_b;
+  logic<32> alu_b = op == RV32I_OP_OPIMM ? imm : reg_b;
+  if (op == RV32I_OP_OP && f3 == 0 && f7 == 32) alu_b = -alu_b;
 
   logic<32> result;
   switch (f3) {
@@ -205,49 +209,50 @@ void Pinwheel::tick_twocycle(logic<1> reset_in) const {
   if (reset_in) {
   }
 
-  auto old_hart1  = hart_a;
-  auto old_hart2  = hart_b;
-  auto old_pc1    = pc_a;
-  auto old_pc2    = pc_b;
-  auto old_insn1  = insn_b;
-  auto old_insn2  = insn_a;
-  auto old_result = result_a;
+  const auto hart_a = this->hart_a;
+  const auto pc_a   = this->pc_a;
+  const auto insn_a = code.out;
+  const auto rs1_a  = b5(insn_a, 15);
+  const auto rs2_a  = b5(insn_a, 20);
 
-  auto old_debug_reg = debug_reg;
+  const auto hart_b = this->hart_b;
+  const auto pc_b   = this->pc_b;
+  const auto insn_b = this->insn_b;
+  const auto rs1_b  = regfile.out_rs1;
+  const auto rs2_b  = regfile.out_rs2;
+  const auto op_b   = b5(insn_b, 2);
+  const auto f3_b   = b3(insn_b, 12);
+  const auto f7_b   = b7(insn_b, 25);
+  const auto imm_b  = decode_imm(insn_b);
+  const auto addr_b = b32(rs1_b + imm_b);
 
-  auto old_code_out = code.out;
-  auto next_ra = b5(old_code_out, 15);
-  auto next_rb = b5(old_code_out, 20);
+  const bool data_wrcs_b    = b4(addr_b, 28) == 0x8;
+  const bool debug_wrcs_b   = b4(addr_b, 28) == 0xF;
+  const bool console_wrcs_b = b4(addr_b, 28) == 0x4;
 
-  auto old_reg_a = regfile.out_rs1;
-  auto old_reg_b = regfile.out_rs2;
+  const auto hart_c   = this->hart_c;
+  const auto insn_c   = this->insn_c;
+  const auto result_c = this->result_c;
+  const auto op_c     = b5(insn_c, 2);
+  const auto rd_c     = b5(insn_c, 7);
+  const auto f3_c     = b3(insn_c, 12);
 
-  auto old_op1  = b5(old_insn1, 2);
-  auto old_f31  = b3(old_insn1, 12);
-  auto old_f71  = b7(old_insn1, 25);
-  auto old_imm1 = decode_imm(old_insn1);
+  const auto hart_d    = this->hart_d;
 
-  auto old_op2  = b5(old_insn2, 2);
-  auto old_rd2  = b5(old_insn2, 7);
-  auto old_f32  = b3(old_insn2, 12);
-
-  logic<32> old_addr = old_reg_a + old_imm1;
-
-  logic<1> old_data_wrcs    = b4(old_addr, 28) == 0x8;
-  logic<1> old_debug_wrcs   = b4(old_addr, 28) == 0xF;
-  logic<1> old_console_wrcs = b4(old_addr, 28) == 0x4;
+  const auto debug_reg = this->debug_reg;
 
   //----------
   // Next PC
 
-  logic<32> new_pc1 = 0;
-  if (old_pc2) {
-    logic<1> eq  = old_reg_a == old_reg_b;
-    logic<1> slt = signed(old_reg_a) < signed(old_reg_b);
-    logic<1> ult = old_reg_a < old_reg_b;
+  logic<5>  next_hart_a = hart_b;
+  logic<32> next_pc_a = 0;
+  if (pc_b) {
+    logic<1> eq  = rs1_b == rs2_b;
+    logic<1> slt = signed(rs1_b) < signed(rs2_b);
+    logic<1> ult = rs1_b < rs2_b;
 
     logic<1> take_branch;
-    switch (old_f31) {
+    switch (f3_b) {
       case 0:  take_branch =   eq; break;
       case 1:  take_branch =  !eq; break;
       case 2:  take_branch =   eq; break;
@@ -259,115 +264,112 @@ void Pinwheel::tick_twocycle(logic<1> reset_in) const {
       default: take_branch =    0; break;
     }
 
-    switch (old_op1) {
-      case OP_BRANCH:  new_pc1 = take_branch ? old_pc2 + old_imm1 : old_pc2 + b32(4); break;
-      case OP_JAL:     new_pc1 = old_pc2 + old_imm1; break;
-      case OP_JALR:    new_pc1 = old_addr; break;
-      default:         new_pc1 = old_pc2 + 4; break;
+    switch (op_b) {
+      case RV32I_OP_BRANCH:  next_pc_a = take_branch ? pc_b + imm_b : pc_b + b32(4); break;
+      case RV32I_OP_JAL:     next_pc_a = pc_b + imm_b; break;
+      case RV32I_OP_JALR:    next_pc_a = addr_b; break;
+      default:         next_pc_a = pc_b + 4; break;
     }
   }
 
   //----------
   // Write
 
-  logic<1> old_data_rdcs    = b4(old_result, 28) == 0x8;
-  logic<1> old_debug_rdcs   = b4(old_result, 28) == 0xF;
+  logic<1> data_rdcs_c    = b4(result_c, 28) == 0x8;
+  logic<1> debug_rdcs_c   = b4(result_c, 28) == 0xF;
 
-  logic<32> old_data_out = 0;
-  if      (old_data_rdcs)  old_data_out = data.out;
-  else if (old_debug_rdcs) old_data_out = debug_reg;
+  logic<32> data_out_c = 0;
+  if      (data_rdcs_c)  data_out_c = data.out;
+  else if (debug_rdcs_c) data_out_c = debug_reg;
 
-  if (old_result[0]) old_data_out = old_data_out >> 8;
-  if (old_result[1]) old_data_out = old_data_out >> 16;
+  if (result_c[0]) data_out_c = data_out_c >> 8;
+  if (result_c[1]) data_out_c = data_out_c >> 16;
 
-  logic<32> unpacked = old_data_out;
+  logic<32> unpacked_c = data_out_c;
 
-  switch (old_f32) {
-    case 0:  unpacked = sign_extend<32>( b8(old_data_out)); break;
-    case 1:  unpacked = sign_extend<32>(b16(old_data_out)); break;
-    case 4:  unpacked = zero_extend<32>( b8(old_data_out)); break;
-    case 5:  unpacked = zero_extend<32>(b16(old_data_out)); break;
+  switch (f3_c) {
+    case 0:  unpacked_c = sign_extend<32>( b8(data_out_c)); break;
+    case 1:  unpacked_c = sign_extend<32>(b16(data_out_c)); break;
+    case 4:  unpacked_c = zero_extend<32>( b8(data_out_c)); break;
+    case 5:  unpacked_c = zero_extend<32>(b16(data_out_c)); break;
   }
 
-  self.writeback_addr = cat(b5(hart_a), old_rd2);
-  self.writeback_data = old_op2 == OP_LOAD ? unpacked : old_result;
-  self.writeback_wren = old_rd2 != 0 && old_op2 != OP_STORE && old_op2 != OP_BRANCH;
 
-  if (old_op2 == RV32I_OP_CUSTOM0) {
+  self.hart_d    = hart_c;
+  self.wb_addr_d = cat(b5(hart_c), rd_c);
+  self.wb_data_d = op_c == RV32I_OP_LOAD ? unpacked_c : result_c;
+  self.wb_wren_d = rd_c != 0 && op_c != RV32I_OP_STORE && op_c != RV32I_OP_BRANCH;
+
+
+  if (op_c == RV32I_OP_CUSTOM0) {
     // Swap result and the PC that we'll use to fetch.
     // Execute phase should've deposited the new PC in result
     //printf("%08d> force_jump @ write from 0x%08x to 0x%08x\n", (int)ticks, (uint32_t)pc2, (uint32_t)old_result);
-    self.writeback_data = new_pc1;
-    new_pc1 = old_result;
+    self.wb_data_d = next_pc_a;
+    next_pc_a      = result_c;
   }
 
   // This MUST come before self.regfile.tick_read.
-  self.regfile.tick_write(writeback_addr, writeback_data, writeback_wren);
+  self.regfile.tick_write(wb_addr_d, wb_data_d, wb_wren_d);
 
   //----------
   // Execute
 
   logic<32> new_result;
-  switch(old_op1) {
-    case OP_JAL:           new_result = pc_b + 4;   break;
-    case OP_JALR:          new_result = pc_b + 4;   break;
-    case OP_LUI:           new_result = old_imm1;       break;
-    case OP_AUIPC:         new_result = pc_b + old_imm1; break;
-    case OP_LOAD:          new_result = old_addr; break;
-    case OP_STORE:         new_result = old_addr; break;
-    case RV32I_OP_CUSTOM0: {
-      //printf("%08d> force_jump @ execute from 0x%08x to 0x%08x\n", (int)ticks, (uint32_t)pc1, (uint32_t)old_reg_a);
-      new_result = old_reg_a;
-      break;
-    }
-    case OP_SYSTEM:        new_result = self.execute_system(old_insn1); break;
-    default:               new_result = self.execute_alu   (old_insn1, old_reg_a, old_reg_b); break;
+  switch(op_b) {
+    case RV32I_OP_JAL:     new_result = pc_b + 4;     break;
+    case RV32I_OP_JALR:    new_result = pc_b + 4;     break;
+    case RV32I_OP_LUI:     new_result = imm_b;        break;
+    case RV32I_OP_AUIPC:   new_result = pc_b + imm_b; break;
+    case RV32I_OP_LOAD:    new_result = addr_b;       break;
+    case RV32I_OP_STORE:   new_result = addr_b;       break;
+    case RV32I_OP_CUSTOM0: new_result = rs1_b;        break;
+    case RV32I_OP_SYSTEM:  new_result = self.execute_system(insn_b); break;
+    default:               new_result = self.execute_alu   (insn_b, rs1_b, rs2_b); break;
   }
 
-  self.insn_a  = old_insn1;
-  self.result_a = new_result;
+  self.hart_c   = hart_b;
+  self.insn_c   = insn_b;
+  self.result_c = new_result;
 
   //----------
   // Fetch
 
-  self.pc_a    = new_pc1;
-  self.code.tick_read(new_pc1);
+  self.hart_a  = next_hart_a;
+  self.pc_a    = next_pc_a;
+  self.code.tick_read(next_pc_a);
 
   //----------
   // Memory
 
-  logic<4>  mask  = 0;
+  logic<4>  mask_b  = 0;
 
-  if (old_f31 == 0) mask = 0b0001;
-  if (old_f31 == 1) mask = 0b0011;
-  if (old_f31 == 2) mask = 0b1111;
+  if (f3_b == 0) mask_b = 0b0001;
+  if (f3_b == 1) mask_b = 0b0011;
+  if (f3_b == 2) mask_b = 0b1111;
 
-  if (old_addr[0]) mask = mask << 1;
-  if (old_addr[1]) mask = mask << 2;
+  if (addr_b[0]) mask_b = mask_b << 1;
+  if (addr_b[1]) mask_b = mask_b << 2;
 
-  self.data.tick_write(old_addr, old_reg_b, mask, (old_op1 == OP_STORE) && old_data_wrcs);
-  self.data.tick_read (old_addr);
+  self.data.tick_write(addr_b, rs2_b, mask_b, (op_b == RV32I_OP_STORE) && data_wrcs_b);
+  self.data.tick_read (addr_b);
 
   //----------
   // Debug reg
 
-  self.debug_reg = (old_op1 == OP_STORE) && old_debug_wrcs ? old_reg_b : old_debug_reg;
+  self.debug_reg = (op_b == RV32I_OP_STORE) && debug_wrcs_b ? rs2_b : debug_reg;
 
-  if (old_console_wrcs && old_op1 == OP_STORE) {
-    self.tick_console(old_reg_b);
+  if (console_wrcs_b && op_b == RV32I_OP_STORE) {
+    self.tick_console(rs2_b);
   }
 
   //----------
   // Decode
 
-  self.pc_b    = old_pc1;
-  self.insn_b  = old_pc1 == 0 ? b32(0) : old_code_out;
-  self.regfile.tick_read(cat(b5(old_hart1), next_ra), cat(b5(old_hart1), next_rb));
-
-  //----------
-
-  self.hart_a  = old_hart2;
-  self.hart_b  = old_hart1;
+  self.hart_b  = hart_a;
+  self.pc_b    = pc_a;
+  self.insn_b  = pc_a == 0 ? b32(0) : insn_a;
+  self.regfile.tick_read(cat(b5(hart_a), rs1_a), cat(b5(hart_a), rs2_a));
 
   //----------
 
