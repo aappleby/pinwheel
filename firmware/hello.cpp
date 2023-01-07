@@ -163,8 +163,15 @@ void _start() {
 //------------------------------------------------------------------------------
 
 int main(int argc, char** argv) {
-  int hart = get_hart();
+  //int hart = get_hart();
 
+  for (int i = 0; i < 100; i++) {
+    ((volatile uint32_t*)0xE0000000)[37] = 0xF00DCAFE + i;
+  }
+
+  //printf("\n");
+
+#if 0
   if (hart != 0) {
     for (int i = 0; true; i++) {
       printf("<%d>", i);
@@ -193,6 +200,7 @@ int main(int argc, char** argv) {
   printf("\n");
   printf("running hart 1 done\n");
   printf("hart1_pc = 0x%p\n", hart1_pc);
+#endif
 
   /*
   for (int hart = 1; hart < 4; hart++) {
@@ -209,7 +217,6 @@ int main(int argc, char** argv) {
   }
   */
 
-  printf("\n");
 
 
   *(volatile uint32_t*)0xFFFFFFF0 = 1;

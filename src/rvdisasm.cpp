@@ -1,5 +1,6 @@
 #include "rvdisasm.h"
 #include "metron_tools.h"
+#include "constants.h"
 
 #include "CoreLib/Dumper.h"
 #include "CoreLib/Check.h"
@@ -39,7 +40,7 @@ void print_rv(Dumper& d, uint32_t op_u32) {
 
   switch (opcode) {
     // Load
-    case 0b00000: {
+    case RV32I_OP_LOAD: {
       switch(f3) {
       case 0: d("LB    "); break;
       case 1: d("LH    "); break;
@@ -55,7 +56,7 @@ void print_rv(Dumper& d, uint32_t op_u32) {
     }
 
     // Store
-    case 0b01000: {
+    case RV32I_OP_STORE: {
       switch(f3) {
       case 0: d("SB    "); break;
       case 1: d("SH    "); break;
@@ -71,7 +72,7 @@ void print_rv(Dumper& d, uint32_t op_u32) {
     }
 
     // ALU
-    case 0b01100: {
+    case RV32I_OP_OP: {
       switch(f3) {
       case 0: b1(op,30) ? d("SUB   ") : d("ADD   "); break;
       case 1: d("SLL   "); break;
@@ -87,7 +88,7 @@ void print_rv(Dumper& d, uint32_t op_u32) {
     }
 
     // ALUI
-    case 0b00100: {
+    case RV32I_OP_OPIMM: {
       switch(f3) {
       case 0: d("ADDI  "); break;
       case 1: d("SLLI  "); break;
@@ -103,7 +104,7 @@ void print_rv(Dumper& d, uint32_t op_u32) {
     }
 
     // Branch
-    case 0b11000: {
+    case RV32I_OP_BRANCH: {
       switch(f3) {
       case 0: d("BEQ   "); break;
       case 1: d("BNE   "); break;
@@ -114,34 +115,48 @@ void print_rv(Dumper& d, uint32_t op_u32) {
       case 6: d("BLTU  "); break;
       case 7: d("BGEU  "); break;
       }
-      d("r%02d, r%02d, %c%d", rs1, rs2, imm_b < 0 ? '-' : '+', imm_b_abs); break;
+      d("r%02d, r%02d, %c%d", rs1, rs2, imm_b < 0 ? '-' : '+', imm_b_abs);
       break;
     }
 
     // Add upper immediate to PC
-    case 0b00101: {
+    case RV32I_OP_AUIPC: {
       d("AUIPC r%02d, 0x%08x", rd, imm_u);
       break;
     }
 
     // Load upper immediate
-    case 0b01101: {
+    case RV32I_OP_LUI: {
       d("LUI   r%02d, %d", b5(op, 7), b20(op, 12));
       break;
     }
 
     // Jump relative to register and link
-    case 0b11001: {
+    case RV32I_OP_JALR: {
       d("JALR  r%02d, [r%02d%c%d]", rd,  rs1, imm_i < 0 ? '-' : '+', imm_i_abs);
       break;
     }
 
     // Jump absolute and link
-    case 0b11011: {
+    case RV32I_OP_JAL: {
       d("JAL   r%02d, [%c%d]", rd, imm_j < 0 ? '-' : '+', imm_j_abs);
       break;
     }
 
+    case RV32I_OP_SYSTEM: {
+      switch(f3) {
+      case 0: d("???   "); break;
+      case 1: d("CSRRW "); break;
+      case 2: d("CSRRS "); break;
+      case 3: d("CSRRC "); break;
+      case 4: d("???   "); break;
+      case 5: d("CSRWI "); break;
+      case 6: d("CSRSI "); break;
+      case 7: d("CSRCI "); break;
+      }
+      d("r%02d, 0x%03x", rs1, b12(op, 20));
+      break;
+    }
 
     //case 0b00011: d("MISC_MEM "); break;
     //case 0b00110: d("OPIMM32  "); break;

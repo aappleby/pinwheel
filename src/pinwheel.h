@@ -5,13 +5,10 @@
 //------------------------------------------------------------------------------
 
 struct BlockRam {
-  void tock_read(logic<32> raddr);
-  void tick_read();
-  void tock_write(logic<32> waddr, logic<32> wdata, logic<4> wmask, logic<1> wren);
-  void tick_write();
+  void tock(logic<32> addr, logic<32> wdata, logic<4> wmask, logic<1> wren);
+  void tick();
 
-  logic<32> raddr;
-  logic<32> waddr;
+  logic<32> addr;
   logic<32> wdata;
   logic<4>  wmask;
   logic<1>  wren;
@@ -23,8 +20,7 @@ struct BlockRam {
 //------------------------------------------------------------------------------
 
 struct Regfile {
-  void tock_read(logic<10> raddr1, logic<10> raddr2);
-  void tock_write(logic<10> waddr, logic<32> wdata, logic<1> wren);
+  void tock(logic<10> raddr1, logic<10> raddr2, logic<10> waddr, logic<32> wdata, logic<1> wren);
   void tick();
 
   logic<10> raddr1;
@@ -64,15 +60,34 @@ struct Pinwheel {
   void reset_mem();
   static logic<32> decode_imm(logic<32> insn);
 
-  void tick_console(logic<1> reset, logic<1> wrcs, logic<32> reg_b);
+  void tock_console(logic<1> wrcs, logic<32> reg_b);
+  void tick_console(logic<1> reset);
 
   logic<32> get_memory();
 
   logic<32> execute_alu   (logic<32> insn, logic<32> reg_a, logic<32> reg_b) const;
   logic<32> execute_system(logic<32> insn) const;
 
-  void tock_twocycle(logic<1> reset_in) const;
   void tick_twocycle(logic<1> reset_in) const;
+  void tock_twocycle(logic<1> reset_in) const;
+
+  //----------
+
+  logic<5>  next_hart_a;
+  logic<32> next_pc_a;
+
+  logic<32> next_insn_b;
+
+  logic<32> next_addr_c;
+  logic<32> next_result_c;
+
+  logic<10> next_wb_addr_d;
+  logic<32> next_wb_data_d;
+  logic<1>  next_wb_wren_d;
+
+  logic<32> next_debug_reg;
+
+  //----------
 
   logic<5>  hart_a;
   logic<32> pc_a;
@@ -84,6 +99,7 @@ struct Pinwheel {
   logic<5>  hart_c;
   logic<32> pc_c;
   logic<32> insn_c;
+  logic<32> addr_c;
   logic<32> result_c;
 
   logic<5>  hart_d;
@@ -103,6 +119,8 @@ struct Pinwheel {
   char console_buf[80*50];
   int console_x = 0;
   int console_y = 0;
+  logic<1>  console_wrcs;
+  logic<32> console_reg_b;
 
   uint64_t ticks;
 };

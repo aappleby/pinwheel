@@ -44,6 +44,8 @@ int main(int argc, const char** argv) {
   app.pinwheel_sim->states.top().pc_b = header.e_entry - 4;
   //app.pinwheel_sim->states.top().vane0_pc = header.e_entry;
 
+  bool has_data = false;
+
   for (int i = 0; i < header.e_phnum; i++) {
     Elf32_Phdr& phdr = *(Elf32_Phdr*)(blob + header.e_phoff + header.e_phentsize * i);
     if (phdr.p_type & PT_LOAD) {
@@ -53,9 +55,14 @@ int main(int argc, const char** argv) {
       }
       else if (phdr.p_flags & PF_W) {
         LOG_G("Data @ 0x%08x = %d bytes\n", phdr.p_vaddr, phdr.p_filesz);
+        has_data = true;
         put_cache("rv_tests/firmware.data.vh", blob + phdr.p_offset, phdr.p_filesz);
       }
     }
+  }
+
+  if (!has_data) {
+    put_cache("rv_tests/firmware.data.vh", nullptr, 0);
   }
 
   auto app_result = host.app_main(argc, argv);
