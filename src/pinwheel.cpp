@@ -29,6 +29,16 @@ void BlockRam::tick() {
 //--------------------------------------------------------------------------------
 
 void Regfile::tock(logic<10> raddr1, logic<10> raddr2, logic<10> waddr, logic<32> wdata, logic<1> wren) {
+
+  /*
+  if (raddr1 == 0) {
+    printf("?");
+  }
+  if (raddr2 == 0) {
+    printf("?");
+  }
+  */
+
   assert(raddr1 < 1024);
   assert(raddr2 < 1024);
   assert(waddr < 1024);
@@ -188,11 +198,15 @@ void Pinwheel::tick_console(logic<1> reset) {
 void Pinwheel::tock_twocycle(logic<1> reset_in) const {
   Pinwheel& self = const_cast<Pinwheel&>(*this);
 
-  const auto rs1_b  = regfile.out_rs1;
-  const auto rs2_b  = regfile.out_rs2;
   const auto op_b   = b5(insn_b, 2);
+  const auto rda_b  = b5(insn_b, 7);
   const auto f3_b   = b3(insn_b, 12);
+  const auto rs1a_b = b5(insn_b, 15);
+  const auto rs2a_b = b5(insn_b, 20);
   const auto f7_b   = b7(insn_b, 25);
+
+  const auto rs1_b  = rs1a_b ? regfile.out_rs1 : b32(0);
+  const auto rs2_b  = rs2a_b ? regfile.out_rs2 : b32(0);
   const auto imm_b  = decode_imm(insn_b);
   const auto addr_b = b32(rs1_b + imm_b);
   //const auto addr_c = result_c;
@@ -235,10 +249,11 @@ void Pinwheel::tock_twocycle(logic<1> reset_in) const {
   // Decode
 
   const auto insn_a = code.out;
-  const auto rs1_a  = b5(insn_a, 15);
-  const auto rs2_a  = b5(insn_a, 20);
+  const auto rs1a_a  = b5(insn_a, 15);
+  const auto rs2a_a  = b5(insn_a, 20);
 
   self.next_insn_b = pc_a == 0 ? b32(0) : insn_a;
+  self.next_addr_c = addr_b;
 
   //----------
   // Execute
@@ -250,12 +265,15 @@ void Pinwheel::tock_twocycle(logic<1> reset_in) const {
     case RV32I_OP_AUIPC:   self.next_result_c = pc_b + imm_b; break;
     case RV32I_OP_LOAD:    self.next_result_c = addr_b;       break;
     case RV32I_OP_STORE:   self.next_result_c = rs2_b;        break;
-    case RV32I_OP_CUSTOM0: self.next_result_c = rs1_b;        break;
+    case RV32I_OP_CUSTOM0: {
+      self.next_addr_c   = rs1_b;
+      self.next_result_c = rs2_b;
+      break;
+    }
     case RV32I_OP_SYSTEM:  self.next_result_c = execute_system(insn_b); break;
     default:               self.next_result_c = execute_alu   (insn_b, rs1_b, rs2_b); break;
   }
 
-  self.next_addr_c = addr_b;
 
   //----------
   // Memory
@@ -310,6 +328,7 @@ void Pinwheel::tock_twocycle(logic<1> reset_in) const {
     // Execute phase should've deposited the new PC in result
     //printf("%08d> force_jump @ write from 0x%08x to 0x%08x\n", (int)ticks, (uint32_t)pc2, (uint32_t)old_result);
     self.next_wb_data_d = next_pc_a;
+    self.next_hart_a    = addr_c;
     self.next_pc_a      = result_c;
   }
 
@@ -325,12 +344,16 @@ void Pinwheel::tock_twocycle(logic<1> reset_in) const {
   const bool data_wren_b = (op_b == RV32I_OP_STORE) && data_cs_b;
   const bool regfile_wren_b = (op_b == RV32I_OP_STORE) && regfile_cs_b;
 
-  auto reg_raddr1 = cat(b5(hart_a), rs1_a);
-  auto reg_raddr2 = cat(b5(hart_a), rs2_a);
+  auto reg_raddr1_a = cat(b5(hart_a), rs1a_a);
+  auto reg_raddr2_a = cat(b5(hart_a), rs2a_a);
+
+  if ((op_b == RV32I_OP_LOAD) && regfile_cs_b && (pc_a == 0)) {
+    reg_raddr1_a = b10(addr_b >> 2);
+  }
 
   self.code.tock(next_pc_a, 0, 0, 0);
   self.data.tock(addr_b, rs2_b, next_mask_b, data_wren_b);
-  self.regfile.tock(reg_raddr1, reg_raddr2, next_wb_addr_d, next_wb_data_d, next_wb_wren_d);
+  self.regfile.tock(reg_raddr1_a, reg_raddr2_a, next_wb_addr_d, next_wb_data_d, next_wb_wren_d);
   self.tock_console(console_cs_b && op_b == RV32I_OP_STORE, rs2_b);
 }
 

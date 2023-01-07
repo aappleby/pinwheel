@@ -40,8 +40,17 @@ __attribute__ ((naked)) int get_hart()
 }
 
 __attribute__((naked))
-uint32_t start_hart1(uint32_t address) {
+uint32_t start_hart(uint32_t hart, uint32_t address) {
   __asm__(R"(
+    .insn r 0x0B, 0, 0, a0, a0, a1
+    ret
+  )");
+}
+
+__attribute__((naked))
+uint32_t step_hart(uint32_t hart, uint32_t address) {
+  __asm__(R"(
+    .insn r 0x0B, 0, 0, a0, a0, a1
     .insn r 0x0B, 0, 0, a0, a0, x0
     ret
   )");
@@ -151,7 +160,8 @@ void _start() {
     la gp, __global_pointer$
     la sp, _stack_top
     csrr t0, mhartid
-    sll t0, t0, 9
+    /* 256 bytes stack per hart, which is rather tight... */
+    sll t0, t0, 8
     sub sp, sp, t0
   main_loop:
     call main
@@ -163,20 +173,85 @@ void _start() {
 //------------------------------------------------------------------------------
 
 int main(int argc, char** argv) {
-  //int hart = get_hart();
+  int hart = get_hart();
 
+  if (hart != 0) {
+    //while(1);
+    for (int i = 0; true; i++) printf("I am hart %d : %d\n", hart, i);
+  }
+
+  uint32_t pc = 0x00400000 - 4;
+
+  for (int i = 0; i < 1024; i++) {
+    pc = step_hart(1, pc);
+
+    volatile uint32_t* r = ((volatile uint32_t*)0xE0000000) + 32;
+    printf("pc 0x%p\n", pc);
+    printf("r00 %p  r08 %p  r16 %p  r24 %p\n", r[ 0], r[ 8], r[16], r[24]);
+    printf("r01 %p  r09 %p  r17 %p  r25 %p\n", r[ 1], r[ 9], r[17], r[25]);
+    printf("r02 %p  r10 %p  r18 %p  r26 %p\n", r[ 2], r[10], r[18], r[26]);
+    printf("r03 %p  r11 %p  r19 %p  r27 %p\n", r[ 3], r[11], r[19], r[27]);
+    printf("r04 %p  r12 %p  r20 %p  r28 %p\n", r[ 4], r[12], r[20], r[28]);
+    printf("r05 %p  r13 %p  r21 %p  r29 %p\n", r[ 5], r[13], r[21], r[29]);
+    printf("r06 %p  r14 %p  r22 %p  r30 %p\n", r[ 6], r[14], r[22], r[30]);
+    printf("r07 %p  r15 %p  r23 %p  r31 %p\n", r[ 7], r[15], r[23], r[31]);
+    printf("\n");
+  }
+
+
+  while(1);
+
+  /*
+  while(1) {
+    for (volatile int i = 0; i < 1000; i++) {}
+    hart_pcs[1] = start_hart(2, hart_pcs[2]);
+    for (volatile int i = 0; i < 1000; i++) {}
+    hart_pcs[2] = start_hart(3, hart_pcs[3]);
+    for (volatile int i = 0; i < 1000; i++) {}
+    hart_pcs[3] = start_hart(1, hart_pcs[1]);
+  }
+  */
+
+  /*
+  start_hart(1, 0x00400000 - 4);
+  for (int i = 0; i < 32; i++) {
+    ((volatile uint32_t*)0xE0000000)[32 * 2 + i] = 0xDEADBEEF + i;
+  }
+
+  for (int i = 0; i < 32; i++) {
+    uint32_t reg = ((volatile uint32_t*)0xE0000000)[32 * 2 + i];
+    printf("hart %d reg r%d = 0x%p\n", 2, i, reg);
+  }
+  */
+
+  /*
+
+  for (int i = 1; i <= 3; i++) {
+    printf("running hart %d for a bit\n", i);
+    static uint32_t hart_pcs[4] = {
+      0x00400000 - 4,
+      0x00400000 - 4,
+      0x00400000 - 4,
+      0x00400000 - 4,
+    };
+    ((volatile uint32_t*)0xE0000000)[32 * i] = hart_pcs[i];
+    start_hart(i, hart_pcs[i]);
+    for (volatile int i = 0; i < 100; i++) {}
+    hart_pcs[i] = start_hart(i, 0);
+    printf("\n");
+    printf("running hart %d done\n", i);
+  }
+  */
+
+  /*
   for (int i = 0; i < 100; i++) {
     ((volatile uint32_t*)0xE0000000)[37] = 0xF00DCAFE + i;
   }
+  */
 
   //printf("\n");
 
 #if 0
-  if (hart != 0) {
-    for (int i = 0; true; i++) {
-      printf("<%d>", i);
-    }
-  }
 
 
   printf("hart    %d\n", hart);

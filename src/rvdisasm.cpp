@@ -158,6 +158,11 @@ void print_rv(Dumper& d, uint32_t op_u32) {
       break;
     }
 
+    case RV32I_OP_CUSTOM0: {
+      d("CUSTOM! rd=%d rs1 = %d rs2 = %d", rd, rs1, rs2);
+      break;
+    }
+
     //case 0b00011: d("MISC_MEM "); break;
     //case 0b00110: d("OPIMM32  "); break;
     //case 0b01110: d("OP32     "); break;
