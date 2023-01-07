@@ -49,6 +49,7 @@ void PinwheelApp::app_init(int screen_w, int screen_h) {
     dontcare[i] = rand();
   }
 
+  pinwheel.tock_twocycle(true);
   pinwheel.tick_twocycle(true);
 }
 
@@ -138,28 +139,37 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
 
   auto& pinwheel = pinwheel_sim->states.top();
 
+  uint32_t insn_a = pinwheel.pc_a ? uint32_t(pinwheel.code.out) : 0;
 
   d("hart_a        %d\n",     pinwheel.hart_a);
   d("pc_a          0x%08x\n", pinwheel.pc_a);
-  d("code.out      0x%08x\n", pinwheel.code.out);
-  d("insn_a        0x%08x ",  pinwheel.insn_c);
-  print_rv(d, uint32_t(pinwheel.insn_c));
+  d("insn_a        0x%08x ",  insn_a); print_rv(d, insn_a); d("\n");
+  d("rs1 a         %d\n", b5(insn_a, 15));
+  d("rs2 a         %d\n", b5(insn_a, 20));
   d("\n");
-  d("rs1 a         0x%08x\n", pinwheel.regfile.out_rs1);
-  d("rs2 a         0x%08x\n", pinwheel.regfile.out_rs2);
-  d("result        0x%08x\n", pinwheel.result_c);
-  d("\n");
+
   d("hart_b        %d\n",     pinwheel.hart_b);
   d("pc_b          0x%08x\n", pinwheel.pc_b);
-  d("insn_b        0x%08x ",  pinwheel.insn_b);
-  print_rv(d, uint32_t(pinwheel.insn_b));
+  d("insn_b        0x%08x ",  pinwheel.insn_b); print_rv(d, pinwheel.insn_b); d("\n");
+  d("rs1 b         0x%08x\n", pinwheel.regfile.out_rs1);
+  d("rs2 b         0x%08x\n", pinwheel.regfile.out_rs2);
   d("\n");
-  d("data b        0x%08x\n", pinwheel.data.out);
+
+  d("hart c        %d\n",     pinwheel.hart_c);
+  d("pc c          0x%08x\n", pinwheel.pc_c);
+  d("insn c        0x%08x ",  pinwheel.insn_c); print_rv(d, pinwheel.insn_c); d("\n");
+  d("result c      0x%08x\n", pinwheel.result_c);
+  d("data c        0x%08x\n", pinwheel.data.out);
   d("\n");
-  d("wb addr       0x%08x\n", pinwheel.wb_addr_d);
-  d("wb data       0x%08x\n", pinwheel.wb_data_d);
-  d("wb wren       0x%08x\n", pinwheel.wb_wren_d);
+
+  d("hart d        %d\n",     pinwheel.hart_d);
+  d("pc d          0x%08x\n", pinwheel.pc_d);
+  d("insn d        0x%08x ",  pinwheel.insn_d); print_rv(d, pinwheel.insn_d); d("\n");
+  d("wb addr d     0x%08x\n", pinwheel.wb_addr_d);
+  d("wb data d     0x%08x\n", pinwheel.wb_data_d);
+  d("wb wren d     0x%08x\n", pinwheel.wb_wren_d);
   d("\n");
+
   d("debug_reg     0x%08x\n", pinwheel.debug_reg);
   d("ticks         %lld\n",   pinwheel.ticks);
   d("speed         %f\n",     double(sim_thread->sim_steps) / sim_thread->sim_time);
