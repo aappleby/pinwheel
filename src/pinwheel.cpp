@@ -151,45 +151,45 @@ logic<32> Pinwheel::execute_system(logic<32> insn) const {
 
 //--------------------------------------------------------------------------------
 
-void Pinwheel::tock_console(logic<1> wrcs, logic<32> reg_b) {
-  this->console_wrcs = wrcs;
-  this->console_reg_b = reg_b;
+void Console::tock(logic<1> wrcs, logic<32> reg_b) {
+  this->wrcs = wrcs;
+  this->reg_b = reg_b;
 }
 
-void Pinwheel::tick_console(logic<1> reset) {
+void Console::tick(logic<1> reset) {
   if (reset) {
-    memset(console_buf, 0, sizeof(console_buf));
-    console_x = 0;
-    console_y = 0;
+    memset(buf, 0, sizeof(buf));
+    x = 0;
+    y = 0;
   }
-  else if (console_wrcs) {
-    console_buf[console_y * 80 + console_x] = 0;
-    auto c = char(console_reg_b);
+  else if (wrcs) {
+    buf[y * 80 + x] = 0;
+    auto c = char(reg_b);
 
     if (c == 0) c = '?';
 
     if (c == '\n') {
-      console_x = 0;
-      console_y++;
+      x = 0;
+      y++;
     }
     else if (c == '\r') {
-      console_x = 0;
+      x = 0;
     }
     else {
-      console_buf[console_y * 80 + console_x] = c;
-      console_x++;
+      buf[y * 80 + x] = c;
+      x++;
     }
 
-    if (console_x == 80) {
-      console_x = 0;
-      console_y++;
+    if (x == 80) {
+      x = 0;
+      y++;
     }
-    if (console_y == 25) {
-      memcpy(console_buf, console_buf + 80, 80*24);
-      memset(console_buf + (80*24), 0, 80);
-      console_y = 24;
+    if (y == 25) {
+      memcpy(buf, buf + 80, 80*24);
+      memset(buf + (80*24), 0, 80);
+      y = 24;
     }
-    console_buf[console_y * 80 + console_x] = 30;
+    buf[y * 80 + x] = 30;
   }
 }
 
@@ -266,8 +266,17 @@ void Pinwheel::tock_twocycle(logic<1> reset_in) const {
     case RV32I_OP_LOAD:    self.next_result_c = addr_b;       break;
     case RV32I_OP_STORE:   self.next_result_c = rs2_b;        break;
     case RV32I_OP_CUSTOM0: {
-      self.next_addr_c   = rs1_b;
-      self.next_result_c = rs2_b;
+      if (f3_b == 0) {
+        // Switch the other thread to another hart
+        self.next_addr_c   = rs1_b;
+        self.next_result_c = rs2_b;
+      }
+      else if (f3_b == 1) {
+        // Yield to another hart
+        self.next_result_c  = self.next_pc_a;
+        self.next_hart_a    = rs1_b;
+        self.next_pc_a      = rs2_b;
+      }
       break;
     }
     case RV32I_OP_SYSTEM:  self.next_result_c = execute_system(insn_b); break;
@@ -278,7 +287,8 @@ void Pinwheel::tock_twocycle(logic<1> reset_in) const {
   //----------
   // Memory
 
-  auto console_cs_b = b4(addr_b, 28) == 0x4;
+  auto console1_cs_b = b4(addr_b, 28) == 0x4;
+  auto console2_cs_b = b4(addr_b, 28) == 0x5;
   auto data_cs_b    = b4(addr_b, 28) == 0x8;
   auto regfile_cs_b = b4(addr_b, 28) == 0xE;
   auto debug_cs_b   = b4(addr_b, 28) == 0xF;
@@ -321,9 +331,9 @@ void Pinwheel::tock_twocycle(logic<1> reset_in) const {
 
   self.next_wb_addr_d = cat(b5(hart_c), rd_c);
   self.next_wb_data_d = op_c == RV32I_OP_LOAD ? unpacked_c : result_c;
-  self.next_wb_wren_d = rd_c != 0 && op_c != RV32I_OP_STORE && op_c != RV32I_OP_BRANCH;
+  self.next_wb_wren_d = /*rd_c != 0 &&*/ op_c != RV32I_OP_STORE && op_c != RV32I_OP_BRANCH;
 
-  if (op_c == RV32I_OP_CUSTOM0) {
+  if (op_c == RV32I_OP_CUSTOM0 && f3_c == 0) {
     // Swap result and the PC that we'll use to fetch.
     // Execute phase should've deposited the new PC in result
     //printf("%08d> force_jump @ write from 0x%08x to 0x%08x\n", (int)ticks, (uint32_t)pc2, (uint32_t)old_result);
@@ -354,7 +364,8 @@ void Pinwheel::tock_twocycle(logic<1> reset_in) const {
   self.code.tock(next_pc_a, 0, 0, 0);
   self.data.tock(addr_b, rs2_b, next_mask_b, data_wren_b);
   self.regfile.tock(reg_raddr1_a, reg_raddr2_a, next_wb_addr_d, next_wb_data_d, next_wb_wren_d);
-  self.tock_console(console_cs_b && op_b == RV32I_OP_STORE, rs2_b);
+  self.console1.tock(console1_cs_b && op_b == RV32I_OP_STORE, rs2_b);
+  self.console2.tock(console2_cs_b && op_b == RV32I_OP_STORE, rs2_b);
 }
 
 //--------------------------------------------------------------------------------
@@ -417,7 +428,8 @@ void Pinwheel::tick_twocycle(logic<1> reset_in) const {
   self.code.tick();
   self.data.tick();
   self.regfile.tick();
-  self.tick_console(reset_in);
+  self.console1.tick(reset_in);
+  self.console2.tick(reset_in);
 }
 
 //--------------------------------------------------------------------------------

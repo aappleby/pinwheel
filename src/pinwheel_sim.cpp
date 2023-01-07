@@ -3,7 +3,6 @@
 
 PinwheelSim::PinwheelSim() : states(new Pinwheel()) {
   auto& pinwheel = states.top();
-  memset(pinwheel.console_buf, 0, sizeof(pinwheel.console_buf));
 }
 
 bool PinwheelSim::busy() const {

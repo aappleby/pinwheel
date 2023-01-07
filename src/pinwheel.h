@@ -49,6 +49,17 @@ struct RegPortWrite {
   logic<1>  wren;
 };
 
+struct Console {
+  void tock(logic<1> wrcs, logic<32> reg_b);
+  void tick(logic<1> reset);
+
+  char buf[80*25];
+  int  x = 0;
+  int  y = 0;
+  logic<1>  wrcs;
+  logic<32> reg_b;
+};
+
 //------------------------------------------------------------------------------
 
 struct Pinwheel {
@@ -59,11 +70,6 @@ struct Pinwheel {
 
   void reset_mem();
   static logic<32> decode_imm(logic<32> insn);
-
-  void tock_console(logic<1> wrcs, logic<32> reg_b);
-  void tick_console(logic<1> reset);
-
-  logic<32> get_memory();
 
   logic<32> execute_alu   (logic<32> insn, logic<32> reg_a, logic<32> reg_b) const;
   logic<32> execute_system(logic<32> insn) const;
@@ -116,11 +122,16 @@ struct Pinwheel {
   BlockRam  data;
   Regfile   regfile;
 
+  Console console1;
+  Console console2;
+
+  /*
   char console_buf[80*50];
   int console_x = 0;
   int console_y = 0;
   logic<1>  console_wrcs;
   logic<32> console_reg_b;
+  */
 
   uint64_t ticks;
 };
