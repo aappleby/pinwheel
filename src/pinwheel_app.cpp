@@ -139,7 +139,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
 
   auto& pinwheel = pinwheel_sim->states.top();
 
-  uint32_t insn_a = pinwheel.pc_a ? uint32_t(pinwheel.code.out) : 0;
+  uint32_t insn_a = pinwheel.pc_a ? uint32_t(pinwheel.code.rdata()) : 0;
 
   d("hart_a        %d\n",     pinwheel.hart_a);
   d("pc_a          0x%08x\n", pinwheel.pc_a);
@@ -151,11 +151,11 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   d("hart_b        %d\n",     pinwheel.hart_b);
   d("pc_b          0x%08x\n", pinwheel.pc_b);
   d("insn_b        0x%08x ",  pinwheel.insn_b); print_rv(d, pinwheel.insn_b); d("\n");
-  d("rs1 b         0x%08x\n", pinwheel.regfile.out_rs1);
-  d("rs2 b         0x%08x\n", pinwheel.regfile.out_rs2);
+  d("rs1 b         0x%08x\n", pinwheel.regfile.get_rs1());
+  d("rs2 b         0x%08x\n", pinwheel.regfile.get_rs2());
 
   const auto imm_b  = Pinwheel::decode_imm(pinwheel.insn_b);
-  const auto addr_b = b32(pinwheel.regfile.out_rs1 + imm_b);
+  const auto addr_b = b32(pinwheel.regfile.get_rs1() + imm_b);
   d("addr b        0x%08x\n", addr_b);
 
   d("\n");
@@ -165,7 +165,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   d("insn c        0x%08x ",  pinwheel.insn_c); print_rv(d, pinwheel.insn_c); d("\n");
   d("addr c        0x%08x\n", pinwheel.addr_c);
   d("result c      0x%08x\n", pinwheel.result_c);
-  d("data c        0x%08x\n", pinwheel.data.out);
+  d("data c        0x%08x\n", pinwheel.data.rdata());
   d("\n");
 
   d("hart d        %d\n",     pinwheel.hart_d);
@@ -181,20 +181,11 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   d("speed         %f\n",     double(sim_thread->sim_steps) / sim_thread->sim_time);
   d("states        %d\n",     pinwheel_sim->states.state_count());
   d("state bytes   %d\n",     pinwheel_sim->states.state_size_bytes());
-  //Vane* harts[Pinwheel::hart_count];
-
-  //harts[pinwheel.vane0_hart] = &pinwheel_vane0;
-  //harts[pinwheel.vane1.hart] = &pinwheel.vane1;
-  //harts[pinwheel.vane2.hart] = &pinwheel.vane2;
-
-  //int hart_to_vane[Pinwheel::hart_count];
-  //hart_to_vane[pinwheel.vane0_hart] = 0;
-  //hart_to_vane[pinwheel.vane1_hart] = 1;
-  //hart_to_vane[pinwheel.vane2_hart] = 2;
 
   d("\n");
+
   for (int hart = 0; hart < 4; hart++) {
-    auto r = &pinwheel.regfile.data[hart << 5];
+    auto r = &pinwheel.regfile.get_data()[hart << 5];
     //d("hart %d vane %d pc 0x%08x", hart, hart_to_vane[hart], harts[hart]->pc);
     d("hart %d", hart);
     d("\n");
@@ -211,13 +202,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
 
   text_painter.render_string(view, screen_size, d.s.c_str(), 32, 32);
 
-#if 0
-  logic<32> hart0_pc = 0;
-  if (pinwheel.vane0_hart == 0) hart0_pc = pinwheel.vane0_pc;
-  if (pinwheel.vane1_hart == 0) hart0_pc = pinwheel.vane1_pc;
-  if (pinwheel.vane2_hart == 0) hart0_pc = pinwheel.vane2_pc;
-
-
+  logic<32> hart0_pc = pinwheel.pc_a ? pinwheel.pc_a : pinwheel.pc_b;
   {
     d.clear();
 
@@ -227,36 +212,31 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
 
       if (offset < 0) op = 0;
       else if (offset > (65536 - 4)) op = 0;
-      else op = pinwheel.code.data[offset >> 2];
+      else op = pinwheel.code.get_data()[offset >> 2];
 
       d("%c0x%08x ", i == 0 ? '>' : ' ', hart0_pc + (i * 4));
       print_rv(d, op);
       d("\n");
     }
 
-    text_painter.render_string(view, screen_size, d.s.c_str(), 32 + 384, 32);
+    text_painter.render_string(view, screen_size, d.s.c_str(), 320, 32);
   }
-#endif
-
-  //pinwheel.code.data[16 * 31 - 1] = 0xDEADBEEF;
-  //pinwheel.code.data[16 * 31 + 0] = 0xDEADBEEF;
 
   code_painter.highlight_x = ((/*hart0_pc*/pinwheel.pc_b & 0xFFFF) >> 2) % 16;
   code_painter.highlight_y = ((/*hart0_pc*/pinwheel.pc_b & 0xFFFF) >> 2) / 16;
+  code_painter.dump2(view, screen_size, 1024, 512, 0.5, 0.5, 64, 64, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.code.get_data());
 
+  data_painter.dump2(view, screen_size, 1024, 32, 1, 1, 64, 32, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.data.get_data());
 
-  data_painter.dump2(view, screen_size, 1024, 32, 1, 1, 64, 32, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.data.data);
-  code_painter.dump2(view, screen_size, 1024, 512, 0.5, 0.5, 64, 64, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.code.data);
-
-  console_painter.dump2(view, screen_size, 32*14,  32, 1, 1, Console::width, Console::height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console1.buf);
-  console_painter.dump2(view, screen_size, 32*14, 256, 1, 1, Console::width, Console::height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console2.buf);
-  console_painter.dump2(view, screen_size, 32*14, 480, 1, 1, Console::width, Console::height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console3.buf);
-  console_painter.dump2(view, screen_size, 32*14, 704, 1, 1, Console::width, Console::height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console4.buf);
+  console_painter.dump2(view, screen_size, 32*19,  32, 1, 1, Console::width, Console::height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console1.buf);
+  console_painter.dump2(view, screen_size, 32*19, 256, 1, 1, Console::width, Console::height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console2.buf);
+  console_painter.dump2(view, screen_size, 32*19, 480, 1, 1, Console::width, Console::height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console3.buf);
+  console_painter.dump2(view, screen_size, 32*19, 704, 1, 1, Console::width, Console::height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console4.buf);
 
   //box_painter.push_corner_size(1024 + (harts[0]->pc % 64) * 14 - 1, 512 + (harts[0]->pc / 64) * 12, 12*4+2*3+2, 12, 0x8000FFFF);
   //box_painter.push_corner_size(1024 + (harts[1]->pc % 64) * 14 - 1, 512 + (harts[1]->pc / 64) * 12, 12*4+2*3+2, 12, 0x80FFFF00);
   //box_painter.push_corner_size(1024 + (harts[2]->pc % 64) * 14 - 1, 512 + (harts[2]->pc / 64) * 12, 12*4+2*3+2, 12, 0x80FF00FF);
-  box_painter.render(view, screen_size, 0, 0);
+  //box_painter.render(view, screen_size, 0, 0);
 
   sim_thread->resume();
 }
