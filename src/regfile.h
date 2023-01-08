@@ -1,10 +1,16 @@
 #pragma once
 #include "metron_tools.h"
 
+#include "constants.h"
+
 //------------------------------------------------------------------------------
 
 class Regfile {
 public:
+
+  Regfile() {
+    for (int i = 0; i < 1024; i++) data[i] = 0;
+  }
 
   void tock(logic<10> raddr1_ , logic<10> raddr2_, logic<10> waddr_, logic<32> wdata_, logic<1> wren_) {
     raddr1 = raddr1_;

@@ -2,13 +2,32 @@
 #include "metron_tools.h"
 
 #include "block_ram.h"
+//noconvert
 #include "console.h"
 #include "constants.h"
 #include "regfile.h"
 
 //------------------------------------------------------------------------------
 
-struct Pinwheel {
+class Pinwheel {
+public:
+
+  Pinwheel() {
+    std::string s;
+    value_plusargs("text_file=%s", s);
+    readmemh(s, code.get_data());
+
+    value_plusargs("data_file=%s", s);
+    readmemh(s, data.get_data());
+  }
+
+  /*
+  example_data_memory() {
+    std::string s;
+    value_plusargs("data_file=%s", s);
+    readmemh(s, mem);
+  }
+  */
 
   // noconvert
   Pinwheel* clone() {
@@ -24,18 +43,13 @@ struct Pinwheel {
 
   //----------
 
+  /*
   void reset_mem() {
     memset(&code,    0x00, sizeof(code));
     memset(&data,    0x00, sizeof(data));
-    memset(&regfile, 0, sizeof(regfile));
-
-    std::string s;
-    value_plusargs("text_file=%s", s);
-    readmemh(s, code.get_data());
-
-    value_plusargs("data_file=%s", s);
-    readmemh(s, data.get_data());
+    memset(&regfile, 0,    sizeof(regfile));
   }
+  */
 
   //----------
 
@@ -110,9 +124,7 @@ struct Pinwheel {
 
   //----------
 
-  void tock_twocycle(logic<1> reset_in) const {
-    Pinwheel& self = const_cast<Pinwheel&>(*this);
-
+  void tock_twocycle(logic<1> reset_in) {
     const auto op_b   = b5(insn_b, 2);
     const auto rda_b  = b5(insn_b, 7);
     const auto f3_b   = b3(insn_b, 12);
@@ -132,8 +144,8 @@ struct Pinwheel {
     //----------
     // Fetch
 
-    self.next_hart_a = hart_b;
-    self.next_pc_a = 0;
+    next_hart_a = hart_b;
+    next_pc_a = 0;
 
     {
       if (pc_b) {
@@ -155,10 +167,10 @@ struct Pinwheel {
         }
 
         switch (op_b) {
-          case RV32I_OP_BRANCH:  self.next_pc_a = take_branch ? pc_b + imm_b : pc_b + b32(4); break;
-          case RV32I_OP_JAL:     self.next_pc_a = pc_b + imm_b; break;
-          case RV32I_OP_JALR:    self.next_pc_a = addr_b; break;
-          default:               self.next_pc_a = pc_b + 4; break;
+          case RV32I_OP_BRANCH:  next_pc_a = take_branch ? pc_b + imm_b : pc_b + b32(4); break;
+          case RV32I_OP_JAL:     next_pc_a = pc_b + imm_b; break;
+          case RV32I_OP_JALR:    next_pc_a = addr_b; break;
+          default:               next_pc_a = pc_b + 4; break;
         }
       }
     }
@@ -170,35 +182,35 @@ struct Pinwheel {
     const auto rs1a_a  = b5(insn_a, 15);
     const auto rs2a_a  = b5(insn_a, 20);
 
-    self.next_insn_b = pc_a == 0 ? b32(0) : insn_a;
-    self.next_addr_c = addr_b;
+    next_insn_b = pc_a == 0 ? b32(0) : insn_a;
+    next_addr_c = addr_b;
 
     //----------
     // Execute
 
     switch(op_b) {
-      case RV32I_OP_JAL:     self.next_result_c = pc_b + 4;     break;
-      case RV32I_OP_JALR:    self.next_result_c = pc_b + 4;     break;
-      case RV32I_OP_LUI:     self.next_result_c = imm_b;        break;
-      case RV32I_OP_AUIPC:   self.next_result_c = pc_b + imm_b; break;
-      case RV32I_OP_LOAD:    self.next_result_c = addr_b;       break;
-      case RV32I_OP_STORE:   self.next_result_c = rs2_b;        break;
+      case RV32I_OP_JAL:     next_result_c = pc_b + 4;     break;
+      case RV32I_OP_JALR:    next_result_c = pc_b + 4;     break;
+      case RV32I_OP_LUI:     next_result_c = imm_b;        break;
+      case RV32I_OP_AUIPC:   next_result_c = pc_b + imm_b; break;
+      case RV32I_OP_LOAD:    next_result_c = addr_b;       break;
+      case RV32I_OP_STORE:   next_result_c = rs2_b;        break;
       case RV32I_OP_CUSTOM0: {
         if (f3_b == 0) {
           // Switch the other thread to another hart
-          self.next_addr_c   = rs1_b;
-          self.next_result_c = rs2_b;
+          next_addr_c   = rs1_b;
+          next_result_c = rs2_b;
         }
         else if (f3_b == 1) {
           // Yield to another hart
-          self.next_result_c  = self.next_pc_a;
-          self.next_hart_a    = rs1_b;
-          self.next_pc_a      = rs2_b;
+          next_result_c  = next_pc_a;
+          next_hart_a    = rs1_b;
+          next_pc_a      = rs2_b;
         }
         break;
       }
-      case RV32I_OP_SYSTEM:  self.next_result_c = execute_system(insn_b); break;
-      default:               self.next_result_c = execute_alu   (insn_b, rs1_b, rs2_b); break;
+      case RV32I_OP_SYSTEM:  next_result_c = execute_system(insn_b); break;
+      default:               next_result_c = execute_alu   (insn_b, rs1_b, rs2_b); break;
     }
 
 
@@ -228,7 +240,7 @@ struct Pinwheel {
     if (addr_c[0]) next_mask_c = next_mask_c << 1;
     if (addr_c[1]) next_mask_c = next_mask_c << 2;
 
-    self.next_debug_reg = (op_b == RV32I_OP_STORE) && debug_cs_b ? rs2_b : debug_reg;
+    next_debug_reg = (op_b == RV32I_OP_STORE) && debug_cs_b ? rs2_b : debug_reg;
 
     //----------
     // Write
@@ -257,23 +269,23 @@ struct Pinwheel {
       case 5:  unpacked_c = zero_extend<32>(b16(unpacked_c)); break;
     }
 
-    self.next_wb_addr_d = cat(b5(hart_c), rd_c);
-    self.next_wb_data_d = op_c == RV32I_OP_LOAD ? unpacked_c : result_c;
-    self.next_wb_wren_d = op_c != RV32I_OP_STORE && op_c != RV32I_OP_BRANCH;
+    next_wb_addr_d = cat(b5(hart_c), rd_c);
+    next_wb_data_d = op_c == RV32I_OP_LOAD ? unpacked_c : result_c;
+    next_wb_wren_d = op_c != RV32I_OP_STORE && op_c != RV32I_OP_BRANCH;
 
     if (op_c == RV32I_OP_CUSTOM0 && f3_c == 0) {
       // Swap result and the PC that we'll use to fetch.
       // Execute phase should've deposited the new PC in result
-      self.next_wb_data_d = next_pc_a;
-      self.next_hart_a    = addr_c;
-      self.next_pc_a      = result_c;
+      next_wb_data_d = next_pc_a;
+      next_hart_a    = addr_c;
+      next_pc_a      = result_c;
     }
 
     if (regfile_cs_c && op_c == RV32I_OP_STORE) {
       // Thread writing to other thread's regfile
-      self.next_wb_addr_d = b10(addr_c >> 2);
-      self.next_wb_data_d = result_c;
-      self.next_wb_wren_d = 1;
+      next_wb_addr_d = b10(addr_c >> 2);
+      next_wb_data_d = result_c;
+      next_wb_wren_d = 1;
     }
 
     //----------
@@ -297,80 +309,85 @@ struct Pinwheel {
 
     //----------
 
-    self.code.tock(code_addr_c, result_c, next_mask_c, code_wren_c);
-    self.data.tock(data_addr_b, rs2_b,    next_mask_b, data_wren_b);
+    code.tock(code_addr_c, result_c, next_mask_c, code_wren_c);
+    data.tock(data_addr_b, rs2_b,    next_mask_b, data_wren_b);
 
-    self.regfile.tock(reg_raddr1_a, reg_raddr2_a, next_wb_addr_d, next_wb_data_d, next_wb_wren_d);
-    self.console1.tock(console1_cs_b && op_b == RV32I_OP_STORE, rs2_b);
-    self.console2.tock(console2_cs_b && op_b == RV32I_OP_STORE, rs2_b);
-    self.console3.tock(console3_cs_b && op_b == RV32I_OP_STORE, rs2_b);
-    self.console4.tock(console4_cs_b && op_b == RV32I_OP_STORE, rs2_b);
+    regfile.tock(reg_raddr1_a, reg_raddr2_a, next_wb_addr_d, next_wb_data_d, next_wb_wren_d);
+    console1.tock(console1_cs_b && op_b == RV32I_OP_STORE, rs2_b);
+    console2.tock(console2_cs_b && op_b == RV32I_OP_STORE, rs2_b);
+    console3.tock(console3_cs_b && op_b == RV32I_OP_STORE, rs2_b);
+    console4.tock(console4_cs_b && op_b == RV32I_OP_STORE, rs2_b);
   }
 
   //----------
 
-  void tick_twocycle(logic<1> reset_in) const {
-    Pinwheel& self = const_cast<Pinwheel&>(*this);
-
+  void tick_twocycle(logic<1> reset_in) {
     if (reset_in) {
-      self.reset_mem();
-      self.hart_a    = 1;
-      self.pc_a      = 0;
+      //reset_mem();
+      hart_a    = 1;
+      pc_a      = 0;
 
-      self.hart_b    = 0;
-      self.pc_b      = 0x00400000 - 4;
-      self.insn_b    = 0;
+      hart_b    = 0;
+      pc_b      = 0x00400000 - 4;
+      insn_b    = 0;
 
-      self.hart_c    = 0;
-      self.pc_c      = 0;
-      self.insn_c    = 0;
-      self.addr_c    = 0;
-      self.result_c  = 0;
+      hart_c    = 0;
+      pc_c      = 0;
+      insn_c    = 0;
+      addr_c    = 0;
+      result_c  = 0;
 
-      self.hart_d    = 0;
-      self.pc_d      = 0;
-      self.insn_d    = 0;
-      self.result_d  = 0;
-      self.wb_addr_d = 0;
-      self.wb_data_d = 0;
-      self.wb_wren_d = 0;
+      hart_d    = 0;
+      pc_d      = 0;
+      insn_d    = 0;
+      result_d  = 0;
+      wb_addr_d = 0;
+      wb_data_d = 0;
+      wb_wren_d = 0;
 
-      self.debug_reg = 0;
-      self.ticks     = 0;
+      debug_reg = 0;
+      // noconvert
+      ticks     = 0;
     }
     else {
-      self.hart_d    = hart_c;
-      self.pc_d      = pc_c;
-      self.insn_d    = insn_c;
-      self.result_d  = result_c;
-      self.wb_addr_d = next_wb_addr_d;
-      self.wb_data_d = next_wb_data_d;
-      self.wb_wren_d = next_wb_wren_d;
+      hart_d    = hart_c;
+      pc_d      = pc_c;
+      insn_d    = insn_c;
+      result_d  = result_c;
+      wb_addr_d = next_wb_addr_d;
+      wb_data_d = next_wb_data_d;
+      wb_wren_d = next_wb_wren_d;
 
-      self.hart_c    = hart_b;
-      self.pc_c      = pc_b;
-      self.insn_c    = insn_b;
-      self.addr_c    = next_addr_c;
-      self.result_c  = next_result_c;
+      hart_c    = hart_b;
+      pc_c      = pc_b;
+      insn_c    = insn_b;
+      addr_c    = next_addr_c;
+      result_c  = next_result_c;
 
-      self.hart_b    = hart_a;
-      self.pc_b      = pc_a;
-      self.insn_b    = next_insn_b;
+      hart_b    = hart_a;
+      pc_b      = pc_a;
+      insn_b    = next_insn_b;
 
-      self.hart_a    = next_hart_a;
-      self.pc_a      = next_pc_a;
+      hart_a    = next_hart_a;
+      pc_a      = next_pc_a;
 
-      self.debug_reg = next_debug_reg;
-      self.ticks     = ticks + 1;
+      debug_reg = next_debug_reg;
+      // noconvert
+      ticks     = ticks + 1;
     }
 
-    self.code.tick();
-    self.data.tick();
-    self.regfile.tick();
-    self.console1.tick(reset_in);
-    self.console2.tick(reset_in);
-    self.console3.tick(reset_in);
-    self.console4.tick(reset_in);
+    code.tick();
+    data.tick();
+    regfile.tick();
+
+    // noconvert
+    console1.tick(reset_in);
+    // noconvert
+    console2.tick(reset_in);
+    // noconvert
+    console3.tick(reset_in);
+    // noconvert
+    console4.tick(reset_in);
   }
 
   //----------
@@ -422,11 +439,16 @@ struct Pinwheel {
   BlockRam  data;
   Regfile   regfile;
 
+  // noconvert
   Console console1;
+  // noconvert
   Console console2;
+  // noconvert
   Console console3;
+  // noconvert
   Console console4;
 
+  // noconvert
   uint64_t ticks;
 };
 
