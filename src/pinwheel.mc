@@ -42,11 +42,11 @@ void BlockRam::tick_write(logic<32> waddr, logic<32> wdata, logic<4> wmask, logi
   if (wren) {
     old_data := data[b10(waddr, 2)];
     new_data := wdata << (8 * b2(waddr));
-    if (!wmask[0]) new_data = (new_data & 0xFFFFFF00) | (old_data & 0x000000FF);
-    if (!wmask[1]) new_data = (new_data & 0xFFFF00FF) | (old_data & 0x0000FF00);
-    if (!wmask[2]) new_data = (new_data & 0xFF00FFFF) | (old_data & 0x00FF0000);
-    if (!wmask[3]) new_data = (new_data & 0x00FFFFFF) | (old_data & 0xFF000000);
-    data[b10(waddr, 2)] @= new_data;
+    data[b10(waddr, 2)] @=
+      ((wmask[0] ? new_data : old_data) & 0x000000FF) |
+      ((wmask[1] ? new_data : old_data) & 0x0000FF00) |
+      ((wmask[2] ? new_data : old_data) & 0x00FF0000) |
+      ((wmask[3] ? new_data : old_data) & 0xFF000000);
   }
 }
 

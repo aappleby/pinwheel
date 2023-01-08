@@ -308,7 +308,7 @@ void Pinwheel::tock_twocycle(logic<1> reset_in) const {
   //----------
   // Write
 
-  auto code_cs_c     = b4(addr_c, 28) == 0x0;
+  auto code_cs_c     = b4(addr_c, 28) == 0x0 && next_pc_a == 0;
   auto console1_cs_c = b4(addr_c, 28) == 0x4;
   auto console2_cs_c = b4(addr_c, 28) == 0x5;
   auto console3_cs_c = b4(addr_c, 28) == 0x6;
@@ -352,11 +352,14 @@ void Pinwheel::tock_twocycle(logic<1> reset_in) const {
   }
 
   //----------
+  // hmm we can't actually read from code because we also have to read our next instruction
+  // and we can't do it earlier or later (we can read it during C, but then it's not back
+  // in time to write to the regfile).
 
-  auto code_wren_c = (op_c == RV32I_OP_STORE) && code_cs_c && next_pc_a == 0;
+  auto code_wren_c = (op_c == RV32I_OP_STORE) && code_cs_c;
   auto data_wren_b = (op_b == RV32I_OP_STORE) && data_cs_b;
 
-  auto code_addr_c = code_wren_c ? addr_c : next_pc_a;
+  auto code_addr_c = code_cs_c ? addr_c : next_pc_a;
   auto data_addr_b = addr_b;
 
   auto reg_raddr1_a = cat(b5(hart_a), rs1a_a);

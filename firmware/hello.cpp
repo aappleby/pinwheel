@@ -214,6 +214,14 @@ Console c4 = { (uint32_t*)0x70000000 };
 
 int main(int argc, char** argv) {
 
+  // test read from code mem... this can't work with the way pinwheel is set up
+  /*
+  for (int i = 0; i < 100; i++) {
+    volatile uint32_t* code = (volatile uint32_t*)(i * 4);
+    c1.printf("Code @ %p = %p\n", code, *code);
+  }
+  */
+
   // test write to code mem
   /*
   volatile uint32_t* code = (volatile uint32_t*)0x00000000;

@@ -10,3 +10,6 @@
 [submodule "submodules/MetroLib"]
 	path = submodules/MetroLib
 	url = https://github.com/aappleby/MetroLib
+[submodule "submodules/Metron"]
+	path = submodules/Metron
+	url = https://github.com/aappleby/Metron
