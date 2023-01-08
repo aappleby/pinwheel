@@ -65,6 +65,8 @@ uint32_t start_hart(uint32_t hart, uint32_t address) {
   )");
 }
 
+// https://sourceware.org/binutils/docs-2.34/as/RISC_002dV_002dFormats.html
+
 __attribute__((naked))
 uint32_t step_hart(uint32_t hart, uint32_t address) {
   __asm__(R"(
@@ -203,27 +205,43 @@ void _start() {
 
 //------------------------------------------------------------------------------
 
-int main(int argc, char** argv) {
-  int hart = get_hart();
+Console c1 = { (uint32_t*)0x40000000 };
+Console c2 = { (uint32_t*)0x50000000 };
+Console c3 = { (uint32_t*)0x60000000 };
+Console c4 = { (uint32_t*)0x70000000 };
 
-  Console c1 = { (uint32_t*)0x40000000 };
-  Console c2 = { (uint32_t*)0x50000000 };
+//------------------------------------------------------------------------------
+
+int main(int argc, char** argv) {
+
+  // test write to code mem
+  /*
+  volatile uint32_t* code = (volatile uint32_t*)0x00000000;
+  for(int i = 0; i < 1000000; i++) {
+    code[i] = 0xDEADBEEF;
+  }
+  */
+
+#if 1
+  int hart = get_hart();
 
   if (hart == 3) {
     //while(1);
+    c3.printf("Hart %d active\n", hart);
     for (int i = 0; i < 5; i++) {
-      c2.printf("I am hart %d : %d\n", hart, i);
+      c3.printf("I am hart %d : %d\n", hart, i);
     }
-    c2.printf("Yielding back to hart 0\n");
+    c3.printf("Yielding back to hart 0\n");
     uint32_t pc = *((volatile uint32_t*)0xE0000000);
     yield_hart(0, pc);
   }
 
   uint32_t pc = 0x00400000 - 4;
 
-  c1.printf("Yielding to hart 3\n");
+  c4.printf("Yielding to hart 3\n");
   yield_hart(3, pc);
-  c1.printf("Back from yield\n");
+  c4.printf("Back from yield\n");
+#endif
 
   //for (int i = 0; i < 300; i++) {
   /*

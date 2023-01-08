@@ -53,7 +53,10 @@ struct Console {
   void tock(logic<1> wrcs, logic<32> reg_b);
   void tick(logic<1> reset);
 
-  char buf[80*25];
+  static const int width =64;
+  static const int height=16;
+
+  char buf[width*height];
   int  x = 0;
   int  y = 0;
   logic<1>  wrcs;
@@ -118,12 +121,18 @@ struct Pinwheel {
 
   logic<32> debug_reg;
 
+  logic<32> gpio_dir;
+  logic<32> gpio_in;
+  logic<32> gpio_out;
+
   BlockRam  code;
   BlockRam  data;
   Regfile   regfile;
 
   Console console1;
   Console console2;
+  Console console3;
+  Console console4;
 
   /*
   char console_buf[80*50];
