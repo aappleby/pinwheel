@@ -61,18 +61,20 @@ public:
     logic<32> imm_b = cat(dup<20>(insn[31]), insn[7], b6(insn, 25), b4(insn, 8), b1(0));
     logic<32> imm_j = cat(dup<12>(insn[31]), b8(insn, 12), insn[20], b10(insn, 21), b1(0));
 
+    logic<32> result;
     switch(op) {
-      case RV32I_OP_LOAD:   return imm_i;
-      case RV32I_OP_OPIMM:  return imm_i;
-      case RV32I_OP_AUIPC:  return imm_u;
-      case RV32I_OP_STORE:  return imm_s;
-      case RV32I_OP_OP:     return imm_i;
-      case RV32I_OP_LUI:    return imm_u;
-      case RV32I_OP_BRANCH: return imm_b;
-      case RV32I_OP_JALR:   return imm_i;
-      case RV32I_OP_JAL:    return imm_j;
-      default:              return 0;
+      case RV32I_OP_LOAD:   result = imm_i; break;
+      case RV32I_OP_OPIMM:  result = imm_i; break;
+      case RV32I_OP_AUIPC:  result = imm_u; break;
+      case RV32I_OP_STORE:  result = imm_s; break;
+      case RV32I_OP_OP:     result = imm_i; break;
+      case RV32I_OP_LUI:    result = imm_u; break;
+      case RV32I_OP_BRANCH: result = imm_b; break;
+      case RV32I_OP_JALR:   result = imm_i; break;
+      case RV32I_OP_JAL:    result = imm_j; break;
+      default:              result = 0;     break;
     }
+    return result;
   }
 
   //----------
