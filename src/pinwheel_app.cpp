@@ -151,11 +151,11 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   d("hart_b        %d\n",     pinwheel.hart_b);
   d("pc_b          0x%08x\n", pinwheel.pc_b);
   d("insn_b        0x%08x ",  pinwheel.insn_b); print_rv(d, pinwheel.insn_b); d("\n");
-  d("rs1 b         0x%08x\n", pinwheel.regfile.get_rs1());
-  d("rs2 b         0x%08x\n", pinwheel.regfile.get_rs2());
+  d("rs1 b         0x%08x\n", pinwheel.regs.get_rs1());
+  d("rs2 b         0x%08x\n", pinwheel.regs.get_rs2());
 
   const auto imm_b  = Pinwheel::decode_imm(pinwheel.insn_b);
-  const auto addr_b = b32(pinwheel.regfile.get_rs1() + imm_b);
+  const auto addr_b = b32(pinwheel.regs.get_rs1() + imm_b);
   d("addr b        0x%08x\n", addr_b);
 
   d("\n");
@@ -185,7 +185,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   d("\n");
 
   for (int hart = 0; hart < 4; hart++) {
-    auto r = &pinwheel.regfile.get_data()[hart << 5];
+    auto r = &pinwheel.regs.get_data()[hart << 5];
     //d("hart %d vane %d pc 0x%08x", hart, hart_to_vane[hart], harts[hart]->pc);
     d("hart %d", hart);
     d("\n");

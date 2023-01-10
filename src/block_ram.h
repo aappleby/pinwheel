@@ -3,10 +3,10 @@
 
 //------------------------------------------------------------------------------
 
-class BlockRam {
+class block_ram {
 public:
 
-  void tock(logic<32> addr_, logic<32> wdata_, logic<4> wmask_, logic<1> wren_) {
+  void tock(logic<12> addr_, logic<32> wdata_, logic<4> wmask_, logic<1> wren_) {
     addr  = addr_;
     wdata = wdata_;
     wmask = wmask_;
@@ -32,18 +32,18 @@ public:
   }
 
   // noconvert
-  uint32_t* get_data() { return data; }
+  uint32_t* get_data() { return (uint32_t*)data; }
   // noconvert
-  const uint32_t* get_data() const { return data; }
+  const uint32_t* get_data() const { return (uint32_t*)data; }
 
 private:
 
-  logic<32> addr;
+  logic<12> addr;
   logic<32> wdata;
   logic<4>  wmask;
   logic<1>  wren;
 
-  uint32_t  data[16384];
+  logic<32> data[16384];
 };
 
 //------------------------------------------------------------------------------

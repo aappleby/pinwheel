@@ -21,14 +21,6 @@ public:
     readmemh(s, data.get_data());
   }
 
-  /*
-  example_data_memory() {
-    std::string s;
-    value_plusargs("data_file=%s", s);
-    readmemh(s, mem);
-  }
-  */
-
   // noconvert
   Pinwheel* clone() {
     Pinwheel* p = new Pinwheel();
@@ -63,15 +55,15 @@ public:
 
     logic<32> result;
     switch(op) {
-      case RV32I_OP_LOAD:   result = imm_i; break;
-      case RV32I_OP_OPIMM:  result = imm_i; break;
-      case RV32I_OP_AUIPC:  result = imm_u; break;
-      case RV32I_OP_STORE:  result = imm_s; break;
-      case RV32I_OP_OP:     result = imm_i; break;
-      case RV32I_OP_LUI:    result = imm_u; break;
-      case RV32I_OP_BRANCH: result = imm_b; break;
-      case RV32I_OP_JALR:   result = imm_i; break;
-      case RV32I_OP_JAL:    result = imm_j; break;
+      case RV32I::OP_LOAD:   result = imm_i; break;
+      case RV32I::OP_OPIMM:  result = imm_i; break;
+      case RV32I::OP_AUIPC:  result = imm_u; break;
+      case RV32I::OP_STORE:  result = imm_s; break;
+      case RV32I::OP_OP:     result = imm_i; break;
+      case RV32I::OP_LUI:    result = imm_u; break;
+      case RV32I::OP_BRANCH: result = imm_b; break;
+      case RV32I::OP_JALR:   result = imm_i; break;
+      case RV32I::OP_JAL:    result = imm_j; break;
       default:              result = 0;     break;
     }
     return result;
@@ -86,8 +78,8 @@ public:
     logic<32> imm = decode_imm(insn);
 
     logic<32> alu_a = reg_a;
-    logic<32> alu_b = op == RV32I_OP_OPIMM ? imm : reg_b;
-    if (op == RV32I_OP_OP && f3 == 0 && f7 == 32) alu_b = -alu_b;
+    logic<32> alu_b = op == RV32I::OP_OPIMM ? imm : reg_b;
+    if (op == RV32I::OP_OP && f3 == 0 && f7 == 32) alu_b = -alu_b;
 
     logic<32> result;
     switch (f3) {
@@ -108,18 +100,18 @@ public:
 
   logic<32> execute_system(logic<32> insn) const {
     logic<3>  f3  = b3(insn, 12);
-    auto csr = b12(insn, 20);
+    logic<12> csr = b12(insn, 20);
 
     logic<32> result = 0;
     switch(f3) {
       case 0:               break;
-      case RV32I_F3_CSRRW:  break;
-      case RV32I_F3_CSRRS:  if (csr == 0xF14) result = hart_b; break;
-      case RV32I_F3_CSRRC:  break;
+      case RV32I::F3_CSRRW:  break;
+      case RV32I::F3_CSRRS:  if (csr == 0xF14) result = hart_b; break;
+      case RV32I::F3_CSRRC:  break;
       case 4:               break;
-      case RV32I_F3_CSRRWI: break;
-      case RV32I_F3_CSRRSI: break;
-      case RV32I_F3_CSRRCI: break;
+      case RV32I::F3_CSRRWI: break;
+      case RV32I::F3_CSRRSI: break;
+      case RV32I::F3_CSRRCI: break;
     }
     return result;
   }
@@ -127,27 +119,36 @@ public:
   //----------
 
   void tock_twocycle(logic<1> reset_in) {
-    const auto op_b   = b5(insn_b, 2);
-    const auto rda_b  = b5(insn_b, 7);
-    const auto f3_b   = b3(insn_b, 12);
-    const auto rs1a_b = b5(insn_b, 15);
-    const auto rs2a_b = b5(insn_b, 20);
-    const auto f7_b   = b7(insn_b, 25);
+    logic<5> op_b   = b5(insn_b, 2);
+    logic<5> rda_b  = b5(insn_b, 7);
+    logic<3> f3_b   = b3(insn_b, 12);
+    logic<5> rs1a_b = b5(insn_b, 15);
+    logic<5> rs2a_b = b5(insn_b, 20);
+    logic<7> f7_b   = b7(insn_b, 25);
 
-    const auto op_c   = b5(insn_c, 2);
-    const auto rd_c   = b5(insn_c, 7);
-    const auto f3_c   = b3(insn_c, 12);
+    logic<5> op_c   = b5(insn_c, 2);
+    logic<5> rd_c   = b5(insn_c, 7);
+    logic<3> f3_c   = b3(insn_c, 12);
 
-    const auto rs1_b  = rs1a_b ? regfile.get_rs1() : b32(0);
-    const auto rs2_b  = rs2a_b ? regfile.get_rs2() : b32(0);
-    const auto imm_b  = decode_imm(insn_b);
-    const auto addr_b = b32(rs1_b + imm_b);
+    logic<32> rs1_b  = rs1a_b ? regs.get_rs1() : b32(0);
+    logic<32> rs2_b  = rs2a_b ? regs.get_rs2() : b32(0);
+    logic<32> imm_b  = decode_imm(insn_b);
+    logic<32> addr_b = b32(rs1_b + imm_b);
+
+    logic<32> temp_pc_a = 0;
+
+    next_hart_a    = hart_b;
+    next_pc_a      = 0;
+    next_insn_b    = 0;
+    next_addr_c    = 0;
+    next_result_c  = 0;
+    next_wb_addr_d = 0;
+    next_wb_data_d = 0;
+    next_wb_wren_d = 0;
+    next_debug_reg = 0;
 
     //----------
     // Fetch
-
-    next_hart_a = hart_b;
-    next_pc_a = 0;
 
     {
       if (pc_b) {
@@ -169,10 +170,10 @@ public:
         }
 
         switch (op_b) {
-          case RV32I_OP_BRANCH:  next_pc_a = take_branch ? pc_b + imm_b : pc_b + b32(4); break;
-          case RV32I_OP_JAL:     next_pc_a = pc_b + imm_b; break;
-          case RV32I_OP_JALR:    next_pc_a = addr_b; break;
-          default:               next_pc_a = pc_b + 4; break;
+          case RV32I::OP_BRANCH:  temp_pc_a = take_branch ? pc_b + imm_b : pc_b + b32(4); break;
+          case RV32I::OP_JAL:     temp_pc_a = pc_b + imm_b; break;
+          case RV32I::OP_JALR:    temp_pc_a = addr_b; break;
+          default:                temp_pc_a = pc_b + 4; break;
         }
       }
     }
@@ -180,9 +181,9 @@ public:
     //----------
     // Decode
 
-    const auto insn_a = code.rdata();
-    const auto rs1a_a  = b5(insn_a, 15);
-    const auto rs2a_a  = b5(insn_a, 20);
+    logic<32> insn_a = code.rdata();
+    logic<5> rs1a_a  = b5(insn_a, 15);
+    logic<5> rs2a_a  = b5(insn_a, 20);
 
     next_insn_b = pc_a == 0 ? b32(0) : insn_a;
     next_addr_c = addr_b;
@@ -191,13 +192,13 @@ public:
     // Execute
 
     switch(op_b) {
-      case RV32I_OP_JAL:     next_result_c = pc_b + 4;     break;
-      case RV32I_OP_JALR:    next_result_c = pc_b + 4;     break;
-      case RV32I_OP_LUI:     next_result_c = imm_b;        break;
-      case RV32I_OP_AUIPC:   next_result_c = pc_b + imm_b; break;
-      case RV32I_OP_LOAD:    next_result_c = addr_b;       break;
-      case RV32I_OP_STORE:   next_result_c = rs2_b;        break;
-      case RV32I_OP_CUSTOM0: {
+      case RV32I::OP_JAL:     next_result_c = pc_b + 4;     break;
+      case RV32I::OP_JALR:    next_result_c = pc_b + 4;     break;
+      case RV32I::OP_LUI:     next_result_c = imm_b;        break;
+      case RV32I::OP_AUIPC:   next_result_c = pc_b + imm_b; break;
+      case RV32I::OP_LOAD:    next_result_c = addr_b;       break;
+      case RV32I::OP_STORE:   next_result_c = rs2_b;        break;
+      case RV32I::OP_CUSTOM0: {
         if (f3_b == 0) {
           // Switch the other thread to another hart
           next_addr_c   = rs1_b;
@@ -205,16 +206,15 @@ public:
         }
         else if (f3_b == 1) {
           // Yield to another hart
-          next_result_c  = next_pc_a;
+          next_result_c  = temp_pc_a;
           next_hart_a    = rs1_b;
-          next_pc_a      = rs2_b;
+          temp_pc_a      = rs2_b;
         }
         break;
       }
-      case RV32I_OP_SYSTEM:  next_result_c = execute_system(insn_b); break;
+      case RV32I::OP_SYSTEM:  next_result_c = execute_system(insn_b); break;
       default:               next_result_c = execute_alu   (insn_b, rs1_b, rs2_b); break;
     }
-
 
     //----------
     // Memory
@@ -242,12 +242,12 @@ public:
     if (addr_c[0]) next_mask_c = next_mask_c << 1;
     if (addr_c[1]) next_mask_c = next_mask_c << 2;
 
-    next_debug_reg = (op_b == RV32I_OP_STORE) && debug_cs_b ? rs2_b : debug_reg;
+    next_debug_reg = (op_b == RV32I::OP_STORE) && debug_cs_b ? rs2_b : debug_reg;
 
     //----------
     // Write
 
-    auto code_cs_c     = b4(addr_c, 28) == 0x0 && next_pc_a == 0;
+    auto code_cs_c     = b4(addr_c, 28) == 0x0 && temp_pc_a == 0;
     auto console1_cs_c = b4(addr_c, 28) == 0x4;
     auto console2_cs_c = b4(addr_c, 28) == 0x5;
     auto console3_cs_c = b4(addr_c, 28) == 0x6;
@@ -259,7 +259,7 @@ public:
     logic<32> data_out_c = 0;
     if      (data_cs_c)    data_out_c = data.rdata();
     else if (debug_cs_c)   data_out_c = debug_reg;
-    else if (regfile_cs_c) data_out_c = regfile.get_rs1();
+    else if (regfile_cs_c) data_out_c = regs.get_rs1();
 
     logic<32> unpacked_c = data_out_c;
     if (result_c[0]) unpacked_c = unpacked_c >> 8;
@@ -272,18 +272,18 @@ public:
     }
 
     next_wb_addr_d = cat(b5(hart_c), rd_c);
-    next_wb_data_d = op_c == RV32I_OP_LOAD ? unpacked_c : result_c;
-    next_wb_wren_d = op_c != RV32I_OP_STORE && op_c != RV32I_OP_BRANCH;
+    next_wb_data_d = op_c == RV32I::OP_LOAD ? unpacked_c : result_c;
+    next_wb_wren_d = op_c != RV32I::OP_STORE && op_c != RV32I::OP_BRANCH;
 
-    if (op_c == RV32I_OP_CUSTOM0 && f3_c == 0) {
+    if (op_c == RV32I::OP_CUSTOM0 && f3_c == 0) {
       // Swap result and the PC that we'll use to fetch.
       // Execute phase should've deposited the new PC in result
-      next_wb_data_d = next_pc_a;
+      next_wb_data_d = temp_pc_a;
       next_hart_a    = addr_c;
-      next_pc_a      = result_c;
+      temp_pc_a      = result_c;
     }
 
-    if (regfile_cs_c && op_c == RV32I_OP_STORE) {
+    if (regfile_cs_c && op_c == RV32I::OP_STORE) {
       // Thread writing to other thread's regfile
       next_wb_addr_d = b10(addr_c >> 2);
       next_wb_data_d = result_c;
@@ -295,30 +295,35 @@ public:
     // and we can't do it earlier or later (we can read it during C, but then it's not back
     // in time to write to the regfile).
 
-    auto code_wren_c = (op_c == RV32I_OP_STORE) && code_cs_c;
-    auto data_wren_b = (op_b == RV32I_OP_STORE) && data_cs_b;
+    auto code_wren_c = (op_c == RV32I::OP_STORE) && code_cs_c;
+    auto data_wren_b = (op_b == RV32I::OP_STORE) && data_cs_b;
 
-    auto code_addr_c = code_cs_c ? addr_c : next_pc_a;
+    auto code_addr_c = code_cs_c ? addr_c : temp_pc_a;
     auto data_addr_b = addr_b;
 
     auto reg_raddr1_a = cat(b5(hart_a), rs1a_a);
     auto reg_raddr2_a = cat(b5(hart_a), rs2a_a);
-    auto regfile_wren_b = (op_b == RV32I_OP_STORE) && regfile_cs_b;
+    auto regfile_wren_b = (op_b == RV32I::OP_STORE) && regfile_cs_b;
 
-    if ((op_b == RV32I_OP_LOAD) && regfile_cs_b && (pc_a == 0)) {
+    if ((op_b == RV32I::OP_LOAD) && regfile_cs_b && (pc_a == 0)) {
       reg_raddr1_a = b10(addr_b >> 2);
     }
 
     //----------
 
-    code.tock(code_addr_c, result_c, next_mask_c, code_wren_c);
-    data.tock(data_addr_b, rs2_b,    next_mask_b, data_wren_b);
+    code.tock(b12(code_addr_c), result_c, next_mask_c, code_wren_c);
+    data.tock(b12(data_addr_b), rs2_b,    next_mask_b, data_wren_b);
 
-    regfile.tock(reg_raddr1_a, reg_raddr2_a, next_wb_addr_d, next_wb_data_d, next_wb_wren_d);
-    console1.tock(console1_cs_b && op_b == RV32I_OP_STORE, rs2_b);
-    console2.tock(console2_cs_b && op_b == RV32I_OP_STORE, rs2_b);
-    console3.tock(console3_cs_b && op_b == RV32I_OP_STORE, rs2_b);
-    console4.tock(console4_cs_b && op_b == RV32I_OP_STORE, rs2_b);
+    regs.tock(reg_raddr1_a, reg_raddr2_a, next_wb_addr_d, next_wb_data_d, next_wb_wren_d);
+    console1.tock(console1_cs_b && op_b == RV32I::OP_STORE, rs2_b);
+    console2.tock(console2_cs_b && op_b == RV32I::OP_STORE, rs2_b);
+    console3.tock(console3_cs_b && op_b == RV32I::OP_STORE, rs2_b);
+    console4.tock(console4_cs_b && op_b == RV32I::OP_STORE, rs2_b);
+
+    //----------
+    // Signal writeback
+
+    next_pc_a = temp_pc_a;
   }
 
   //----------
@@ -380,7 +385,7 @@ public:
 
     code.tick();
     data.tick();
-    regfile.tick();
+    regs.tick();
 
     // noconvert
     console1.tick(reset_in);
@@ -437,9 +442,9 @@ public:
   logic<32> gpio_in;
   logic<32> gpio_out;
 
-  BlockRam  code;
-  BlockRam  data;
-  Regfile   regfile;
+  block_ram  code;
+  block_ram  data;
+  regfile   regs;
 
   // noconvert
   Console console1;

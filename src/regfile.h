@@ -5,10 +5,10 @@
 
 //------------------------------------------------------------------------------
 
-class Regfile {
+class regfile {
 public:
 
-  Regfile() {
+  regfile() {
     for (int i = 0; i < 1024; i++) data[i] = 0;
   }
 
@@ -34,7 +34,7 @@ public:
 
   // noconvert
   const uint32_t* get_data() const {
-    return data;
+    return (uint32_t*)data;
   }
 
 private:
@@ -43,8 +43,7 @@ private:
   logic<10> waddr;
   logic<32> wdata;
   logic<1>  wren;
-
-  uint32_t  data[1024];
+  logic<32> data[1024];
 };
 
 //------------------------------------------------------------------------------

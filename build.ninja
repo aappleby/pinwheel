@@ -22,7 +22,7 @@ rule run_test
   command = ${in} | grep "All tests pass."
 
 rule do_subninja
-  command = ninja -C ${dir}
+  command = ninja -C ${dir} ${target}
 
 rule compile_c
   command = gcc -g -MMD ${build_mode} ${default_includes} ${includes} -MF ${out}.d -c ${in} -o ${out}
@@ -31,6 +31,12 @@ rule compile_c
 
 rule run_command
   command = $command
+
+rule check_sv
+  command = verilator -I. -Isv --lint-only -Wall -Wno-declfilename -Wno-multitop ${in}
+
+rule metron
+  command = submodules/Metron/bin/metron -e -c ${in} -o ${out}
 
 ################################################################################
 
@@ -44,6 +50,10 @@ build submodules/MetroLib/bin/CoreLib.a submodules/MetroLib/bin/AppLib.a : do_su
 
 build firmware/bin/hello : do_subninja | always
   dir = firmware
+
+build submodules/Metron/bin/metron : do_subninja | always
+  dir = submodules/Metron
+  target = bin/metron
 
 build obj/pinwheel_main.o: compile src/pinwheel_main.cpp
 build obj/pinwheel_app.o:  compile src/pinwheel_app.cpp
@@ -72,3 +82,24 @@ build build_rv_tests : run_command | always
   command = make -C rv_tests
 
 build bin/pinwheel_test_pass: run_test bin/pinwheel_test | build_rv_tests
+
+build sv/block_ram.sv  : metron src/block_ram.h
+build sv/constants.sv      : metron src/constants.h
+#build sv/pinwheel.sv  : metron src/pinwheel.h
+build sv/pinwheel2.sv  : metron src/pinwheel2.h
+build sv/regfile.sv    : metron src/regfile.h
+
+build check_block_ram_sv : check_sv sv/block_ram.sv
+#build check_constants_sv     : check_sv sv/constants.sv
+#build check_pinwheel_sv : check_sv sv/pinwheel.sv
+build check_pinwheel2_sv : check_sv sv/pinwheel2.sv
+build check_regfile_sv   : check_sv sv/regfile.sv
+
+build check_sv : phony $
+  sv/constants.sv $
+  check_block_ram_sv $
+  check_pinwheel2_sv $
+  check_regfile_sv $
+  | submodules/Metron/bin/metron
+
+#  check_pinwheel_sv $
