@@ -19,7 +19,7 @@ rule lib
   command = ar rcs ${out} ${in}
 
 rule run_test
-  command = ${in} | grep "All tests pass."
+  command = ${in} | grep "All tests pass." && touch ${out}
 
 rule do_subninja
   command = ninja -C ${dir} ${target}
@@ -33,27 +33,12 @@ rule run_command
   command = $command
 
 rule check_sv
-  command = verilator -I. -Isv --lint-only -Wall -Wno-declfilename -Wno-multitop ${in}
+  command = verilator -I. -Isv --lint-only -Wall -Wno-declfilename -Wno-multitop ${in} && touch ${out}
 
 rule metron
-  command = submodules/Metron/bin/metron -e -c ${in} -o ${out}
+  command = submodules/Metron/bin/metron -v -e -c ${in} -o ${out}
 
 ################################################################################
-
-build always : phony
-
-build submodules/bin/glad.a submodules/bin/imgui.a : do_subninja | always
-  dir = submodules
-
-build submodules/MetroLib/bin/CoreLib.a submodules/MetroLib/bin/AppLib.a : do_subninja | always
-  dir = submodules/MetroLib
-
-build firmware/bin/hello : do_subninja | always
-  dir = firmware
-
-build submodules/Metron/bin/metron : do_subninja | always
-  dir = submodules/Metron
-  target = bin/metron
 
 build obj/pinwheel_main.o: compile src/pinwheel_main.cpp
 build obj/pinwheel_app.o:  compile src/pinwheel_app.cpp
@@ -73,33 +58,26 @@ build bin/pinwheel: link $
   submodules/bin/imgui.a $
   submodules/bin/glad.a | firmware/bin/hello
 
-
 build bin/pinwheel_test: link $
-  obj/pinwheel.o $
   obj/pinwheel_test.o
 
-build build_rv_tests : run_command | always
-  command = make -C rv_tests
-
-build bin/pinwheel_test_pass: run_test bin/pinwheel_test | build_rv_tests
+build obj/pinwheel_test_pass: run_test bin/pinwheel_test
 
 build sv/block_ram.sv  : metron src/block_ram.h
-build sv/constants.sv      : metron src/constants.h
-#build sv/pinwheel.sv  : metron src/pinwheel.h
+build sv/constants.sv  : metron src/constants.h
 build sv/pinwheel2.sv  : metron src/pinwheel2.h
 build sv/regfile.sv    : metron src/regfile.h
+#build sv/pinwheel.sv   : metron src/pinwheel.h  | submodules/Metron/bin/metron
 
-build check_block_ram_sv : check_sv sv/block_ram.sv
+build obj/check_block_ram_sv : check_sv sv/block_ram.sv
 #build check_constants_sv     : check_sv sv/constants.sv
 #build check_pinwheel_sv : check_sv sv/pinwheel.sv
-build check_pinwheel2_sv : check_sv sv/pinwheel2.sv
-build check_regfile_sv   : check_sv sv/regfile.sv
+build obj/check_pinwheel2_sv : check_sv sv/pinwheel2.sv
+build obj/check_regfile_sv   : check_sv sv/regfile.sv
 
 build check_sv : phony $
   sv/constants.sv $
-  check_block_ram_sv $
-  check_pinwheel2_sv $
-  check_regfile_sv $
-  | submodules/Metron/bin/metron
-
+  obj/check_block_ram_sv $
+  obj/check_pinwheel2_sv $
+  obj/check_regfile_sv
 #  check_pinwheel_sv $
