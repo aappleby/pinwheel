@@ -5,3 +5,4 @@ ninja -C submodules/MetroLib
 ninja -C firmware
 ninja -C submodules/Metron bin/metron
 ninja
+#ninja check_sv

@@ -330,7 +330,7 @@ public:
     //----------
     // Submod tocks
 
-    code.tock(b12(code_addr_c), result_c, temp_mask_c, code_wren_c);
+    //code.tock(b12(code_addr_c), result_c, temp_mask_c, code_wren_c);
 
     // noconvert
     {
