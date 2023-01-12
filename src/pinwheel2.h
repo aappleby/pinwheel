@@ -19,13 +19,13 @@ class pinwheel2 {
 public:
 
   pinwheel2() {
-    //std::string s;
-    //value_plusargs("text_file=%s", s);
-    // dumpit
-    //readmemh(s, code.data);
+    std::string s;
 
-    //value_plusargs("data_file=%s", s);
-    //readmemh(s, data_ram.get_data());
+    value_plusargs("text_file=%s", s);
+    readmemh(s, code.data);
+
+    value_plusargs("data_file=%s", s);
+    readmemh(s, data_ram.data);
   }
 
   // metron_noconvert
