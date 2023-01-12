@@ -21,10 +21,10 @@ public:
   pinwheel() {
     std::string s;
     value_plusargs("text_file=%s", s);
-    readmemh(s, code.get_data());
+    readmemh(s, code.data);
 
     value_plusargs("data_file=%s", s);
-    readmemh(s, data_ram.get_data());
+    readmemh(s, data_ram.data);
   }
 
   // metron_noconvert
@@ -350,6 +350,11 @@ public:
 
   //----------------------------------------
 
+  logic<32> get_debug() const {
+    return debug_reg;
+  }
+
+  //----------------------------------------
   // FIXME trace modules individually
 
   void tick_twocycle(logic<1> reset_in) {
@@ -421,30 +426,14 @@ public:
     console4.tick(reset_in);
   }
 
-  logic<32> get_debug() const {
-    return debug_reg;
-  }
-
   // metron_noconvert
   uint32_t* get_code() { return code.get_data(); }
+  // metron_noconvert
   uint32_t* get_data() { return data_ram.get_data(); }
 
   //----------------------------------------
 
-  // metron_noconvert
-  Console console1;
-  // metron_noconvert
-  Console console2;
-  // metron_noconvert
-  Console console3;
-  // metron_noconvert
-  Console console4;
-
-  // metron_noconvert
-  uint64_t ticks;
-
-//private:
-
+  // metron_internal
   logic<5>  next_hart_a;
   logic<32> next_pc_a;
 
@@ -492,7 +481,19 @@ public:
 
   // FIXME having this named data and a field inside block_ram named data breaks context resolve
   block_ram  data_ram;
-  regfile    regs;
+  regfile   regs;
+
+  // metron_noconvert
+  Console console1;
+  // metron_noconvert
+  Console console2;
+  // metron_noconvert
+  Console console3;
+  // metron_noconvert
+  Console console4;
+
+  // metron_noconvert
+  uint64_t ticks;
 };
 
 // verilator lint_on unusedsignal
