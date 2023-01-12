@@ -34,12 +34,12 @@ public:
   logic<32> get_rs1() const { return out_1; }
   logic<32> get_rs2() const { return out_2; }
 
-  // noconvert
+  // metron_noconvert
   const uint32_t* get_data() const {
     return (uint32_t*)data;
   }
 
-private:
+  // metron_internal
   logic<10> raddr1;
   logic<10> raddr2;
   logic<10> waddr;

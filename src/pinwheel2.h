@@ -2,7 +2,7 @@
 #include "metron_tools.h"
 
 #include "block_ram.h"
-//noconvert
+// metron_noconvert
 #include "console.h"
 #include "constants.h"
 #include "regfile.h"
@@ -21,20 +21,21 @@ public:
   pinwheel2() {
     //std::string s;
     //value_plusargs("text_file=%s", s);
-    //readmemh(s, code.get_data());
+    // dumpit
+    //readmemh(s, code.data);
 
     //value_plusargs("data_file=%s", s);
     //readmemh(s, data_ram.get_data());
   }
 
-  // noconvert
+  // metron_noconvert
   pinwheel2* clone() {
     pinwheel2* p = new pinwheel2();
     memcpy(p, this, sizeof(*this));
     return p;
   }
 
-  // noconvert
+  // metron_noconvert
   size_t size_bytes() {
     return sizeof(*this);
   }
@@ -71,12 +72,12 @@ public:
       case RV32I::OP_BRANCH: result = imm_b; break;
       case RV32I::OP_JALR:   result = imm_i; break;
       case RV32I::OP_JAL:    result = imm_j; break;
-      default:               result = 0;     break;
+      default:              result = 0;     break;
     }
     return result;
   }
 
-  //----------------------------------------
+  //----------
 
   logic<32> execute_alu(logic<32> insn, logic<32> reg_a, logic<32> reg_b) const {
     logic<5>  op  = b5(insn, 2);
@@ -88,7 +89,7 @@ public:
     logic<32> alu_b = op == RV32I::OP_OPIMM ? imm : reg_b;
     if (op == RV32I::OP_OP && f3 == 0 && f7 == 32) alu_b = -alu_b;
 
-    logic<32> result = 0;
+    logic<32> result;
     switch (f3) {
       case 0:  result = alu_a + alu_b; break;
       case 1:  result = alu_a << b5(alu_b); break;
@@ -103,7 +104,7 @@ public:
     return result;
   }
 
-  //----------------------------------------
+  //----------
 
   logic<32> execute_system(logic<32> insn) const {
     logic<3>  f3  = b3(insn, 12);
@@ -218,7 +219,7 @@ public:
           // Yield to another hart
           next_result_c  = temp_pc_a;
           next_hart_a    = rs1_b;
-          temp_pc_a = rs2_b;
+          temp_pc_a      = rs2_b;
         }
         break;
       }
@@ -330,12 +331,11 @@ public:
     //----------
     // Submod tocks
 
-    // FIXME this isn't working due to some tracing bug in Metron
     code.tock(b12(code_addr_c), result_c, temp_mask_c, code_wren_c);
     data_ram.tock(b12(data_addr_b), rs2_b,    temp_mask_b, data_wren_b);
     regs.tock(reg_raddr1_a, reg_raddr2_a, next_wb_addr_d, next_wb_data_d, next_wb_wren_d);
 
-    // noconvert
+    // metron_noconvert
     {
       console1.tock(console1_cs_b && op_b == RV32I::OP_STORE, rs2_b);
       console2.tock(console2_cs_b && op_b == RV32I::OP_STORE, rs2_b);
@@ -378,7 +378,7 @@ public:
       wb_wren_d = 0;
 
       debug_reg = 0;
-      // noconvert
+      // metron_noconvert
       ticks     = 0;
     }
     else {
@@ -404,19 +404,27 @@ public:
       pc_a      = next_pc_a;
 
       debug_reg = next_debug_reg;
-      // noconvert
+      // metron_noconvert
       ticks     = ticks + 1;
     }
 
     code.tick();
     data_ram.tick();
     regs.tick();
+
+    // metron_noconvert
+    console1.tick(reset_in);
+    // metron_noconvert
+    console2.tick(reset_in);
+    // metron_noconvert
+    console3.tick(reset_in);
+    // metron_noconvert
+    console4.tick(reset_in);
   }
 
   //----------------------------------------
 
-private:
-
+  // metron_internal
   logic<5>  next_hart_a;
   logic<32> next_pc_a;
 
@@ -466,16 +474,16 @@ private:
   block_ram  data_ram;
   regfile   regs;
 
-  // noconvert
+  // metron_noconvert
   Console console1;
-  // noconvert
+  // metron_noconvert
   Console console2;
-  // noconvert
+  // metron_noconvert
   Console console3;
-  // noconvert
+  // metron_noconvert
   Console console4;
 
-  // noconvert
+  // metron_noconvert
   uint64_t ticks;
 };
 

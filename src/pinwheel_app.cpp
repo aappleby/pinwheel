@@ -135,6 +135,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   auto& view = view_control.view_smooth_snap;
   grid_painter.render(view, screen_size);
 
+#if 0
   StringDumper d;
 
   auto& pinwheel = pinwheel_sim->states.top();
@@ -154,7 +155,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   d("rs1 b         0x%08x\n", pinwheel.regs.get_rs1());
   d("rs2 b         0x%08x\n", pinwheel.regs.get_rs2());
 
-  const auto imm_b  = Pinwheel::decode_imm(pinwheel.insn_b);
+  const auto imm_b  = pinwheel::decode_imm(pinwheel.insn_b);
   const auto addr_b = b32(pinwheel.regs.get_rs1() + imm_b);
   d("addr b        0x%08x\n", addr_b);
 
@@ -232,6 +233,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   console_painter.dump2(view, screen_size, 32*19, 256, 1, 1, Console::width, Console::height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console2.buf);
   console_painter.dump2(view, screen_size, 32*19, 480, 1, 1, Console::width, Console::height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console3.buf);
   console_painter.dump2(view, screen_size, 32*19, 704, 1, 1, Console::width, Console::height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console4.buf);
+#endif
 
   //box_painter.push_corner_size(1024 + (harts[0]->pc % 64) * 14 - 1, 512 + (harts[0]->pc / 64) * 12, 12*4+2*3+2, 12, 0x8000FFFF);
   //box_painter.push_corner_size(1024 + (harts[1]->pc % 64) * 14 - 1, 512 + (harts[1]->pc / 64) * 12, 12*4+2*3+2, 12, 0x80FFFF00);

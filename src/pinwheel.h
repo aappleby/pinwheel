@@ -2,33 +2,39 @@
 #include "metron_tools.h"
 
 #include "block_ram.h"
-//noconvert
+// metron_noconvert
 #include "console.h"
 #include "constants.h"
 #include "regfile.h"
 
 //------------------------------------------------------------------------------
 
-class Pinwheel {
+// verilator lint_off unusedsignal
+// verilator lint_off varhidden
+
+// FIXME remove this once everything hooked up
+// verilator lint_off UNDRIVEN
+
+class pinwheel {
 public:
 
-  Pinwheel() {
+  pinwheel() {
     std::string s;
     value_plusargs("text_file=%s", s);
     readmemh(s, code.get_data());
 
     value_plusargs("data_file=%s", s);
-    readmemh(s, data.get_data());
+    readmemh(s, data_ram.get_data());
   }
 
-  // noconvert
-  Pinwheel* clone() {
-    Pinwheel* p = new Pinwheel();
+  // metron_noconvert
+  pinwheel* clone() {
+    pinwheel* p = new pinwheel();
     memcpy(p, this, sizeof(*this));
     return p;
   }
 
-  // noconvert
+  // metron_noconvert
   size_t size_bytes() {
     return sizeof(*this);
   }
@@ -38,14 +44,15 @@ public:
   /*
   void reset_mem() {
     memset(&code,    0x00, sizeof(code));
-    memset(&data,    0x00, sizeof(data));
+    memset(&data_ram,    0x00, sizeof(data_ram));
     memset(&regfile, 0,    sizeof(regfile));
   }
   */
 
-  //----------
+  //----------------------------------------
+  // FIXME support static
 
-  static logic<32> decode_imm(logic<32> insn) {
+  logic<32> decode_imm(logic<32> insn) const {
     logic<5>  op    = b5(insn, 2);
     logic<32> imm_i = sign_extend<32>(b12(insn, 20));
     logic<32> imm_s = cat(dup<21>(insn[31]), b6(insn, 25), b5(insn, 7));
@@ -102,21 +109,23 @@ public:
     logic<3>  f3  = b3(insn, 12);
     logic<12> csr = b12(insn, 20);
 
+    // FIXME need a good error if case is missing an expression
     logic<32> result = 0;
     switch(f3) {
-      case 0:               break;
-      case RV32I::F3_CSRRW:  break;
+      case 0:                result = 0; break;
+      case RV32I::F3_CSRRW:  result = 0; break;
       case RV32I::F3_CSRRS:  if (csr == 0xF14) result = hart_b; break;
-      case RV32I::F3_CSRRC:  break;
-      case 4:               break;
-      case RV32I::F3_CSRRWI: break;
-      case RV32I::F3_CSRRSI: break;
-      case RV32I::F3_CSRRCI: break;
+      case RV32I::F3_CSRRC:  result = 0; break;
+      case 4:                result = 0; break;
+      case RV32I::F3_CSRRWI: result = 0; break;
+      case RV32I::F3_CSRRSI: result = 0; break;
+      case RV32I::F3_CSRRCI: result = 0; break;
     }
     return result;
   }
 
-  //----------
+  //----------------------------------------
+  // FIXME const local variable should not become parameter
 
   void tock_twocycle(logic<1> reset_in) {
     logic<5> op_b   = b5(insn_b, 2);
@@ -199,6 +208,7 @@ public:
       case RV32I::OP_LOAD:    next_result_c = addr_b;       break;
       case RV32I::OP_STORE:   next_result_c = rs2_b;        break;
       case RV32I::OP_CUSTOM0: {
+        next_result_c = 0;
         if (f3_b == 0) {
           // Switch the other thread to another hart
           next_addr_c   = rs1_b;
@@ -213,7 +223,7 @@ public:
         break;
       }
       case RV32I::OP_SYSTEM:  next_result_c = execute_system(insn_b); break;
-      default:               next_result_c = execute_alu   (insn_b, rs1_b, rs2_b); break;
+      default:                next_result_c = execute_alu   (insn_b, rs1_b, rs2_b); break;
     }
 
     //----------
@@ -256,10 +266,16 @@ public:
     logic<1> debug_cs_c    = b4(addr_c, 28) == 0xF;
     logic<1> regfile_cs_c  = b4(addr_c, 28) == 0xE;
 
-    logic<32>              data_out_c = 0;
-    if      (data_cs_c)    data_out_c = data.rdata();
-    else if (debug_cs_c)   data_out_c = debug_reg;
-    else if (regfile_cs_c) data_out_c = regs.get_rs1();
+    logic<32> data_out_c = 0;
+    if (data_cs_c) {
+      data_out_c = data_ram.rdata();
+    }
+    else if (debug_cs_c) {
+      data_out_c = debug_reg;
+    }
+    else if (regfile_cs_c) {
+      data_out_c = regs.get_rs1();
+    }
 
     logic<32>        unpacked_c = data_out_c;
     if (result_c[0]) unpacked_c = unpacked_c >> 8;
@@ -315,10 +331,10 @@ public:
     // Submod tocks
 
     code.tock(b12(code_addr_c), result_c, temp_mask_c, code_wren_c);
-    data.tock(b12(data_addr_b), rs2_b,    temp_mask_b, data_wren_b);
+    data_ram.tock(b12(data_addr_b), rs2_b,    temp_mask_b, data_wren_b);
     regs.tock(reg_raddr1_a, reg_raddr2_a, next_wb_addr_d, next_wb_data_d, next_wb_wren_d);
 
-    // noconvert
+    // metron_noconvert
     {
       console1.tock(console1_cs_b && op_b == RV32I::OP_STORE, rs2_b);
       console2.tock(console2_cs_b && op_b == RV32I::OP_STORE, rs2_b);
@@ -333,6 +349,8 @@ public:
   }
 
   //----------------------------------------
+
+  // FIXME trace modules individually
 
   void tick_twocycle(logic<1> reset_in) {
     if (reset_in) {
@@ -359,7 +377,7 @@ public:
       wb_wren_d = 0;
 
       debug_reg = 0;
-      // noconvert
+      // metron_noconvert
       ticks     = 0;
     }
     else {
@@ -385,25 +403,47 @@ public:
       pc_a      = next_pc_a;
 
       debug_reg = next_debug_reg;
-      // noconvert
+      // metron_noconvert
       ticks     = ticks + 1;
     }
 
     code.tick();
-    data.tick();
+    data_ram.tick();
     regs.tick();
 
-    // noconvert
+    // metron_noconvert
     console1.tick(reset_in);
-    // noconvert
+    // metron_noconvert
     console2.tick(reset_in);
-    // noconvert
+    // metron_noconvert
     console3.tick(reset_in);
-    // noconvert
+    // metron_noconvert
     console4.tick(reset_in);
   }
 
+  logic<32> get_debug() const {
+    return debug_reg;
+  }
+
+  // metron_noconvert
+  uint32_t* get_code() { return code.get_data(); }
+  uint32_t* get_data() { return data_ram.get_data(); }
+
   //----------------------------------------
+
+  // metron_noconvert
+  Console console1;
+  // metron_noconvert
+  Console console2;
+  // metron_noconvert
+  Console console3;
+  // metron_noconvert
+  Console console4;
+
+  // metron_noconvert
+  uint64_t ticks;
+
+//private:
 
   logic<5>  next_hart_a;
   logic<32> next_pc_a;
@@ -449,20 +489,12 @@ public:
   logic<32> gpio_out;
 
   block_ram  code;
-  block_ram  data;
-  regfile   regs;
 
-  // noconvert
-  Console console1;
-  // noconvert
-  Console console2;
-  // noconvert
-  Console console3;
-  // noconvert
-  Console console4;
-
-  // noconvert
-  uint64_t ticks;
+  // FIXME having this named data and a field inside block_ram named data breaks context resolve
+  block_ram  data_ram;
+  regfile    regs;
 };
+
+// verilator lint_on unusedsignal
 
 //------------------------------------------------------------------------------

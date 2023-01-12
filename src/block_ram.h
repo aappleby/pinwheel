@@ -36,13 +36,12 @@ public:
     }
   }
 
-  // noconvert
+  // metron_noconvert
   uint32_t* get_data() { return (uint32_t*)data; }
-  // noconvert
+  // metron_noconvert
   const uint32_t* get_data() const { return (uint32_t*)data; }
 
-private:
-
+  // metron_internal
   logic<12> addr;
   logic<32> wdata;
   logic<4>  wmask;

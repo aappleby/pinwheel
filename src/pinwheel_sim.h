@@ -11,6 +11,6 @@ struct PinwheelSim : public Sim {
   virtual bool busy() const override;
   virtual void step() override;
 
-  StatePointerStack<Pinwheel> states;
+  StatePointerStack<pinwheel> states;
   int steps = 0;
 };

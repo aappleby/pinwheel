@@ -1,7 +1,7 @@
 #include "pinwheel_sim.h"
 
 
-PinwheelSim::PinwheelSim() : states(new Pinwheel()) {
+PinwheelSim::PinwheelSim() : states(new pinwheel()) {
   auto& pinwheel = states.top();
 }
 

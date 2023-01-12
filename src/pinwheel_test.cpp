@@ -75,7 +75,7 @@ TestResults run_test(const char* test_name, int reps, int max_cycles) {
   double time_a, time_b;
   int elapsed_cycles = 0;
 
-  Pinwheel top;
+  pinwheel top;
 
   for (int rep = 0; rep < reps; rep++) {
     top.tock_twocycle(1);
@@ -86,8 +86,8 @@ TestResults run_test(const char* test_name, int reps, int max_cycles) {
       top.tick_twocycle(0);
       tocks++;
 
-      if (top.debug_reg) {
-        EXPECT_EQ(top.debug_reg, 1, "FAIL @ %d", elapsed_cycles);
+      if (top.get_debug()) {
+        EXPECT_EQ(top.get_debug(), 1, "FAIL @ %d", elapsed_cycles);
         break;
       }
     }
