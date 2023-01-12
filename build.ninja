@@ -65,19 +65,22 @@ build obj/pinwheel_test_pass: run_test bin/pinwheel_test
 
 build sv/block_ram.sv  : metron src/block_ram.h
 build sv/constants.sv  : metron src/constants.h
-build sv/pinwheel2.sv  : metron src/pinwheel2.h
 build sv/regfile.sv    : metron src/regfile.h
 #build sv/pinwheel.sv   : metron src/pinwheel.h  | submodules/Metron/bin/metron
+build sv/pinwheel2.sv  : metron src/pinwheel2.h
+build sv/pinwheel3.sv  : metron src/pinwheel3.h
 
 build obj/check_block_ram_sv : check_sv sv/block_ram.sv
 #build check_constants_sv     : check_sv sv/constants.sv
 #build check_pinwheel_sv : check_sv sv/pinwheel.sv
 build obj/check_pinwheel2_sv : check_sv sv/pinwheel2.sv
+build obj/check_pinwheel3_sv : check_sv sv/pinwheel3.sv
 build obj/check_regfile_sv   : check_sv sv/regfile.sv
 
 build check_sv : phony $
   sv/constants.sv $
   obj/check_block_ram_sv $
   obj/check_pinwheel2_sv $
+  obj/check_pinwheel3_sv $
   obj/check_regfile_sv
 #  check_pinwheel_sv $

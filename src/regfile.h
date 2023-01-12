@@ -4,6 +4,7 @@
 #include "constants.h"
 
 //------------------------------------------------------------------------------
+// verilator lint_off unusedsignal
 
 class regfile {
 public:
@@ -20,17 +21,18 @@ public:
     wren   = wren_;
   }
 
-  logic<32> get_rs1() const {
-    return data[raddr1];
-  }
-
-  logic<32> get_rs2() const {
-    return data[raddr2];
-  }
-
   void tick() {
+    out_1 = data[raddr1];
+    out_2 = data[raddr2];
+
     if (wren) data[waddr] = wdata;
+
+    if (wren && raddr1 == waddr) out_1 = wdata;
+    if (wren && raddr2 == waddr) out_2 = wdata;
   }
+
+  logic<32> get_rs1() const { return out_1; }
+  logic<32> get_rs2() const { return out_2; }
 
   // noconvert
   const uint32_t* get_data() const {
@@ -43,7 +45,11 @@ private:
   logic<10> waddr;
   logic<32> wdata;
   logic<1>  wren;
+
   logic<32> data[1024];
+  logic<32> out_1;
+  logic<32> out_2;
 };
 
 //------------------------------------------------------------------------------
+// verilator lint_on unusedsignal

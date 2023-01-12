@@ -316,7 +316,6 @@ public:
 
     code.tock(b12(code_addr_c), result_c, temp_mask_c, code_wren_c);
     data.tock(b12(data_addr_b), rs2_b,    temp_mask_b, data_wren_b);
-
     regs.tock(reg_raddr1_a, reg_raddr2_a, next_wb_addr_d, next_wb_data_d, next_wb_wren_d);
 
     // noconvert

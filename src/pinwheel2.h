@@ -330,7 +330,10 @@ public:
     //----------
     // Submod tocks
 
-    //code.tock(b12(code_addr_c), result_c, temp_mask_c, code_wren_c);
+    // FIXME this isn't working due to some tracing bug in Metron
+    code.tock(b12(code_addr_c), result_c, temp_mask_c, code_wren_c);
+    data_ram.tock(b12(data_addr_b), rs2_b,    temp_mask_b, data_wren_b);
+    regs.tock(reg_raddr1_a, reg_raddr2_a, next_wb_addr_d, next_wb_data_d, next_wb_wren_d);
 
     // noconvert
     {
@@ -351,10 +354,68 @@ public:
   // FIXME trace modules individually
 
   void tick_twocycle(logic<1> reset_in) {
+    if (reset_in) {
+      //reset_mem();
+      hart_a    = 1;
+      pc_a      = 0;
+
+      hart_b    = 0;
+      pc_b      = 0x00400000 - 4;
+      insn_b    = 0;
+
+      hart_c    = 0;
+      pc_c      = 0;
+      insn_c    = 0;
+      addr_c    = 0;
+      result_c  = 0;
+
+      hart_d    = 0;
+      pc_d      = 0;
+      insn_d    = 0;
+      result_d  = 0;
+      wb_addr_d = 0;
+      wb_data_d = 0;
+      wb_wren_d = 0;
+
+      debug_reg = 0;
+      // noconvert
+      ticks     = 0;
+    }
+    else {
+      hart_d    = hart_c;
+      pc_d      = pc_c;
+      insn_d    = insn_c;
+      result_d  = result_c;
+      wb_addr_d = next_wb_addr_d;
+      wb_data_d = next_wb_data_d;
+      wb_wren_d = next_wb_wren_d;
+
+      hart_c    = hart_b;
+      pc_c      = pc_b;
+      insn_c    = insn_b;
+      addr_c    = next_addr_c;
+      result_c  = next_result_c;
+
+      hart_b    = hart_a;
+      pc_b      = pc_a;
+      insn_b    = next_insn_b;
+
+      hart_a    = next_hart_a;
+      pc_a      = next_pc_a;
+
+      debug_reg = next_debug_reg;
+      // noconvert
+      ticks     = ticks + 1;
+    }
+
     code.tick();
+    data_ram.tick();
+    regs.tick();
   }
 
   //----------------------------------------
+
+private:
 
   logic<5>  next_hart_a;
   logic<32> next_pc_a;

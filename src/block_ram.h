@@ -14,7 +14,7 @@ public:
   }
 
   logic<32> rdata() const {
-    return data[b10(addr, 2)];
+    return data_out;
   }
 
   void tick() {
@@ -23,11 +23,16 @@ public:
       logic<32> new_data = wdata;
       if (addr[0]) new_data = new_data << 8;
       if (addr[1]) new_data = new_data << 16;
+      new_data = ((wmask[0] ? new_data : old_data) & 0x000000FF) |
+                 ((wmask[1] ? new_data : old_data) & 0x0000FF00) |
+                 ((wmask[2] ? new_data : old_data) & 0x00FF0000) |
+                 ((wmask[3] ? new_data : old_data) & 0xFF000000);
 
-      data[b10(addr, 2)] = ((wmask[0] ? new_data : old_data) & 0x000000FF) |
-                           ((wmask[1] ? new_data : old_data) & 0x0000FF00) |
-                           ((wmask[2] ? new_data : old_data) & 0x00FF0000) |
-                           ((wmask[3] ? new_data : old_data) & 0xFF000000);
+      data[b10(addr, 2)] = new_data;
+      data_out = new_data;
+    }
+    else {
+      data_out = data[b10(addr, 2)];
     }
   }
 
@@ -44,6 +49,7 @@ private:
   logic<1>  wren;
 
   logic<32> data[16384];
+  logic<32> data_out;
 };
 
 //------------------------------------------------------------------------------
