@@ -18,13 +18,9 @@
 class pinwheel {
 public:
 
-  pinwheel() {
-    std::string s;
-    value_plusargs("text_file=%s", s);
-    readmemh(s, code.data);
-
-    value_plusargs("data_file=%s", s);
-    readmemh(s, data_ram.data);
+  void init(const char* text_file = nullptr, const char* data_file = nullptr) {
+    readmemh(text_file, code.data);
+    readmemh(data_file, data_ram.data);
   }
 
   // metron_noconvert

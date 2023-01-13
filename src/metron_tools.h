@@ -606,6 +606,7 @@ inline void readmemh(const std::string& path, void* mem, int begin, int end) {
 }
 
 inline void readmemh(const char* path, void* mem) {
+  if (path == nullptr) return;
   auto cache = get_cache(path);
   if (cache) {
     memcpy(mem, cache->blob, cache->size);
@@ -616,6 +617,7 @@ inline void readmemh(const char* path, void* mem) {
 }
 
 inline void readmemh(const std::string& path, void* mem) {
+  if (path.empty()) return;
   auto cache = get_cache(path.c_str());
   if (cache) {
     memcpy(mem, cache->blob, cache->size);

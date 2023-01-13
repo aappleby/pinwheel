@@ -33,6 +33,6 @@ struct PinwheelApp : public App {
   DumpPainter    console_painter;
   BoxPainter     box_painter;
 
-  PinwheelSim*   pinwheel_sim;
-  SimThread*     sim_thread;
+  PinwheelSim*   pinwheel_sim = nullptr;
+  SimThread*     sim_thread = nullptr;
 };

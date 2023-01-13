@@ -13,11 +13,14 @@
 #include "CoreLib/Dumper.h"
 #include "CoreLib/Log.h"
 
+//#include <algorithm>
+
+#include <elf.h>
+#include <sys/stat.h>
+
 //------------------------------------------------------------------------------
 
 PinwheelApp::PinwheelApp() {
-  pinwheel_sim = new PinwheelSim();
-  sim_thread = new SimThread(pinwheel_sim);
 }
 
 //------------------------------------------------------------------------------
@@ -29,6 +32,9 @@ const char* PinwheelApp::app_get_title() {
 //------------------------------------------------------------------------------
 
 void PinwheelApp::app_init(int screen_w, int screen_h) {
+  pinwheel_sim = new PinwheelSim();
+  sim_thread = new SimThread(pinwheel_sim);
+
   dvec2 screen_size(screen_w, screen_h);
 
   view_control.init(screen_size);
@@ -40,17 +46,54 @@ void PinwheelApp::app_init(int screen_w, int screen_h) {
   console_painter.init_ascii();
   box_painter.init();
 
-  sim_thread->start();
+  auto& p = pinwheel_sim->states.top();
 
-  auto& pinwheel = pinwheel_sim->states.top();
-
-  uint8_t* dontcare = (uint8_t*)(&pinwheel);
-  for (int i = 0; i < sizeof(pinwheel); i++) {
+  /*
+  uint8_t* dontcare = (uint8_t*)(&p);
+  for (int i = 0; i < sizeof(p); i++) {
     dontcare[i] = rand();
   }
+  */
 
-  pinwheel.tock_twocycle(true);
-  pinwheel.tick_twocycle(true);
+  const char* firmware_filename = "firmware/bin/hello";
+
+  LOG_G("Loading firmware %s...\n", firmware_filename);
+  struct stat sb;
+  if (stat(firmware_filename, &sb) == -1) {
+    LOG_R("Could not stat firmware %s\n", firmware_filename);
+  }
+  else {
+    LOG_G("Firmware is %d bytes\n", sb.st_size);
+    uint8_t* blob = new uint8_t[sb.st_size];
+    FILE* f = fopen(firmware_filename, "rb");
+    auto result = fread(blob, 1, sb.st_size, f);
+    fclose(f);
+
+    Elf32_Ehdr& header = *(Elf32_Ehdr*)blob;
+    for (int i = 0; i < header.e_phnum; i++) {
+      Elf32_Phdr& phdr = *(Elf32_Phdr*)(blob + header.e_phoff + header.e_phentsize * i);
+      if (phdr.p_type & PT_LOAD) {
+        if (phdr.p_flags & PF_X) {
+          LOG_G("Code @ 0x%08x = %d bytes\n", phdr.p_vaddr, phdr.p_filesz);
+          int len = sizeof(p.code.data) < phdr.p_filesz ? sizeof(p.code.data) : phdr.p_filesz;
+          memcpy(p.code.data, blob + phdr.p_offset, len);
+          //put_cache("rv_tests/firmware.text.vh", blob + phdr.p_offset, phdr.p_filesz);
+        }
+        else if (phdr.p_flags & PF_W) {
+          LOG_G("Data @ 0x%08x = %d bytes\n", phdr.p_vaddr, phdr.p_filesz);
+          int len = sizeof(p.data_ram.data) < phdr.p_filesz ? sizeof(p.data_ram.data) : phdr.p_filesz;
+          memcpy(p.data_ram.data, blob + phdr.p_offset, len);
+          //put_cache("rv_tests/firmware.data.vh", blob + phdr.p_offset, phdr.p_filesz);
+        }
+      }
+    }
+  }
+
+
+  p.tock_twocycle(true);
+  p.tick_twocycle(true);
+
+  sim_thread->start();
 }
 
 //------------------------------------------------------------------------------
@@ -135,7 +178,6 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   auto& view = view_control.view_smooth_snap;
   grid_painter.render(view, screen_size);
 
-#if 0
   StringDumper d;
 
   auto& pinwheel = pinwheel_sim->states.top();
@@ -155,7 +197,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   d("rs1 b         0x%08x\n", pinwheel.regs.get_rs1());
   d("rs2 b         0x%08x\n", pinwheel.regs.get_rs2());
 
-  const auto imm_b  = pinwheel::decode_imm(pinwheel.insn_b);
+  const auto imm_b  = pinwheel.decode_imm(pinwheel.insn_b);
   const auto addr_b = b32(pinwheel.regs.get_rs1() + imm_b);
   d("addr b        0x%08x\n", addr_b);
 
@@ -166,7 +208,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   d("insn c        0x%08x ",  pinwheel.insn_c); print_rv(d, pinwheel.insn_c); d("\n");
   d("addr c        0x%08x\n", pinwheel.addr_c);
   d("result c      0x%08x\n", pinwheel.result_c);
-  d("data c        0x%08x\n", pinwheel.data.rdata());
+  d("data c        0x%08x\n", pinwheel.data_ram.rdata());
   d("\n");
 
   d("hart d        %d\n",     pinwheel.hart_d);
@@ -227,13 +269,12 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   code_painter.highlight_y = ((/*hart0_pc*/pinwheel.pc_b & 0xFFFF) >> 2) / 16;
   code_painter.dump2(view, screen_size, 1024, 512, 0.5, 0.5, 64, 64, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.code.get_data());
 
-  data_painter.dump2(view, screen_size, 1024, 32, 1, 1, 64, 32, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.data.get_data());
+  data_painter.dump2(view, screen_size, 1024, 32, 1, 1, 64, 32, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.data_ram.get_data());
 
   console_painter.dump2(view, screen_size, 32*19,  32, 1, 1, Console::width, Console::height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console1.buf);
   console_painter.dump2(view, screen_size, 32*19, 256, 1, 1, Console::width, Console::height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console2.buf);
   console_painter.dump2(view, screen_size, 32*19, 480, 1, 1, Console::width, Console::height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console3.buf);
   console_painter.dump2(view, screen_size, 32*19, 704, 1, 1, Console::width, Console::height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console4.buf);
-#endif
 
   //box_painter.push_corner_size(1024 + (harts[0]->pc % 64) * 14 - 1, 512 + (harts[0]->pc / 64) * 12, 12*4+2*3+2, 12, 0x8000FFFF);
   //box_painter.push_corner_size(1024 + (harts[1]->pc % 64) * 14 - 1, 512 + (harts[1]->pc / 64) * 12, 12*4+2*3+2, 12, 0x80FFFF00);

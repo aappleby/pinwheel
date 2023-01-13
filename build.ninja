@@ -78,3 +78,20 @@ build check_sv : phony $
   obj/check_block_ram_sv $
   obj/check_pinwheel_sv $
   obj/check_regfile_sv
+
+# cmd = f"yosys -q -p 'read_verilog -Isrc -sv tests/metron_sv/{svname};'"
+# cmd = f"iverilog -g2012 -Wall -Isrc -o bin/{svname}.o tests/metron_sv/{svname}"
+# yosys -q -p 'read_verilog -sv wat.sv; dump; synth_ice40 -json wat.json'
+
+#module bot #(parameter MEMFILE) ();
+#  initial $readmemh(MEMFILE, buffer);
+#  logic[7:0] buffer[0:999];
+#endmodule
+#
+#module mid #(parameter MEMFILE) ();
+#  bot #(.MEMFILE(MEMFILE)) _bot();
+#endmodule
+#
+#module top();
+#  mid #(.MEMFILE("message.hex")) _mid();
+#endmodule
