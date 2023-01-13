@@ -18,6 +18,7 @@
 class pinwheel {
 public:
 
+  // metron_noconvert
   void init(const char* text_file = nullptr, const char* data_file = nullptr) {
     readmemh(text_file, code.data);
     readmemh(data_file, data_ram.data);
@@ -34,6 +35,9 @@ public:
   size_t size_bytes() {
     return sizeof(*this);
   }
+
+  // metron_noconvert
+  bool load_elf(const char* firmware_filename);
 
   //----------
 

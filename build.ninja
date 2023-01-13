@@ -19,7 +19,7 @@ rule lib
   command = ar rcs ${out} ${in}
 
 rule run_test
-  command = ${in} | grep "All tests pass." && touch ${out}
+  command = ${in} | grep "All tests pass" && touch ${out}
 
 rule do_subninja
   command = ninja -C ${dir} ${target}
@@ -46,8 +46,10 @@ build obj/pinwheel_test.o: compile src/pinwheel_test.cpp
 build obj/rvdisasm.o:      compile src/rvdisasm.cpp
 build obj/sim_thread.o:    compile src/sim_thread.cpp
 build obj/pinwheel_sim.o:  compile src/pinwheel_sim.cpp
+build obj/pinwheel.o:      compile src/pinwheel.cpp
 
 build bin/pinwheel: link $
+  obj/pinwheel.o $
   obj/pinwheel_main.o $
   obj/pinwheel_app.o $
   obj/pinwheel_sim.o $
@@ -59,6 +61,7 @@ build bin/pinwheel: link $
   submodules/bin/glad.a | firmware/bin/hello
 
 build bin/pinwheel_test: link $
+  obj/pinwheel.o $
   obj/pinwheel_test.o
 
 build obj/pinwheel_test_pass: run_test bin/pinwheel_test

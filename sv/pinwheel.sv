@@ -26,14 +26,11 @@ module pinwheel (
 );
 /*public:*/
 
-  initial begin
-    string s;
-    $value$plusargs("text_file=%s", s);
-    $readmemh(s, code.data);
-
-    $value$plusargs("data_file=%s", s);
-    $readmemh(s, data_ram.data);
-  end
+  // metron_noconvert
+  /*void init(const char* text_file = nullptr, const char* data_file = nullptr) {
+    readmemh(text_file, code.data);
+    readmemh(data_file, data_ram.data);
+  }*/
 
   // metron_noconvert
   /*pinwheel* clone() {
@@ -46,6 +43,9 @@ module pinwheel (
   /*size_t size_bytes() {
     return sizeof(*this);
   }*/
+
+  // metron_noconvert
+  /*bool load_elf(const char* firmware_filename);*/
 
   //----------
 
