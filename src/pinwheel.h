@@ -62,8 +62,6 @@ public:
 
     logic<32> temp_pc_a = 0;
 
-    core.tock(reset_in, code.rdata());
-
     //----------
     // Fetch
 
@@ -182,6 +180,8 @@ public:
     else if (regfile_cs_c) {
       data_out_c = core.regs.get_rs1();
     }
+
+    core.tock(reset_in, code.rdata(), data_out_c);
 
     logic<32>        unpacked_c = data_out_c;
     if (core.result_c[0]) unpacked_c = unpacked_c >> 8;
