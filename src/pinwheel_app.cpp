@@ -267,9 +267,9 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
 
   code_painter.highlight_x = ((pinwheel.core.pc_b & 0xFFFF) >> 2) % 16;
   code_painter.highlight_y = ((pinwheel.core.pc_b & 0xFFFF) >> 2) / 16;
-  code_painter.dump2(view, screen_size, 1024, 512, 0.5, 0.5, 64, 64, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.code_ram.get_data());
+  code_painter.dump2(view, screen_size, 1024, 1024 - 128 - 32, 0.25, 0.25, 64, 64, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.code_ram.get_data());
 
-  data_painter.dump2(view, screen_size, 1024, 32, 1, 1, 64, 32, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.data_ram.get_data());
+  data_painter.dump2(view, screen_size, 1024, 32, 1, 1, 64, 64, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.data_ram.get_data());
 
   console_painter.dump2(view, screen_size, 32*19,  32, 1, 1, Console::width, Console::height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console1.buf);
   console_painter.dump2(view, screen_size, 32*19, 256, 1, 1, Console::width, Console::height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console2.buf);

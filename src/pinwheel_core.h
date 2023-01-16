@@ -199,23 +199,6 @@ public:
         next_result_c = execute_alu(insn_b, rs1_b, rs2_b);
         break;
       }
-      case RV32I::OP_CUSTOM0: {
-        if (f3_b == 0) {
-          // Switch the other thread to another hart
-          next_pc_a = pc_b + 4;
-          next_result_c = rs2_b;
-        }
-        else if (f3_b == 1) {
-          // Yield to another hart
-          next_pc_a = rs2_b;
-          next_result_c = pc_b + 4;
-        }
-        else {
-          next_pc_a = pc_b + 4;
-          next_result_c = 0;
-        }
-        break;
-      }
       default: {
         printf("%x xxxxx\n", (int)op_b);
         next_pc_a = 0;
@@ -298,12 +281,6 @@ public:
       logic<32> next_wb_data_d = op_c == RV32I::OP_LOAD ? unpacked_c : result_c;
       logic<1>  next_wb_wren_d = op_c != RV32I::OP_STORE && op_c != RV32I::OP_BRANCH;
 
-      if (op_c == RV32I::OP_CUSTOM0 && f3_c == 0) {
-        // Swap result and the PC that we'll use to fetch.
-        // Execute phase should've deposited the new PC in result
-        next_wb_data_d = next_pc_a;
-      }
-
       if (regfile_cs_c && op_c == RV32I::OP_STORE) {
         // Thread writing to other thread's regfile
         next_wb_addr_d = b10(addr_c >> 2);
@@ -358,15 +335,6 @@ public:
     }
     else {
       next_hart_a    = hart_b;
-      if (op_b == RV32I::OP_CUSTOM0 && f3_b == 1) {
-        next_hart_a = rs1_b;
-      }
-
-      if (op_c == RV32I::OP_CUSTOM0 && f3_c == 0) {
-        next_hart_a    = addr_c;
-      }
-
-
 
       hart_d    = hart_c;
       pc_d      = pc_c;
@@ -378,12 +346,7 @@ public:
       insn_c    = insn_b;
 
       logic<32> next_addr_c    = 0;
-      if (op_b == RV32I::OP_CUSTOM0 && f3_b == 0) {
-        next_addr_c = rs1_b;
-      }
-      else {
-        next_addr_c = addr_b;
-      }
+      next_addr_c = addr_b;
 
       addr_c    = next_addr_c;
       result_c  = next_result_c;
@@ -394,10 +357,6 @@ public:
 
       hart_a    = next_hart_a;
 
-      // This is probably wrong...
-      if (op_c == RV32I::OP_CUSTOM0 && f3_c == 0) {
-        next_pc_a = result_c;
-      }
       pc_a      = next_pc_a;
 
       ticks     = ticks + 1;

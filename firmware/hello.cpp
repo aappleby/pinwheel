@@ -213,6 +213,36 @@ Console c4 = { (uint32_t*)0x70000000 };
 //------------------------------------------------------------------------------
 
 int main(int argc, char** argv) {
+  int hart = get_hart();
+  c1.printf("hart    %d\n",   hart);
+  c1.printf("main    0x%p\n", main);
+  c1.printf("stack   0x%p\n", get_sp());
+  c1.printf("global  0x%p\n", get_gp());
+
+  c1.printf("decimal 1234567890 %d\n", 1234567890);
+  c1.printf("decimal -123456789 %d\n", -123456789);
+  c1.printf("hex     0x12345678 0x%x\n", 0x12345678);
+  c1.printf("hex     0x1234     0x%x\n", 0x1234);
+  c1.printf("pointer 0x12345678 0x%p\n", 0x12345678);
+  c1.printf("pointer 0x00001234 0x%p\n", 0x00001234);
+  c1.printf("char    !@#$\\%^&*() %c%c%c%c%c%c%c%c%c%c\n", '!', '@', '#', '$', '%', '^', '&', '*', '(', ')');
+
+  *(volatile uint32_t*)0xFFFFFFF0 = 1;
+  c1.printf("Test pass\n\n\n");
+  return 0;
+}
+
+//------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
 
   // test read from code mem... this can't work with the way pinwheel is set up
   /*
@@ -230,26 +260,12 @@ int main(int argc, char** argv) {
   }
   */
 
-#if 1
-  int hart = get_hart();
 
-  if (hart == 3) {
-    //while(1);
-    c3.printf("Hart %d active\n", hart);
-    for (int i = 0; i < 5; i++) {
-      c3.printf("I am hart %d : %d\n", hart, i);
-    }
-    c3.printf("Yielding back to hart 0\n");
-    uint32_t pc = *((volatile uint32_t*)0xE0000000);
-    yield_hart(0, pc);
-  }
 
-  uint32_t pc = 0x00400000 - 4;
 
-  c4.printf("Yielding to hart 3\n");
-  yield_hart(3, pc);
-  c4.printf("Back from yield\n");
-#endif
+
+
+
 
   //for (int i = 0; i < 300; i++) {
   /*
@@ -291,27 +307,3 @@ int main(int argc, char** argv) {
     printf("hart %d reg r%d = 0x%p\n", 2, i, reg);
   }
   */
-
-#if 0
-
-
-  printf("hart    %d\n", hart);
-  printf("main    0x%p\n", main);
-  printf("stack   0x%p\n", get_sp());
-  printf("global  0x%p\n", get_gp());
-
-  printf("decimal 1234567890 %d\n", 1234567890);
-  printf("decimal -123456789 %d\n", -123456789);
-  printf("hex     0x12345678 0x%x\n", 0x12345678);
-  printf("hex     0x1234     0x%x\n", 0x1234);
-  printf("pointer 0x12345678 0x%p\n", 0x12345678);
-  printf("pointer 0x00001234 0x%p\n", 0x00001234);
-  printf("char    !@#$\\%^&*() %c%c%c%c%c%c%c%c%c%c\n", '!', '@', '#', '$', '%', '^', '&', '*', '(', ')');
-#endif
-
-  *(volatile uint32_t*)0xFFFFFFF0 = 1;
-  c1.printf("Test pass\n");
-  return 0;
-}
-
-//------------------------------------------------------------------------------

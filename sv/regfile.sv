@@ -8,12 +8,12 @@
 module regfile (
   // global clock
   input logic clock,
-  // tock() ports
-  input logic[9:0] tock_raddr1_,
-  input logic[9:0] tock_raddr2_,
-  input logic[9:0] tock_waddr_,
-  input logic[31:0] tock_wdata_,
-  input logic tock_wren_,
+  // tick() ports
+  input logic[9:0] tick_raddr1,
+  input logic[9:0] tick_raddr2,
+  input logic[9:0] tick_waddr,
+  input logic[31:0] tick_wdata,
+  input logic tick_wren,
   // get_rs1() ports
   output logic[31:0] get_rs1_ret,
   // get_rs2() ports
@@ -26,22 +26,14 @@ module regfile (
     for (i = 0; i < 1024; i = i + 1) data[i] = 0;
   end
 
-  always_comb begin : tock
-    raddr1 = tock_raddr1_;
-    raddr2 = tock_raddr2_;
-    waddr  = tock_waddr_;
-    wdata  = tock_wdata_;
-    wren   = tock_wren_;
-  end
-
   always_ff @(posedge clock) begin : tick
-    out_1 <= data[raddr1];
-    out_2 <= data[raddr2];
+    out_1 <= data[tick_raddr1];
+    out_2 <= data[tick_raddr2];
 
-    if (wren) data[waddr] <= wdata;
+    if (tick_wren) data[tick_waddr] <= tick_wdata;
 
-    if (wren && raddr1 == waddr) out_1 <= wdata;
-    if (wren && raddr2 == waddr) out_2 <= wdata;
+    if (tick_wren && tick_raddr1 == tick_waddr) out_1 <= tick_wdata;
+    if (tick_wren && tick_raddr2 == tick_waddr) out_2 <= tick_wdata;
   end
 
   always_comb begin : get_rs1 get_rs1_ret = out_1; end
@@ -53,12 +45,6 @@ module regfile (
   }*/
 
   // metron_internal
-  logic[9:0] raddr1;
-  logic[9:0] raddr2;
-  logic[9:0] waddr;
-  logic[31:0] wdata;
-  logic  wren;
-
   logic[31:0] data[1024];
   logic[31:0] out_1;
   logic[31:0] out_2;
