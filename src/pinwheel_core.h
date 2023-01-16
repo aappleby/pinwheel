@@ -92,8 +92,6 @@ public:
 
   void tock(logic<1> reset_in, logic<32> code_rdata, logic<32> bus_rdata) {
 
-    next_result_c  = 0;
-
     logic<5> op_b   = b5(insn_b, 2);
     logic<3> f3_b   = b3(insn_b, 12);
     logic<5> rs1a_b = b5(insn_b, 15);
@@ -121,7 +119,6 @@ public:
       bus_wren   = (op_b == RV32I::OP_STORE);
     }
 
-
     //----------
     // Fetch
 
@@ -147,67 +144,29 @@ public:
     //----------
     // Execute
 
-    next_pc_a      = 0;
-    switch(op_b) {
-      case RV32I::OP_BRANCH: {
-        next_pc_a = take_branch ? pc_b + imm_b : pc_b + b32(4);
-        next_result_c = DONTCARE;
-        break;
+    {
+      logic<32> next_hart_pc = 0;
+
+      if (pc_b) switch(op_b) {
+        case RV32I::OP_BRANCH: next_hart_pc = take_branch ? cat(hart_b, b24(pc_b + imm_b)) : cat(hart_b, b24(pc_b + 4)); break;
+        case RV32I::OP_JAL:    next_hart_pc = cat(hart_b, b24(pc_b + imm_b)); break;
+        case RV32I::OP_JALR:   next_hart_pc = addr_b; break;
+        case RV32I::OP_LUI:    next_hart_pc = cat(hart_b, b24(pc_b + 4)); break;
+        case RV32I::OP_AUIPC:  next_hart_pc = cat(hart_b, b24(pc_b + 4)); break;
+        case RV32I::OP_LOAD:   next_hart_pc = cat(hart_b, b24(pc_b + 4)); break;
+        case RV32I::OP_STORE:  next_hart_pc = cat(hart_b, b24(pc_b + 4)); break;
+        case RV32I::OP_SYSTEM: next_hart_pc = cat(hart_b, b24(pc_b + 4)); break;
+        case RV32I::OP_OPIMM:  next_hart_pc = cat(hart_b, b24(pc_b + 4)); break;
+        case RV32I::OP_OP:     next_hart_pc = cat(hart_b, b24(pc_b + 4)); break;
+        default: printf("%x xxxxx\n", (int)op_b); next_hart_a = 0; next_pc_a = 0; break;
       }
-      case RV32I::OP_JAL: {
-        next_pc_a = pc_b + imm_b;
-        next_result_c = pc_b + 4;
-        break;
-      }
-      case RV32I::OP_JALR: {
-        next_pc_a = addr_b;
-        next_result_c = pc_b + 4;
-        break;
-      }
-      case RV32I::OP_LUI: {
-        next_pc_a = pc_b + 4;
-        next_result_c = imm_b;
-        break;
-      }
-      case RV32I::OP_AUIPC: {
-        next_pc_a = pc_b + 4;
-        next_result_c = pc_b + imm_b;
-        break;
-      }
-      case RV32I::OP_LOAD: {
-        next_pc_a = pc_b + 4;
-        next_result_c = addr_b;
-        break;
-      }
-      case RV32I::OP_STORE: {
-        next_pc_a = pc_b + 4;
-        next_result_c = rs2_b;
-        break;
-      }
-      case RV32I::OP_SYSTEM: {
-        next_pc_a = pc_b + 4;
-        next_result_c = execute_system(insn_b);
-        break;
-      }
-      case RV32I::OP_OPIMM: {
-        next_pc_a = pc_b + 4;
-        next_result_c = execute_alu(insn_b, rs1_b, rs2_b);
-        break;
-      }
-      case RV32I::OP_OP: {
-        next_pc_a = pc_b + 4;
-        next_result_c = execute_alu(insn_b, rs1_b, rs2_b);
-        break;
-      }
-      default: {
-        printf("%x xxxxx\n", (int)op_b);
-        next_pc_a = 0;
-        next_result_c = DONTCARE;
-        break;
-      }
+
+      next_hart_a = b8(next_hart_pc, 24);
+      next_pc_a   = b24(next_hart_pc);
+      hart_b      = b8(next_hart_pc, 24);
     }
 
-    if (pc_b == 0) next_pc_a = 0;
+
 
     //----------
     // Memory + code/data/reg read/write overrides for cross-thread stuff
@@ -220,6 +179,7 @@ public:
       // and we can't do it earlier or later (we can read it during C, but then it's not back
       // in time to write to the regfile).
 
+      /*
       logic<5> op_c   = b5(insn_c, 2);
       logic<3> f3_c   = b3(insn_c, 12);
 
@@ -237,6 +197,12 @@ public:
       code_wdata = result_c;
       code_wmask = temp_mask_c;
       code_wren  = (op_c == RV32I::OP_STORE) && code_cs_c;
+      */
+
+      code_addr  = next_pc_a;
+      code_wdata = 0;
+      code_wmask = 0;
+      code_wren  = 0;
     }
 
   }
@@ -280,13 +246,6 @@ public:
       logic<10> next_wb_addr_d = cat(b5(hart_c), rd_c);
       logic<32> next_wb_data_d = op_c == RV32I::OP_LOAD ? unpacked_c : result_c;
       logic<1>  next_wb_wren_d = op_c != RV32I::OP_STORE && op_c != RV32I::OP_BRANCH;
-
-      if (regfile_cs_c && op_c == RV32I::OP_STORE) {
-        // Thread writing to other thread's regfile
-        next_wb_addr_d = b10(addr_c >> 2);
-        next_wb_data_d = result_c;
-        next_wb_wren_d = 1;
-      }
 
       wb_addr_d = next_wb_addr_d;
       wb_data_d = next_wb_data_d;
@@ -334,7 +293,23 @@ public:
       ticks     = 0;
     }
     else {
-      next_hart_a    = hart_b;
+
+      // FIXME jalr needs to write to _destination_ regfile.
+
+      logic<32> next_result_c  = 0;
+      switch(op_b) {
+        case RV32I::OP_BRANCH: next_result_c = DONTCARE;     break;
+        case RV32I::OP_JAL:    next_result_c = cat(hart_b, b24(pc_b + 4));     break;
+        case RV32I::OP_JALR:   next_result_c = cat(hart_b, b24(pc_b + 4));     break;
+        case RV32I::OP_LUI:    next_result_c = imm_b;        break;
+        case RV32I::OP_AUIPC:  next_result_c = cat(hart_b, pc_b) + imm_b; break;
+        case RV32I::OP_LOAD:   next_result_c = addr_b;       break;
+        case RV32I::OP_STORE:  next_result_c = rs2_b;         break;
+        case RV32I::OP_SYSTEM: next_result_c = execute_system(insn_b); break;
+        case RV32I::OP_OPIMM:  next_result_c = execute_alu(insn_b, rs1_b, rs2_b); break;
+        case RV32I::OP_OP:     next_result_c = execute_alu(insn_b, rs1_b, rs2_b); break;
+        default:               next_result_c = DONTCARE; printf("%x xxxxx\n", (int)op_b); break;
+      }
 
       hart_d    = hart_c;
       pc_d      = pc_c;
@@ -356,7 +331,6 @@ public:
       insn_b    = pc_a == 0 ? b32(0) : code_rdata;
 
       hart_a    = next_hart_a;
-
       pc_a      = next_pc_a;
 
       ticks     = ticks + 1;
@@ -366,9 +340,9 @@ public:
 
   //----------------------------------------
   // metron_internal
-  logic<5>  next_hart_a;
-  logic<32> next_pc_a;
-  logic<32> next_result_c;
+
+  logic<24> next_hart_a;
+  logic<24> next_pc_a;
 
   //----------------------------------------
   // Signals to code ram
@@ -392,21 +366,21 @@ public:
   regfile   regs;
   logic<32> ticks;
 
-  logic<5>  hart_a;
-  logic<32> pc_a;
+  logic<8>  hart_a;
+  logic<24> pc_a;
 
-  logic<5>  hart_b;
-  logic<32> pc_b;
+  logic<8>  hart_b;
+  logic<24> pc_b;
   logic<32> insn_b;
 
-  logic<5>  hart_c;
-  logic<32> pc_c;
+  logic<8>  hart_c;
+  logic<24> pc_c;
   logic<32> insn_c;
   logic<32> addr_c;
   logic<32> result_c;
 
-  logic<5>  hart_d;
-  logic<32> pc_d;
+  logic<8>  hart_d;
+  logic<24> pc_d;
   logic<32> insn_d;
   logic<32> result_d;
   logic<10> wb_addr_d;

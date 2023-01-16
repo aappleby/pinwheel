@@ -188,8 +188,6 @@ void _start() {
   __asm__(R"(
   .option push
   .option norelax
-    li x1, 0
-
     la gp, __global_pointer$
     la sp, _stack_top
     csrr t0, mhartid
@@ -212,6 +210,8 @@ Console c4 = { (uint32_t*)0x70000000 };
 
 //------------------------------------------------------------------------------
 
+typedef int (*start_func)(void);
+
 int main(int argc, char** argv) {
   int hart = get_hart();
   c1.printf("hart    %d\n",   hart);
@@ -226,6 +226,15 @@ int main(int argc, char** argv) {
   c1.printf("pointer 0x12345678 0x%p\n", 0x12345678);
   c1.printf("pointer 0x00001234 0x%p\n", 0x00001234);
   c1.printf("char    !@#$\\%^&*() %c%c%c%c%c%c%c%c%c%c\n", '!', '@', '#', '$', '%', '^', '&', '*', '(', ')');
+
+  if (hart == 0) {
+    c1.printf("Forking to hart 1\n");
+    start_func start0 = reinterpret_cast<start_func>(_start);
+    start_func start1 = reinterpret_cast<start_func>(reinterpret_cast<uint32_t>(start0) + 0x01000000);
+    c1.printf("start0   0x%p\n", start0);
+    c1.printf("start1   0x%p\n", start1);
+    start1();
+  }
 
   *(volatile uint32_t*)0xFFFFFFF0 = 1;
   c1.printf("Test pass\n\n\n");

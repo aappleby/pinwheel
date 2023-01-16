@@ -245,7 +245,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
 
   text_painter.render_string(view, screen_size, d.s.c_str(), 32, 32);
 
-  logic<32> hart0_pc = pinwheel.core.pc_a ? pinwheel.core.pc_a : pinwheel.core.pc_b;
+  logic<24> hart0_pc = pinwheel.core.pc_a ? pinwheel.core.pc_a : pinwheel.core.pc_b;
   {
     d.clear();
 
