@@ -220,7 +220,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   d("\n");
 
   d("debug_reg     0x%08x\n", pinwheel.debug_reg);
-  d("ticks         %lld\n",   pinwheel.ticks);
+  d("ticks         %lld\n",   pinwheel.core.ticks);
   d("speed         %f\n",     double(sim_thread->sim_steps) / sim_thread->sim_time);
   d("states        %d\n",     pinwheel_sim->states.state_count());
   d("state bytes   %d\n",     pinwheel_sim->states.state_size_bytes());

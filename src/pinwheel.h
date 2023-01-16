@@ -52,14 +52,11 @@ public:
     //----------
     // Memory
 
-    logic<1> code_cs_b     = b4(addr_b, 28) == 0x0;
-    logic<1> console1_cs_b = b4(addr_b, 28) == 0x4;
-    logic<1> console2_cs_b = b4(addr_b, 28) == 0x5;
-    logic<1> console3_cs_b = b4(addr_b, 28) == 0x6;
-    logic<1> console4_cs_b = b4(addr_b, 28) == 0x7;
-    logic<1> data_cs_b     = b4(addr_b, 28) == 0x8;
-    logic<1> regfile_cs_b  = b4(addr_b, 28) == 0xE;
-    logic<1> debug_cs_b    = b4(addr_b, 28) == 0xF;
+    logic<1> console1_cs_b = b4(core.addr_b(), 28) == 0x4;
+    logic<1> console2_cs_b = b4(core.addr_b(), 28) == 0x5;
+    logic<1> console3_cs_b = b4(core.addr_b(), 28) == 0x6;
+    logic<1> console4_cs_b = b4(core.addr_b(), 28) == 0x7;
+    logic<1> debug_cs_b    = b4(core.addr_b(), 28) == 0xF;
 
     logic<1> code_cs_c     = b4(core.addr_c, 28) == 0x0;
     logic<1> console1_cs_c = b4(core.addr_c, 28) == 0x4;
@@ -83,6 +80,8 @@ public:
 
     core.tock(reset_in, code.rdata(), data_out_c);
 
+    next_debug_reg = (b5(core.insn_b, 2) == RV32I::OP_STORE) && debug_cs_b ? rs2_b : debug_reg;
+
     //----------
     // Submod tocks
 
@@ -97,11 +96,6 @@ public:
     console3.tock(console3_cs_b && b5(core.insn_b, 2) == RV32I::OP_STORE, core.bus_wdata);
     // metron_noconvert
     console4.tock(console4_cs_b && b5(core.insn_b, 2) == RV32I::OP_STORE, core.bus_wdata);
-
-    //----------
-    // Signal writeback
-
-    next_debug_reg = (b5(core.insn_b, 2) == RV32I::OP_STORE) && debug_cs_b ? rs2_b : debug_reg;
   }
 
   //----------------------------------------
@@ -118,13 +112,9 @@ public:
 
     if (reset_in) {
       debug_reg = 0;
-      // metron_noconvert
-      ticks     = 0;
     }
     else {
       debug_reg = next_debug_reg;
-      // metron_noconvert
-      ticks     = ticks + 1;
     }
 
     code.tick();
@@ -166,8 +156,6 @@ public:
   Console console3;
   // metron_noconvert
   Console console4;
-  // metron_noconvert
-  uint64_t ticks;
 };
 
 // verilator lint_on unusedsignal
