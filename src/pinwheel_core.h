@@ -92,7 +92,6 @@ public:
 
   void tock(logic<1> reset_in, logic<32> code_rdata, logic<32> bus_rdata) {
 
-    next_pc_a      = 0;
     next_result_c  = 0;
 
     logic<5> op_b   = b5(insn_b, 2);
@@ -148,6 +147,7 @@ public:
     //----------
     // Execute
 
+    next_pc_a      = 0;
     switch(op_b) {
       case RV32I::OP_BRANCH: {
         next_pc_a = take_branch ? pc_b + imm_b : pc_b + b32(4);
@@ -366,9 +366,6 @@ public:
         next_hart_a    = addr_c;
       }
 
-      if (op_c == RV32I::OP_CUSTOM0 && f3_c == 0) {
-        next_pc_a      = result_c;
-      }
 
 
       hart_d    = hart_c;
@@ -396,6 +393,11 @@ public:
       insn_b    = pc_a == 0 ? b32(0) : code_rdata;
 
       hart_a    = next_hart_a;
+
+      // This is probably wrong...
+      if (op_c == RV32I::OP_CUSTOM0 && f3_c == 0) {
+        next_pc_a = result_c;
+      }
       pc_a      = next_pc_a;
 
       ticks     = ticks + 1;
