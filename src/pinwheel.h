@@ -91,8 +91,11 @@ public:
 
     // metron_noconvert
     console1.tock(console1_cs_b && b5(core.insn_b, 2) == RV32I::OP_STORE, core.bus_wdata);
+    // metron_noconvert
     console2.tock(console2_cs_b && b5(core.insn_b, 2) == RV32I::OP_STORE, core.bus_wdata);
+    // metron_noconvert
     console3.tock(console3_cs_b && b5(core.insn_b, 2) == RV32I::OP_STORE, core.bus_wdata);
+    // metron_noconvert
     console4.tock(console4_cs_b && b5(core.insn_b, 2) == RV32I::OP_STORE, core.bus_wdata);
 
     //----------
@@ -145,21 +148,15 @@ public:
 
   //----------------------------------------
 
-  pinwheel_core core;
-
   // metron_internal
-
+  pinwheel_core core;
   logic<32> next_debug_reg;
   logic<32> debug_reg;
-
   logic<32> gpio_dir;
   logic<32> gpio_in;
   logic<32> gpio_out;
-
   block_ram  code;
-
-  // FIXME having this named data and a field inside block_ram named data breaks context resolve
-  block_ram  data_ram;
+  block_ram  data_ram; // FIXME having this named data and a field inside block_ram named data breaks context resolve
 
   // metron_noconvert
   Console console1;
@@ -169,7 +166,6 @@ public:
   Console console3;
   // metron_noconvert
   Console console4;
-
   // metron_noconvert
   uint64_t ticks;
 };
