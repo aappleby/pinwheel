@@ -13,15 +13,7 @@ public:
     for (int i = 0; i < 1024; i++) data[i] = 0;
   }
 
-  void tock(logic<10> raddr1_ , logic<10> raddr2_, logic<10> waddr_, logic<32> wdata_, logic<1> wren_) {
-    raddr1 = raddr1_;
-    raddr2 = raddr2_;
-    waddr  = waddr_;
-    wdata  = wdata_;
-    wren   = wren_;
-  }
-
-  void tick() {
+  void tick(logic<10> raddr1 , logic<10> raddr2, logic<10> waddr, logic<32> wdata, logic<1> wren) {
     out_1 = data[raddr1];
     out_2 = data[raddr2];
 
@@ -40,12 +32,6 @@ public:
   }
 
   // metron_internal
-  logic<10> raddr1;
-  logic<10> raddr2;
-  logic<10> waddr;
-  logic<32> wdata;
-  logic<1>  wren;
-
   logic<32> data[1024];
   logic<32> out_1;
   logic<32> out_2;

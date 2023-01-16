@@ -95,9 +95,35 @@ public:
     next_wb_wren_d = 0;
 
     //----------
-    // Fetch
+    // Data bus
 
-    logic<32> temp_pc_a = 0;
+    {
+      logic<5> op_b   = b5(insn_b, 2);
+      logic<3> f3_b   = b3(insn_b, 12);
+      logic<5> rs1a_b = b5(insn_b, 15);
+      logic<5> rs2a_b = b5(insn_b, 20);
+
+      logic<32> rs1_b  = rs1a_b ? regs.get_rs1() : b32(0);
+      logic<32> rs2_b  = rs2a_b ? regs.get_rs2() : b32(0);
+      logic<32> imm_b  = decode_imm(insn_b);
+      logic<32> addr_b = b32(rs1_b + imm_b);
+
+      logic<4>       temp_mask_b = 0;
+      if (f3_b == 0) temp_mask_b = 0b0001;
+      if (f3_b == 1) temp_mask_b = 0b0011;
+      if (f3_b == 2) temp_mask_b = 0b1111;
+      if (addr_b[0]) temp_mask_b = temp_mask_b << 1;
+      if (addr_b[1]) temp_mask_b = temp_mask_b << 2;
+
+      bus_addr   = addr_b;
+      bus_wdata  = rs2_b;
+      bus_wmask  = temp_mask_b;
+      bus_wren   = (op_b == RV32I::OP_STORE);
+    }
+
+
+    //----------
+    // Fetch
 
     if (pc_b) {
       logic<5> op_b   = b5(insn_b, 2);
@@ -133,24 +159,6 @@ public:
         case RV32I::OP_JALR:    temp_pc_a = addr_b; break;
         default:                temp_pc_a = pc_b + 4; break;
       }
-    }
-
-    //----------
-    // Decode
-
-    {
-      logic<5> rs1a_b = b5(insn_b, 15);
-      logic<5> rs2a_b = b5(insn_b, 20);
-
-      logic<32> rs1_b  = rs1a_b ? regs.get_rs1() : b32(0);
-      logic<32> rs2_b  = rs2a_b ? regs.get_rs2() : b32(0);
-      logic<32> imm_b  = decode_imm(insn_b);
-      logic<32> addr_b = b32(rs1_b + imm_b);
-
-      logic<32> insn_a = code_rdata;
-
-      next_insn_b = pc_a == 0 ? b32(0) : insn_a;
-      next_addr_c = addr_b;
     }
 
     //----------
@@ -224,9 +232,20 @@ public:
       code_wren  = (op_c == RV32I::OP_STORE) && code_cs_c;
     }
 
+    //----------------------------------------
+
+    next_pc_a = temp_pc_a;
+    temp_pc_a = 0;
+  }
+
+  //----------------------------------------
+
+  void tick(logic<1> reset_in, logic<32> code_rdata, logic<32> bus_rdata) {
+
+    //----------
+    // Decode
+
     {
-      logic<5> op_b   = b5(insn_b, 2);
-      logic<3> f3_b   = b3(insn_b, 12);
       logic<5> rs1a_b = b5(insn_b, 15);
       logic<5> rs2a_b = b5(insn_b, 20);
 
@@ -235,27 +254,11 @@ public:
       logic<32> imm_b  = decode_imm(insn_b);
       logic<32> addr_b = b32(rs1_b + imm_b);
 
-      logic<4>       temp_mask_b = 0;
-      if (f3_b == 0) temp_mask_b = 0b0001;
-      if (f3_b == 1) temp_mask_b = 0b0011;
-      if (f3_b == 2) temp_mask_b = 0b1111;
-      if (addr_b[0]) temp_mask_b = temp_mask_b << 1;
-      if (addr_b[1]) temp_mask_b = temp_mask_b << 2;
+      logic<32> insn_a = code_rdata;
 
-      bus_addr   = addr_b;
-      bus_wdata  = rs2_b;
-      bus_wmask  = temp_mask_b;
-      bus_wren   = (op_b == RV32I::OP_STORE);
+      next_insn_b = pc_a == 0 ? b32(0) : insn_a;
+      next_addr_c = addr_b;
     }
-
-    //----------------------------------------
-
-    next_pc_a  = temp_pc_a;
-  }
-
-  //----------------------------------------
-
-  void tick(logic<1> reset_in, logic<32> code_rdata, logic<32> bus_rdata) {
 
     //----------
     // Write
@@ -321,7 +324,7 @@ public:
         reg_raddr1_a = b10(addr_b >> 2);
       }
 
-      regs.tock(reg_raddr1_a, reg_raddr2_a, next_wb_addr_d, next_wb_data_d, next_wb_wren_d);
+      regs.tick(reg_raddr1_a, reg_raddr2_a, next_wb_addr_d, next_wb_data_d, next_wb_wren_d);
     }
 
     //----------------------------------------
@@ -375,12 +378,12 @@ public:
       ticks     = ticks + 1;
     }
 
-    regs.tick();
   }
 
   //----------------------------------------
   // metron_internal
   logic<5>  next_hart_a;
+  logic<32> temp_pc_a;
   logic<32> next_pc_a;
   logic<32> next_insn_b;
   logic<32> next_addr_c;
