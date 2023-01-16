@@ -6,8 +6,9 @@
 class block_ram {
 public:
 
-  void tock(logic<12> addr_, logic<32> wdata_, logic<4> wmask_, logic<1> wren_) {
+  void tock(logic<12> addr_, logic<1> rden_, logic<32> wdata_, logic<4> wmask_, logic<1> wren_) {
     addr  = addr_;
+    rden  = rden_;
     wdata = wdata_;
     wmask = wmask_;
     wren  = wren_;
@@ -29,10 +30,10 @@ public:
                  ((wmask[3] ? new_data : old_data) & 0xFF000000);
 
       data[b10(addr, 2)] = new_data;
-      data_out = new_data;
+      data_out = rden ? new_data : b32(0);
     }
     else {
-      data_out = data[b10(addr, 2)];
+      data_out = rden ? data[b10(addr, 2)] : b32(0);
     }
   }
 
@@ -43,6 +44,7 @@ public:
 
   // metron_internal
   logic<12> addr;
+  logic<1>  rden;
   logic<32> wdata;
   logic<4>  wmask;
   logic<1>  wren;
