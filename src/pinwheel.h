@@ -9,17 +9,11 @@
 
 //------------------------------------------------------------------------------
 
-// verilator lint_off unusedsignal
-// verilator lint_off varhidden
-
-// FIXME remove this once everything hooked up
-// verilator lint_off UNDRIVEN
-
 class pinwheel {
 public:
 
   pinwheel(const char* text_file = nullptr, const char* data_file = nullptr) {
-    readmemh(text_file, code.data);
+    readmemh(text_file, code_ram.data);
     readmemh(data_file, data_ram.data);
   }
 
@@ -35,7 +29,7 @@ public:
   // metron_noconvert
   bool load_elf(const char* firmware_filename);
   // metron_noconvert
-  uint32_t* get_code() { return code.get_data(); }
+  uint32_t* get_code() { return code_ram.get_data(); }
   // metron_noconvert
   uint32_t* get_data() { return data_ram.get_data(); }
   // metron_noconvert
@@ -46,57 +40,44 @@ public:
 
   void tock(logic<1> reset_in) {
 
-    logic<4> bus_tag_b = b4(core.addr_b(), 28);
-    logic<4> bus_tag_c = b4(core.addr_c, 28);
+    logic<32> code_to_core = code_ram.rdata();
+    logic<32> bus_to_core  = data_ram.rdata();
 
-    logic<32> data_out_c = 0;
-    if (bus_tag_c == 0x8) data_out_c = data_ram.rdata();
-    if (bus_tag_c == 0xF) data_out_c = debug_reg;
+    if (debug_reg_cs) bus_to_core = debug_reg;
 
-    core.tock(reset_in, code.rdata(), data_out_c);
-
-    //----------
-    // Submod tocks
-
-    code.tock    (b12(core.code_addr), 1,                core.code_wdata, core.code_wmask, core.code_wren && bus_tag_b == 0x0);
-    data_ram.tock(b12(core.bus_addr),  bus_tag_b == 0x8, core.bus_wdata,  core.bus_wmask,  core.bus_wren  && bus_tag_b == 0x8);
-
-    // metron_noconvert
-    console1.tock(bus_tag_b == 0x4 && b5(core.insn_b, 2) == RV32I::OP_STORE, core.bus_wdata);
-    // metron_noconvert
-    console2.tock(bus_tag_b == 0x5 && b5(core.insn_b, 2) == RV32I::OP_STORE, core.bus_wdata);
-    // metron_noconvert
-    console3.tock(bus_tag_b == 0x6 && b5(core.insn_b, 2) == RV32I::OP_STORE, core.bus_wdata);
-    // metron_noconvert
-    console4.tock(bus_tag_b == 0x7 && b5(core.insn_b, 2) == RV32I::OP_STORE, core.bus_wdata);
+    core.tock(reset_in, code_to_core, bus_to_core);
   }
 
   //----------------------------------------
   // FIXME trace modules individually
 
   void tick(logic<1> reset_in) {
+
+    logic<4> bus_tag_b = b4(core.addr_b(), 28);
+
     if (reset_in) {
-      bus_addr = 0;
       debug_reg = 0;
+      debug_reg_cs = 0;
     }
     else {
-      logic<1> debug_cs_b  = b4(core.addr_b(), 28) == 0xF;
+      logic<1> debug_cs_b = bus_tag_b == 0xF;
       if (core.bus_wren && debug_cs_b) debug_reg = core.bus_wdata;
+      debug_reg_cs = debug_cs_b;
     }
 
-    core.tick(reset_in);
-    code.tick();
-    data_ram.tick();
-    core.regs.tick();
+    code_ram.tick(b12(core.code_addr), 1,                core.code_wdata, core.code_wmask, core.code_wren && bus_tag_b == 0x0);
+    data_ram.tick(b12(core.bus_addr),  bus_tag_b == 0x8, core.bus_wdata,  core.bus_wmask,  core.bus_wren  && bus_tag_b == 0x8);
 
     // metron_noconvert
-    console1.tick(reset_in);
+    console1.tick(reset_in, bus_tag_b == 0x4 && core.bus_wren, core.bus_wdata);
     // metron_noconvert
-    console2.tick(reset_in);
+    console2.tick(reset_in, bus_tag_b == 0x5 && core.bus_wren, core.bus_wdata);
     // metron_noconvert
-    console3.tick(reset_in);
+    console3.tick(reset_in, bus_tag_b == 0x6 && core.bus_wren, core.bus_wdata);
     // metron_noconvert
-    console4.tick(reset_in);
+    console4.tick(reset_in, bus_tag_b == 0x7 && core.bus_wren, core.bus_wdata);
+
+    core.tick(reset_in);
   }
 
   //----------------------------------------
@@ -104,11 +85,10 @@ public:
   // metron_internal
   pinwheel_core core;
 
-  logic<32> bus_addr;
-  logic<32> next_bus_addr;
-
   logic<32> debug_reg;
-  block_ram code;
+  logic<1>  debug_reg_cs;
+
+  block_ram code_ram;
   block_ram data_ram; // FIXME having this named data and a field inside block_ram named data breaks context resolve
 
   logic<32> gpio_dir;

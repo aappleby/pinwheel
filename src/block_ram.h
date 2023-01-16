@@ -6,20 +6,12 @@
 class block_ram {
 public:
 
-  void tock(logic<12> addr_, logic<1> rden_, logic<32> wdata_, logic<4> wmask_, logic<1> wren_) {
-    addr  = addr_;
-    rden  = rden_;
-    wdata = wdata_;
-    wmask = wmask_;
-    wren  = wren_;
-  }
-
   logic<32> rdata() const {
     return data_out;
   }
 
-  void tick() {
-    if (wren) {
+  void tick(logic<12> addr, logic<1> cs, logic<32> wdata, logic<4> wmask, logic<1> wren) {
+    if (cs && wren) {
       logic<32> old_data = data[b10(addr, 2)];
       logic<32> new_data = wdata;
       if (addr[0]) new_data = new_data << 8;
@@ -30,10 +22,10 @@ public:
                  ((wmask[3] ? new_data : old_data) & 0xFF000000);
 
       data[b10(addr, 2)] = new_data;
-      data_out = rden ? new_data : b32(0);
+      data_out = cs ? new_data : b32(0);
     }
     else {
-      data_out = rden ? data[b10(addr, 2)] : b32(0);
+      data_out = cs ? data[b10(addr, 2)] : b32(0);
     }
   }
 
@@ -43,12 +35,6 @@ public:
   const uint32_t* get_data() const { return (uint32_t*)data; }
 
   // metron_internal
-  logic<12> addr;
-  logic<1>  rden;
-  logic<32> wdata;
-  logic<4>  wmask;
-  logic<1>  wren;
-
   logic<32> data[16384];
   logic<32> data_out;
 };

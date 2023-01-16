@@ -75,8 +75,8 @@ void PinwheelApp::app_init(int screen_w, int screen_h) {
       if (phdr.p_type & PT_LOAD) {
         if (phdr.p_flags & PF_X) {
           LOG_G("Code @ 0x%08x = %d bytes\n", phdr.p_vaddr, phdr.p_filesz);
-          int len = sizeof(p.code.data) < phdr.p_filesz ? sizeof(p.code.data) : phdr.p_filesz;
-          memcpy(p.code.data, blob + phdr.p_offset, len);
+          int len = sizeof(p.code_ram.data) < phdr.p_filesz ? sizeof(p.code_ram.data) : phdr.p_filesz;
+          memcpy(p.code_ram.data, blob + phdr.p_offset, len);
           //put_cache("rv_tests/firmware.text.vh", blob + phdr.p_offset, phdr.p_filesz);
         }
         else if (phdr.p_flags & PF_W) {
@@ -182,7 +182,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
 
   auto& pinwheel = pinwheel_sim->states.top();
 
-  uint32_t insn_a = pinwheel.core.pc_a ? uint32_t(pinwheel.code.rdata()) : 0;
+  uint32_t insn_a = pinwheel.core.pc_a ? uint32_t(pinwheel.code_ram.rdata()) : 0;
 
   d("hart_a        %d\n",     pinwheel.core.hart_a);
   d("pc_a          0x%08x\n", pinwheel.core.pc_a);
@@ -255,7 +255,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
 
       if (offset < 0) op = 0;
       else if (offset > (65536 - 4)) op = 0;
-      else op = pinwheel.code.get_data()[offset >> 2];
+      else op = pinwheel.code_ram.get_data()[offset >> 2];
 
       d("%c0x%08x ", i == 0 ? '>' : ' ', hart0_pc + (i * 4));
       print_rv(d, op);
@@ -267,7 +267,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
 
   code_painter.highlight_x = ((pinwheel.core.pc_b & 0xFFFF) >> 2) % 16;
   code_painter.highlight_y = ((pinwheel.core.pc_b & 0xFFFF) >> 2) / 16;
-  code_painter.dump2(view, screen_size, 1024, 512, 0.5, 0.5, 64, 64, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.code.get_data());
+  code_painter.dump2(view, screen_size, 1024, 512, 0.5, 0.5, 64, 64, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.code_ram.get_data());
 
   data_painter.dump2(view, screen_size, 1024, 32, 1, 1, 64, 32, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.data_ram.get_data());
 

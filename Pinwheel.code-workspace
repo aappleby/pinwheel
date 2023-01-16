@@ -37,7 +37,16 @@
 			"streambuf": "cpp",
 			"tuple": "cpp",
 			"type_traits": "cpp",
-			"valarray": "cpp"
+			"valarray": "cpp",
+			"codecvt": "cpp",
+			"vector": "cpp",
+			"string_view": "cpp",
+			"iosfwd": "cpp",
+			"istream": "cpp",
+			"sstream": "cpp",
+			"system_error": "cpp",
+			"regex": "cpp",
+			"complex": "cpp"
 		}
 	},
 }

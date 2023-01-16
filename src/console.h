@@ -6,12 +6,7 @@
 class Console {
 public:
 
-  void tock(logic<1> wrcs_, logic<32> reg_b_) {
-    wrcs = wrcs_;
-    reg_b = reg_b_;
-  }
-
-  void tick(logic<1> reset) {
+  void tick(logic<1> reset, logic<1> wrcs, logic<32> reg_b) {
     if (reset) {
       memset(buf, 0, sizeof(buf));
       x = 0;
@@ -54,8 +49,6 @@ public:
   char buf[width*height];
   int  x = 0;
   int  y = 0;
-  logic<1>  wrcs;
-  logic<32> reg_b;
 };
 
 //------------------------------------------------------------------------------

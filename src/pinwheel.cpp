@@ -18,8 +18,8 @@ bool pinwheel::load_elf(const char* firmware_filename) {
     Elf32_Phdr& phdr = *(Elf32_Phdr*)(blob + header.e_phoff + header.e_phentsize * i);
     if (phdr.p_type & PT_LOAD) {
       if (phdr.p_flags & PF_X) {
-        int len = sizeof(code.data) < phdr.p_filesz ? sizeof(code.data) : phdr.p_filesz;
-        memcpy(code.data, blob + phdr.p_offset, len);
+        int len = sizeof(code_ram.data) < phdr.p_filesz ? sizeof(code_ram.data) : phdr.p_filesz;
+        memcpy(code_ram.data, blob + phdr.p_offset, len);
       }
       else if (phdr.p_flags & PF_W) {
         int len = sizeof(data_ram.data) < phdr.p_filesz ? sizeof(data_ram.data) : phdr.p_filesz;
