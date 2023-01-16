@@ -7,16 +7,6 @@ class pinwheel_core {
 public:
 
   //----------------------------------------
-
-  logic<32> addr_b() const {
-    logic<32> rs1_b  = b5(insn_b, 15) ? regs.get_rs1() : b32(0);
-    logic<32> rs2_b  = b5(insn_b, 20) ? regs.get_rs2() : b32(0);
-    logic<32> imm_b  = decode_imm(insn_b);
-    logic<32> addr_b = b32(rs1_b + imm_b);
-    return addr_b;
-  }
-
-  //----------------------------------------
   // FIXME support static
 
   logic<32> decode_imm(logic<32> insn) const {
@@ -94,23 +84,6 @@ public:
   //----------------------------------------
 
   void tock(logic<1> reset_in, logic<32> code_rdata, logic<32> bus_rdata) {
-    logic<5> op_b   = b5(insn_b, 2);
-    logic<5> rda_b  = b5(insn_b, 7);
-    logic<3> f3_b   = b3(insn_b, 12);
-    logic<5> rs1a_b = b5(insn_b, 15);
-    logic<5> rs2a_b = b5(insn_b, 20);
-    logic<7> f7_b   = b7(insn_b, 25);
-
-    logic<5> op_c   = b5(insn_c, 2);
-    logic<5> rd_c   = b5(insn_c, 7);
-    logic<3> f3_c   = b3(insn_c, 12);
-
-    logic<32> rs1_b  = rs1a_b ? regs.get_rs1() : b32(0);
-    logic<32> rs2_b  = rs2a_b ? regs.get_rs2() : b32(0);
-    logic<32> imm_b  = decode_imm(insn_b);
-    logic<32> addr_b = b32(rs1_b + imm_b);
-
-    logic<32> temp_pc_a = 0;
 
     next_hart_a    = hart_b;
     next_pc_a      = 0;
@@ -124,7 +97,19 @@ public:
     //----------
     // Fetch
 
+    logic<32> temp_pc_a = 0;
+
     if (pc_b) {
+      logic<5> op_b   = b5(insn_b, 2);
+      logic<3> f3_b   = b3(insn_b, 12);
+      logic<5> rs1a_b = b5(insn_b, 15);
+      logic<5> rs2a_b = b5(insn_b, 20);
+
+      logic<32> rs1_b  = rs1a_b ? regs.get_rs1() : b32(0);
+      logic<32> rs2_b  = rs2a_b ? regs.get_rs2() : b32(0);
+      logic<32> imm_b  = decode_imm(insn_b);
+      logic<32> addr_b = b32(rs1_b + imm_b);
+
       logic<1> eq  = rs1_b == rs2_b;
       logic<1> slt = signed(rs1_b) < signed(rs2_b);
       logic<1> ult = rs1_b < rs2_b;
@@ -153,46 +138,64 @@ public:
     //----------
     // Decode
 
-    logic<32> insn_a = code_rdata;
-    logic<5> rs1a_a  = b5(insn_a, 15);
-    logic<5> rs2a_a  = b5(insn_a, 20);
+    {
+      logic<5> rs1a_b = b5(insn_b, 15);
+      logic<5> rs2a_b = b5(insn_b, 20);
 
-    next_insn_b = pc_a == 0 ? b32(0) : insn_a;
-    next_addr_c = addr_b;
+      logic<32> rs1_b  = rs1a_b ? regs.get_rs1() : b32(0);
+      logic<32> rs2_b  = rs2a_b ? regs.get_rs2() : b32(0);
+      logic<32> imm_b  = decode_imm(insn_b);
+      logic<32> addr_b = b32(rs1_b + imm_b);
+
+      logic<32> insn_a = code_rdata;
+
+      next_insn_b = pc_a == 0 ? b32(0) : insn_a;
+      next_addr_c = addr_b;
+    }
 
     //----------
     // Execute
 
-    switch(op_b) {
-      case RV32I::OP_JAL:     next_result_c = pc_b + 4;     break;
-      case RV32I::OP_JALR:    next_result_c = pc_b + 4;     break;
-      case RV32I::OP_LUI:     next_result_c = imm_b;        break;
-      case RV32I::OP_AUIPC:   next_result_c = pc_b + imm_b; break;
-      case RV32I::OP_LOAD:    next_result_c = addr_b;       break;
-      case RV32I::OP_STORE:   next_result_c = rs2_b;        break;
-      case RV32I::OP_CUSTOM0: {
-        next_result_c = 0;
-        if (f3_b == 0) {
-          // Switch the other thread to another hart
-          next_addr_c   = rs1_b;
-          next_result_c = rs2_b;
+    {
+      logic<5> op_b   = b5(insn_b, 2);
+      logic<3> f3_b   = b3(insn_b, 12);
+      logic<5> rs1a_b = b5(insn_b, 15);
+      logic<5> rs2a_b = b5(insn_b, 20);
+
+      logic<32> rs1_b  = rs1a_b ? regs.get_rs1() : b32(0);
+      logic<32> rs2_b  = rs2a_b ? regs.get_rs2() : b32(0);
+      logic<32> imm_b  = decode_imm(insn_b);
+      logic<32> addr_b = b32(rs1_b + imm_b);
+      switch(op_b) {
+        case RV32I::OP_JAL:     next_result_c = pc_b + 4;     break;
+        case RV32I::OP_JALR:    next_result_c = pc_b + 4;     break;
+        case RV32I::OP_LUI:     next_result_c = imm_b;        break;
+        case RV32I::OP_AUIPC:   next_result_c = pc_b + imm_b; break;
+        case RV32I::OP_LOAD:    next_result_c = addr_b;       break;
+        case RV32I::OP_STORE:   next_result_c = rs2_b;        break;
+        case RV32I::OP_CUSTOM0: {
+          next_result_c = 0;
+          if (f3_b == 0) {
+            // Switch the other thread to another hart
+            next_addr_c   = rs1_b;
+            next_result_c = rs2_b;
+          }
+          else if (f3_b == 1) {
+            // Yield to another hart
+            next_result_c  = temp_pc_a;
+            next_hart_a    = rs1_b;
+            temp_pc_a      = rs2_b;
+          }
+          break;
         }
-        else if (f3_b == 1) {
-          // Yield to another hart
-          next_result_c  = temp_pc_a;
-          next_hart_a    = rs1_b;
-          temp_pc_a      = rs2_b;
-        }
-        break;
+        case RV32I::OP_SYSTEM:  next_result_c = execute_system(insn_b); break;
+        default:                next_result_c = execute_alu   (insn_b, rs1_b, rs2_b); break;
       }
-      case RV32I::OP_SYSTEM:  next_result_c = execute_system(insn_b); break;
-      default:                next_result_c = execute_alu   (insn_b, rs1_b, rs2_b); break;
     }
 
     //----------
     // Memory + code/data/reg read/write overrides for cross-thread stuff
 
-    logic<4> bus_tag_c = b4(addr_c, 28);
 
     {
       // We write code memory in phase C because it's busy reading the next
@@ -202,6 +205,9 @@ public:
       // and we can't do it earlier or later (we can read it during C, but then it's not back
       // in time to write to the regfile).
 
+      logic<5> op_c   = b5(insn_c, 2);
+      logic<3> f3_c   = b3(insn_c, 12);
+
       logic<4>       temp_mask_c = 0;
       if (f3_c == 0) temp_mask_c = 0b0001;
       if (f3_c == 1) temp_mask_c = 0b0011;
@@ -209,6 +215,7 @@ public:
       if (addr_c[0]) temp_mask_c = temp_mask_c << 1;
       if (addr_c[1]) temp_mask_c = temp_mask_c << 2;
 
+      logic<4> bus_tag_c = b4(addr_c, 28);
       logic<1> code_cs_c = bus_tag_c == 0x0 && temp_pc_a == 0;
 
       code_addr  = code_cs_c ? addr_c : temp_pc_a;
@@ -218,6 +225,16 @@ public:
     }
 
     {
+      logic<5> op_b   = b5(insn_b, 2);
+      logic<3> f3_b   = b3(insn_b, 12);
+      logic<5> rs1a_b = b5(insn_b, 15);
+      logic<5> rs2a_b = b5(insn_b, 20);
+
+      logic<32> rs1_b  = rs1a_b ? regs.get_rs1() : b32(0);
+      logic<32> rs2_b  = rs2a_b ? regs.get_rs2() : b32(0);
+      logic<32> imm_b  = decode_imm(insn_b);
+      logic<32> addr_b = b32(rs1_b + imm_b);
+
       logic<4>       temp_mask_b = 0;
       if (f3_b == 0) temp_mask_b = 0b0001;
       if (f3_b == 1) temp_mask_b = 0b0011;
@@ -235,6 +252,11 @@ public:
     // Write
 
     {
+      logic<5> op_c   = b5(insn_c, 2);
+      logic<5> rd_c   = b5(insn_c, 7);
+      logic<3> f3_c   = b3(insn_c, 12);
+
+      logic<4> bus_tag_c = b4(addr_c, 28);
       logic<1> regfile_cs_c  = bus_tag_c == 0xE;
       logic<32> data_out_c = regfile_cs_c ? regs.get_rs1() : bus_rdata;
 
@@ -266,13 +288,25 @@ public:
         next_wb_data_d = result_c;
         next_wb_wren_d = 1;
       }
+    }
 
-      //----------------------------------------
+    //----------------------------------------
 
+    {
+      logic<5> op_b   = b5(insn_b, 2);
+      logic<5> rs1a_b = b5(insn_b, 15);
+      logic<5> rs2a_b = b5(insn_b, 20);
+
+      logic<32> rs1_b   = rs1a_b ? regs.get_rs1() : b32(0);
+      logic<32> rs2_b   = rs2a_b ? regs.get_rs2() : b32(0);
+      logic<32> imm_b   = decode_imm(insn_b);
+      logic<32> addr_b  = b32(rs1_b + imm_b);
+      logic<32> insn_a  = code_rdata;
+      logic<5>  rs1a_a  = b5(insn_a, 15);
+      logic<5>  rs2a_a  = b5(insn_a, 20);
       logic<10> reg_raddr1_a = cat(b5(hart_a), rs1a_a);
       logic<10> reg_raddr2_a = cat(b5(hart_a), rs2a_a);
-      logic<1>  regfile_cs_b  = b4(addr_b, 28) == 0xE;
-      logic<1>  regfile_wren_b = (op_b == RV32I::OP_STORE) && regfile_cs_b;
+      logic<1>  regfile_cs_b = b4(addr_b, 28) == 0xE;
 
       if ((op_b == RV32I::OP_LOAD) && regfile_cs_b && (pc_a == 0)) {
         reg_raddr1_a = b10(addr_b >> 2);
@@ -288,7 +322,7 @@ public:
 
   //----------------------------------------
 
-  void tick(logic<1> reset_in) {
+  void tick(logic<1> reset_in, logic<32> code_rdata, logic<32> bus_rdata) {
     if (reset_in) {
       hart_a    = 1;
       pc_a      = 0;
@@ -341,6 +375,7 @@ public:
     regs.tick();
   }
 
+  //----------------------------------------
   // metron_internal
   logic<5>  next_hart_a;
   logic<32> next_pc_a;
@@ -351,7 +386,7 @@ public:
   logic<32> next_wb_data_d;
   logic<1>  next_wb_wren_d;
 
-  //----------
+  //----------------------------------------
   // Signals to code ram
 
   logic<32> code_addr;
@@ -359,15 +394,16 @@ public:
   logic<4>  code_wmask;
   logic<1>  code_wren;
 
+  //----------------------------------------
+  // Signals to data bus
+
   logic<32> bus_addr;
   logic<32> bus_wdata;
   logic<4>  bus_wmask;
   logic<1>  bus_wren;
 
-  //----------
-  // Signals to data bus
-
-  //----------
+  //----------------------------------------
+  // Registers
 
   regfile   regs;
   logic<32> ticks;

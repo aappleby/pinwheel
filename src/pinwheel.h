@@ -53,7 +53,7 @@ public:
 
   void tick(logic<1> reset_in) {
 
-    logic<4> bus_tag_b = b4(core.addr_b(), 28);
+    logic<4> bus_tag_b = b4(core.bus_addr, 28);
 
     if (reset_in) {
       debug_reg = 0;
@@ -64,6 +64,9 @@ public:
       if (core.bus_wren && debug_cs_b) debug_reg = core.bus_wdata;
       debug_reg_cs = debug_cs_b;
     }
+
+    logic<32> code_to_core = code_ram.rdata();
+    logic<32> bus_to_core  = data_ram.rdata();
 
     code_ram.tick(b12(core.code_addr), 1,                core.code_wdata, core.code_wmask, core.code_wren && bus_tag_b == 0x0);
     data_ram.tick(b12(core.bus_addr),  bus_tag_b == 0x8, core.bus_wdata,  core.bus_wmask,  core.bus_wren  && bus_tag_b == 0x8);
@@ -77,7 +80,7 @@ public:
     // metron_noconvert
     console4.tick(reset_in, bus_tag_b == 0x7 && core.bus_wren, core.bus_wdata);
 
-    core.tick(reset_in);
+    core.tick(reset_in, code_to_core, bus_to_core);
   }
 
   //----------------------------------------
