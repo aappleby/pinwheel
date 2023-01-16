@@ -18,8 +18,7 @@
 class pinwheel {
 public:
 
-  // metron_noconvert
-  void init(const char* text_file = nullptr, const char* data_file = nullptr) {
+  pinwheel(const char* text_file = nullptr, const char* data_file = nullptr) {
     readmemh(text_file, code.data);
     readmemh(data_file, data_ram.data);
   }
@@ -38,16 +37,6 @@ public:
 
   // metron_noconvert
   bool load_elf(const char* firmware_filename);
-
-  //----------
-
-  /*
-  void reset_mem() {
-    memset(&code,    0x00, sizeof(code));
-    memset(&data_ram,    0x00, sizeof(data_ram));
-    memset(&regfile, 0,    sizeof(regfile));
-  }
-  */
 
   //----------------------------------------
   // FIXME support static

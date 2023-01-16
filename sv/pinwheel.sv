@@ -26,11 +26,12 @@ module pinwheel (
 );
 /*public:*/
 
-  // metron_noconvert
-  /*void init(const char* text_file = nullptr, const char* data_file = nullptr) {
-    readmemh(text_file, code.data);
-    readmemh(data_file, data_ram.data);
-  }*/
+  parameter text_file = "";
+  parameter data_file = "";
+  initial begin
+    $readmemh(text_file, code.data);
+    $readmemh(data_file, data_ram.data);
+  end
 
   // metron_noconvert
   /*pinwheel* clone() {
@@ -46,16 +47,6 @@ module pinwheel (
 
   // metron_noconvert
   /*bool load_elf(const char* firmware_filename);*/
-
-  //----------
-
-  /*
-  void reset_mem() {
-    memset(&code,    0x00, sizeof(code));
-    memset(&data_ram,    0x00, sizeof(data_ram));
-    memset(&regfile, 0,    sizeof(regfile));
-  }
-  */
 
   //----------------------------------------
   // FIXME support static
@@ -554,7 +545,7 @@ module pinwheel (
   /*logic<32> gpio_out;*/
 
   block_ram  code(
-    // global clock
+    // Global clock
     .clock(clock),
     // tock() ports
     .tock_addr_(code_tock_addr_),
@@ -573,7 +564,7 @@ module pinwheel (
 
   // FIXME having this named data and a field inside block_ram named data breaks context resolve
   block_ram  data_ram(
-    // global clock
+    // Global clock
     .clock(clock),
     // tock() ports
     .tock_addr_(data_ram_tock_addr_),
@@ -590,7 +581,7 @@ module pinwheel (
   logic[31:0] data_ram_rdata_ret;
 
   regfile   regs(
-    // global clock
+    // Global clock
     .clock(clock),
     // tock() ports
     .tock_raddr1_(regs_tock_raddr1_),

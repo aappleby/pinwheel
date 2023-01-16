@@ -1,9 +1,7 @@
 #include "pinwheel_sim.h"
 
 
-PinwheelSim::PinwheelSim(const char* text_file, const char* data_file) : states(new pinwheel()) {
-  auto& pinwheel = states.top();
-  pinwheel.init(text_file, data_file);
+PinwheelSim::PinwheelSim(const char* text_file, const char* data_file) : states(new pinwheel(text_file, data_file)) {
 }
 
 bool PinwheelSim::busy() const {
