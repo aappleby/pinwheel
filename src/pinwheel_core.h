@@ -248,6 +248,15 @@ public:
       bus_wren   = (op_b == RV32I::OP_STORE);
     }
 
+    //----------------------------------------
+
+    next_pc_a  = temp_pc_a;
+  }
+
+  //----------------------------------------
+
+  void tick(logic<1> reset_in, logic<32> code_rdata, logic<32> bus_rdata) {
+
     //----------
     // Write
 
@@ -277,9 +286,9 @@ public:
       if (op_c == RV32I::OP_CUSTOM0 && f3_c == 0) {
         // Swap result and the PC that we'll use to fetch.
         // Execute phase should've deposited the new PC in result
-        next_wb_data_d = temp_pc_a;
+        next_wb_data_d = next_pc_a;
         next_hart_a    = addr_c;
-        temp_pc_a      = result_c;
+        next_pc_a      = result_c;
       }
 
       if (regfile_cs_c && op_c == RV32I::OP_STORE) {
@@ -290,7 +299,7 @@ public:
       }
     }
 
-    //----------------------------------------
+    //----------
 
     {
       logic<5> op_b   = b5(insn_b, 2);
@@ -317,12 +326,6 @@ public:
 
     //----------------------------------------
 
-    next_pc_a  = temp_pc_a;
-  }
-
-  //----------------------------------------
-
-  void tick(logic<1> reset_in, logic<32> code_rdata, logic<32> bus_rdata) {
     if (reset_in) {
       hart_a    = 1;
       pc_a      = 0;
