@@ -62,7 +62,7 @@ public:
 
     logic<32> temp_pc_a = 0;
 
-    core.tock(reset_in);
+    core.tock(reset_in, code.rdata());
 
     //----------
     // Fetch
@@ -160,8 +160,6 @@ public:
     if (core.addr_c[0]) temp_mask_c = temp_mask_c << 1;
     if (core.addr_c[1]) temp_mask_c = temp_mask_c << 2;
 
-    core.next_debug_reg = (op_b == RV32I::OP_STORE) && debug_cs_b ? rs2_b : debug_reg;
-
     //----------
     // Write
 
@@ -253,6 +251,8 @@ public:
     //----------
     // Signal writeback
 
+    next_debug_reg = (op_b == RV32I::OP_STORE) && debug_cs_b ? rs2_b : debug_reg;
+
     core.next_pc_a = temp_pc_a;
   }
 
@@ -274,7 +274,7 @@ public:
       ticks     = 0;
     }
     else {
-      debug_reg = core.next_debug_reg;
+      debug_reg = next_debug_reg;
       // metron_noconvert
       ticks     = ticks + 1;
     }
@@ -304,6 +304,7 @@ public:
 
   // metron_internal
 
+  logic<32> next_debug_reg;
   logic<32> debug_reg;
 
   logic<32> gpio_dir;
