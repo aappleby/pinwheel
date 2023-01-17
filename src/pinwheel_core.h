@@ -281,8 +281,7 @@ public:
       pc_b      = 0x00400000 - 4;
       insn_b    = 0;
 
-      hart_c    = 0;
-      pc_c      = 0;
+      hpc_c     = 0;
       insn_c    = 0;
       addr_c    = 0;
       result_c  = 0;
@@ -319,8 +318,6 @@ public:
       insn_d    = insn_c;
       result_d  = result_c;
 
-      hart_c    = hart_b;
-      pc_c      = pc_b;
       hpc_c     = hpc_b;
       insn_c    = insn_b;
 
@@ -380,8 +377,6 @@ public:
   logic<32> hpc_b;
   logic<32> insn_b;
 
-  logic<8>  hart_c;
-  logic<24> pc_c;
   logic<32> hpc_c;
   logic<32> insn_c;
   logic<32> addr_c;

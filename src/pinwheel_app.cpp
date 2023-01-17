@@ -184,15 +184,13 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
 
   uint32_t insn_a = pinwheel.core.pc_a ? uint32_t(pinwheel.code_ram.rdata()) : 0;
 
-  d("hart_a        %d\n",     pinwheel.core.hart_a);
-  d("pc_a          0x%08x\n", pinwheel.core.pc_a);
+  d("hpc_a         0x%08x\n", pinwheel.core.hpc_a);
   d("insn_a        0x%08x ",  insn_a); print_rv(d, insn_a); d("\n");
   d("rs1 a         %d\n", b5(insn_a, 15));
   d("rs2 a         %d\n", b5(insn_a, 20));
   d("\n");
 
-  d("hart_b        %d\n",     pinwheel.core.hart_b);
-  d("pc_b          0x%08x\n", pinwheel.core.pc_b);
+  d("hpc_b         0x%08x\n", pinwheel.core.hpc_b);
   d("insn_b        0x%08x ",  pinwheel.core.insn_b); print_rv(d, pinwheel.core.insn_b); d("\n");
   d("rs1 b         0x%08x\n", pinwheel.core.regs.get_rs1());
   d("rs2 b         0x%08x\n", pinwheel.core.regs.get_rs2());
@@ -203,8 +201,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
 
   d("\n");
 
-  d("hart c        %d\n",     pinwheel.core.hart_c);
-  d("pc c          0x%08x\n", pinwheel.core.pc_c);
+  d("hpc c         0x%08x\n", pinwheel.core.hpc_c);
   d("insn c        0x%08x ",  pinwheel.core.insn_c); print_rv(d, pinwheel.core.insn_c); d("\n");
   d("addr c        0x%08x\n", pinwheel.core.addr_c);
   d("result c      0x%08x\n", pinwheel.core.result_c);
@@ -228,7 +225,6 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
 
   for (int hart = 0; hart < 4; hart++) {
     auto r = &pinwheel.core.regs.get_data()[hart << 5];
-    //d("hart %d vane %d pc 0x%08x", hart, hart_to_vane[hart], harts[hart]->pc);
     d("hart %d", hart);
     d("\n");
     d("r00 %08X  r08 %08X  r16 %08X  r24 %08X\n", r[ 0], r[ 8], r[16], r[24]);
