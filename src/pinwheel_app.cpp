@@ -240,7 +240,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
 
   text_painter.render_string(view, screen_size, d.s.c_str(), 32, 32);
 
-  logic<24> hart0_pc = b24(pinwheel.core.hpc_a) ? b24(pinwheel.core.hpc_a) : pinwheel.core.pc_b;
+  logic<24> hart0_pc = b24(pinwheel.core.hpc_a) ? b24(pinwheel.core.hpc_a) : b24(pinwheel.core.hpc_b);
   {
     d.clear();
 
@@ -260,8 +260,8 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
     text_painter.render_string(view, screen_size, d.s.c_str(), 320, 32);
   }
 
-  code_painter.highlight_x = ((pinwheel.core.pc_b & 0xFFFF) >> 2) % 16;
-  code_painter.highlight_y = ((pinwheel.core.pc_b & 0xFFFF) >> 2) / 16;
+  code_painter.highlight_x = ((b24(pinwheel.core.hpc_b) & 0xFFFF) >> 2) % 16;
+  code_painter.highlight_y = ((b24(pinwheel.core.hpc_b) & 0xFFFF) >> 2) / 16;
   code_painter.dump2(view, screen_size, 1024, 1024 - 128 - 32, 0.25, 0.25, 64, 64, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.code_ram.get_data());
 
   data_painter.dump2(view, screen_size, 1024, 32, 1, 1, 64, 64, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.data_ram.get_data());

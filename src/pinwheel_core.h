@@ -130,7 +130,7 @@ public:
     // Fetch
 
     logic<1> take_branch;
-    if (pc_b) {
+    if (b24(hpc_b)) {
       logic<1> eq  = rs1_b == rs2_b;
       logic<1> slt = signed(rs1_b) < signed(rs2_b);
       logic<1> ult = rs1_b < rs2_b;
@@ -154,21 +154,21 @@ public:
     {
       next_hpc_a = 0;
 
-      if (pc_b) switch(op_b) {
+      if (b24(hpc_b)) switch(op_b) {
         case RV32I::OP_BRANCH: next_hpc_a = take_branch ? b32(hpc_b + imm_b) : b32(hpc_b + 4); break;
         case RV32I::OP_JAL:    next_hpc_a = hpc_b + imm_b; break;
         case RV32I::OP_JALR:   next_hpc_a = addr_b; break;
-        case RV32I::OP_LUI:    next_hpc_a = cat(hart_b, b24(pc_b + 4)); break;
-        case RV32I::OP_AUIPC:  next_hpc_a = cat(hart_b, b24(pc_b + 4)); break;
-        case RV32I::OP_LOAD:   next_hpc_a = cat(hart_b, b24(pc_b + 4)); break;
-        case RV32I::OP_STORE:  next_hpc_a = cat(hart_b, b24(pc_b + 4)); break;
-        case RV32I::OP_SYSTEM: next_hpc_a = cat(hart_b, b24(pc_b + 4)); break;
-        case RV32I::OP_OPIMM:  next_hpc_a = cat(hart_b, b24(pc_b + 4)); break;
-        case RV32I::OP_OP:     next_hpc_a = cat(hart_b, b24(pc_b + 4)); break;
+        case RV32I::OP_LUI:    next_hpc_a = cat(b8(hpc_b, 24), b24(b24(hpc_b) + 4)); break;
+        case RV32I::OP_AUIPC:  next_hpc_a = cat(b8(hpc_b, 24), b24(b24(hpc_b) + 4)); break;
+        case RV32I::OP_LOAD:   next_hpc_a = cat(b8(hpc_b, 24), b24(b24(hpc_b) + 4)); break;
+        case RV32I::OP_STORE:  next_hpc_a = cat(b8(hpc_b, 24), b24(b24(hpc_b) + 4)); break;
+        case RV32I::OP_SYSTEM: next_hpc_a = cat(b8(hpc_b, 24), b24(b24(hpc_b) + 4)); break;
+        case RV32I::OP_OPIMM:  next_hpc_a = cat(b8(hpc_b, 24), b24(b24(hpc_b) + 4)); break;
+        case RV32I::OP_OP:     next_hpc_a = cat(b8(hpc_b, 24), b24(b24(hpc_b) + 4)); break;
         default: printf("%x xxxxx\n", (int)op_b); next_hpc_a = 0; break;
       }
 
-      hart_b      = b8(next_hpc_a, 24);
+      hpc_b = cat(b8(next_hpc_a, 24), b24(hpc_b));
     }
 
 
@@ -276,8 +276,7 @@ public:
     if (reset_in) {
       hpc_a     = 0x01000000;
 
-      hart_b    = 0;
-      pc_b      = 0x00400000 - 4;
+      hpc_b     = 0x00400000 - 4;
       insn_b    = 0;
 
       hpc_c     = 0;
@@ -301,10 +300,10 @@ public:
       logic<32> next_result_c  = 0;
       switch(op_b) {
         case RV32I::OP_BRANCH: next_result_c = DONTCARE;     break;
-        case RV32I::OP_JAL:    next_result_c = cat(hart_b, b24(pc_b + 4));     break;
-        case RV32I::OP_JALR:   next_result_c = cat(hart_b, b24(pc_b + 4));     break;
+        case RV32I::OP_JAL:    next_result_c = cat(b8(hpc_b, 24), b24(b24(hpc_b) + 4));     break;
+        case RV32I::OP_JALR:   next_result_c = cat(b8(hpc_b, 24), b24(b24(hpc_b) + 4));     break;
         case RV32I::OP_LUI:    next_result_c = imm_b;        break;
-        case RV32I::OP_AUIPC:  next_result_c = cat(hart_b, pc_b) + imm_b; break;
+        case RV32I::OP_AUIPC:  next_result_c = cat(b8(hpc_b, 24), b24(hpc_b)) + imm_b; break;
         case RV32I::OP_LOAD:   next_result_c = addr_b;       break;
         case RV32I::OP_STORE:  next_result_c = rs2_b;         break;
         case RV32I::OP_SYSTEM: next_result_c = execute_system(insn_b); break;
@@ -326,8 +325,6 @@ public:
       addr_c    = next_addr_c;
       result_c  = next_result_c;
 
-      hart_b    = b8(hpc_a, 24);
-      pc_b      = b24(hpc_a);
       hpc_b     = hpc_a;
       insn_b    = b24(hpc_a) == 0 ? b32(0) : code_rdata;
 
@@ -367,8 +364,6 @@ public:
 
   logic<32> hpc_a;
 
-  logic<8>  hart_b;
-  logic<24> pc_b;
   logic<32> hpc_b;
   logic<32> insn_b;
 
