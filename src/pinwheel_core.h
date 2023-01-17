@@ -155,20 +155,20 @@ public:
       next_hpc_a = 0;
 
       if (b24(hpc_b)) switch(op_b) {
-        case RV32I::OP_BRANCH: next_hpc_a = take_branch ? b32(hpc_b + imm_b) : b32(hpc_b + 4); break;
+        case RV32I::OP_BRANCH: next_hpc_a = take_branch ? hpc_b + imm_b : hpc_b + 4; break;
         case RV32I::OP_JAL:    next_hpc_a = hpc_b + imm_b; break;
         case RV32I::OP_JALR:   next_hpc_a = addr_b; break;
-        case RV32I::OP_LUI:    next_hpc_a = cat(b8(hpc_b, 24), b24(b24(hpc_b) + 4)); break;
-        case RV32I::OP_AUIPC:  next_hpc_a = cat(b8(hpc_b, 24), b24(b24(hpc_b) + 4)); break;
-        case RV32I::OP_LOAD:   next_hpc_a = cat(b8(hpc_b, 24), b24(b24(hpc_b) + 4)); break;
-        case RV32I::OP_STORE:  next_hpc_a = cat(b8(hpc_b, 24), b24(b24(hpc_b) + 4)); break;
-        case RV32I::OP_SYSTEM: next_hpc_a = cat(b8(hpc_b, 24), b24(b24(hpc_b) + 4)); break;
-        case RV32I::OP_OPIMM:  next_hpc_a = cat(b8(hpc_b, 24), b24(b24(hpc_b) + 4)); break;
-        case RV32I::OP_OP:     next_hpc_a = cat(b8(hpc_b, 24), b24(b24(hpc_b) + 4)); break;
+        case RV32I::OP_LUI:    next_hpc_a = hpc_b + 4; break;
+        case RV32I::OP_AUIPC:  next_hpc_a = hpc_b + 4; break;
+        case RV32I::OP_LOAD:   next_hpc_a = hpc_b + 4; break;
+        case RV32I::OP_STORE:  next_hpc_a = hpc_b + 4; break;
+        case RV32I::OP_SYSTEM: next_hpc_a = hpc_b + 4; break;
+        case RV32I::OP_OPIMM:  next_hpc_a = hpc_b + 4; break;
+        case RV32I::OP_OP:     next_hpc_a = hpc_b + 4; break;
         default: printf("%x xxxxx\n", (int)op_b); next_hpc_a = 0; break;
       }
 
-      hpc_b = cat(b8(next_hpc_a, 24), b24(hpc_b));
+      //hpc_b = cat(b8(next_hpc_a, 24), b24(hpc_b));
     }
 
 
@@ -299,12 +299,12 @@ public:
 
       logic<32> next_result_c  = 0;
       switch(op_b) {
-        case RV32I::OP_BRANCH: next_result_c = DONTCARE;     break;
-        case RV32I::OP_JAL:    next_result_c = cat(b8(hpc_b, 24), b24(b24(hpc_b) + 4));     break;
-        case RV32I::OP_JALR:   next_result_c = cat(b8(hpc_b, 24), b24(b24(hpc_b) + 4));     break;
-        case RV32I::OP_LUI:    next_result_c = imm_b;        break;
-        case RV32I::OP_AUIPC:  next_result_c = cat(b8(hpc_b, 24), b24(hpc_b)) + imm_b; break;
-        case RV32I::OP_LOAD:   next_result_c = addr_b;       break;
+        case RV32I::OP_BRANCH: next_result_c = DONTCARE;      break;
+        case RV32I::OP_JAL:    next_result_c = hpc_b + 4;     break;
+        case RV32I::OP_JALR:   next_result_c = hpc_b + 4;     break;
+        case RV32I::OP_LUI:    next_result_c = imm_b;         break;
+        case RV32I::OP_AUIPC:  next_result_c = hpc_b + imm_b; break;
+        case RV32I::OP_LOAD:   next_result_c = addr_b;        break;
         case RV32I::OP_STORE:  next_result_c = rs2_b;         break;
         case RV32I::OP_SYSTEM: next_result_c = execute_system(insn_b); break;
         case RV32I::OP_OPIMM:  next_result_c = execute_alu(insn_b, rs1_b, rs2_b); break;
