@@ -83,7 +83,7 @@ public:
         break;
       }
       case RV32I::F3_CSRRS: {
-        if (csr == 0xF14) result = hart_b;
+        if (csr == 0xF14) result = b8(hpc_b, 24);
         break;
       }
       case RV32I::F3_CSRRC:  result = 0; break;
@@ -155,8 +155,8 @@ public:
       next_hpc_a = 0;
 
       if (pc_b) switch(op_b) {
-        case RV32I::OP_BRANCH: next_hpc_a = take_branch ? cat(hart_b, b24(pc_b + imm_b)) : cat(hart_b, b24(pc_b + 4)); break;
-        case RV32I::OP_JAL:    next_hpc_a = cat(hart_b, b24(pc_b + imm_b)); break;
+        case RV32I::OP_BRANCH: next_hpc_a = take_branch ? b32(hpc_b + imm_b) : b32(hpc_b + 4); break;
+        case RV32I::OP_JAL:    next_hpc_a = hpc_b + imm_b; break;
         case RV32I::OP_JALR:   next_hpc_a = addr_b; break;
         case RV32I::OP_LUI:    next_hpc_a = cat(hart_b, b24(pc_b + 4)); break;
         case RV32I::OP_AUIPC:  next_hpc_a = cat(hart_b, b24(pc_b + 4)); break;
@@ -287,8 +287,7 @@ public:
       addr_c    = 0;
       result_c  = 0;
 
-      hart_d    = 0;
-      pc_d      = 0;
+      hpc_d     = 0;
       insn_d    = 0;
       result_d  = 0;
       wb_addr_d = 0;
@@ -316,8 +315,6 @@ public:
         default:               next_result_c = DONTCARE; printf("%x xxxxx\n", (int)op_b); break;
       }
 
-      hart_d    = hart_c;
-      pc_d      = pc_c;
       hpc_d     = hpc_c;
       insn_d    = insn_c;
       result_d  = result_c;
@@ -390,8 +387,6 @@ public:
   logic<32> addr_c;
   logic<32> result_c;
 
-  logic<8>  hart_d;
-  logic<24> pc_d;
   logic<32> hpc_d;
   logic<32> insn_d;
   logic<32> result_d;

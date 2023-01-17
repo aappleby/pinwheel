@@ -211,8 +211,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   d("data c        0x%08x\n", pinwheel.data_ram.rdata());
   d("\n");
 
-  d("hart d        %d\n",     pinwheel.core.hart_d);
-  d("pc d          0x%08x\n", pinwheel.core.pc_d);
+  d("hpc d         0x%08x\n", pinwheel.core.hpc_d);
   d("insn d        0x%08x ",  pinwheel.core.insn_d); print_rv(d, pinwheel.core.insn_d); d("\n");
   d("wb addr d     0x%08x\n", pinwheel.core.wb_addr_d);
   d("wb data d     0x%08x\n", pinwheel.core.wb_data_d);
