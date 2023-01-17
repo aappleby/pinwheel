@@ -234,12 +234,30 @@ inline uint32_t csr_swap_secondary_thread(uint32_t dst) {
   return dst;
 }
 
+inline uint32_t csr_step_secondary_thread(uint32_t dst) {
+  __asm__ volatile (
+    R"(
+      csrrw %[dst], 0x800, %[dst]
+      csrrw %[dst], 0x800, %[dst]
+    )"
+    : [dst] "+r" (dst)
+  );
+  return dst;
+}
+
 int main(int argc, char** argv) {
   int hart = get_hart();
 
   Console* c = hart == 0 ? &c1 : &c2;
 
-  do {
+  if (hart == 0) {
+    c->printf("Starting hart 1\n");
+    uint32_t old_thread = 0x01040000;
+    while(1) {
+      old_thread = csr_step_secondary_thread(old_thread);
+    }
+  }
+  else {
     c->printf("hart    %d\n",   hart);
     c->printf("main    0x%p\n", main);
     c->printf("stack   0x%p\n", get_sp());
@@ -252,14 +270,7 @@ int main(int argc, char** argv) {
     c->printf("pointer 0x12345678 0x%p\n", 0x12345678);
     c->printf("pointer 0x00001234 0x%p\n", 0x00001234);
     c->printf("char    !@#$\\%^&*() %c%c%c%c%c%c%c%c%c%c\n", '!', '@', '#', '$', '%', '^', '&', '*', '(', ')');
-  } while(hart == 1);
-
-  if (hart == 0) {
-    c->printf("Starting hart 1\n");
-    uint32_t old_thread = csr_swap_secondary_thread(0x01040000);
-    c->printf("old_thread 0x%p\n", old_thread);
   }
-  while(1);
 
   /*
   if (hart == 0) {

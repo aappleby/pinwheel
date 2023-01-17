@@ -176,8 +176,8 @@ public:
     logic<3> f3_c = b3(insn_c, 12);
 
     if (op_c == RV32I::OP_SYSTEM && f3_c == RV32I::F3_CSRRW) {
-      printf("result_c   0x%08x\n", (int)result_c);
-      printf("next_hpc_a 0x%08x\n", (int)next_hpc_a);
+      //printf("result_c   0x%08x\n", (int)result_c);
+      //printf("next_hpc_a 0x%08x\n", (int)next_hpc_a);
       logic<32> temp = result_c;
       result_c = next_hpc_a;
       next_hpc_a = temp;
