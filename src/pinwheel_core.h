@@ -165,11 +165,9 @@ public:
         case RV32I::OP_SYSTEM: next_hpc_a = cat(hart_b, b24(pc_b + 4)); break;
         case RV32I::OP_OPIMM:  next_hpc_a = cat(hart_b, b24(pc_b + 4)); break;
         case RV32I::OP_OP:     next_hpc_a = cat(hart_b, b24(pc_b + 4)); break;
-        default: printf("%x xxxxx\n", (int)op_b); next_hart_a = 0; next_pc_a = 0; break;
+        default: printf("%x xxxxx\n", (int)op_b); next_hpc_a = 0; break;
       }
 
-      next_hart_a = b8(next_hpc_a, 24);
-      next_pc_a   = b24(next_hpc_a);
       hart_b      = b8(next_hpc_a, 24);
     }
 
@@ -198,15 +196,15 @@ public:
       if (addr_c[1]) temp_mask_c = temp_mask_c << 2;
 
       logic<4> bus_tag_c = b4(addr_c, 28);
-      logic<1> code_cs_c = bus_tag_c == 0x0 && next_pc_a == 0;
+      logic<1> code_cs_c = bus_tag_c == 0x0 && b24(next_hpc_a) == 0;
 
-      code_addr  = code_cs_c ? addr_c : next_pc_a;
+      code_addr  = code_cs_c ? addr_c : b24(next_hpc_a);
       code_wdata = result_c;
       code_wmask = temp_mask_c;
       code_wren  = (op_c == RV32I::OP_STORE) && code_cs_c;
       */
 
-      code_addr  = next_pc_a;
+      code_addr  = b24(next_hpc_a);
       code_wdata = 0;
       code_wmask = 0;
       code_wren  = 0;
@@ -250,7 +248,7 @@ public:
         case 5:  unpacked_c = zero_extend<32>(b16(unpacked_c)); break;
       }
 
-      logic<10> next_wb_addr_d = cat(b5(hart_c), rd_c);
+      logic<10> next_wb_addr_d = cat(b5(hpc_c, 24), rd_c);
       logic<32> next_wb_data_d = op_c == RV32I::OP_LOAD ? unpacked_c : result_c;
       logic<1>  next_wb_wren_d = op_c != RV32I::OP_STORE && op_c != RV32I::OP_BRANCH;
 
@@ -262,8 +260,8 @@ public:
       logic<32> insn_a  = code_rdata;
       logic<5>  rs1a_a  = b5(insn_a, 15);
       logic<5>  rs2a_a  = b5(insn_a, 20);
-      logic<10> reg_raddr1_a = cat(b5(hart_a), rs1a_a);
-      logic<10> reg_raddr2_a = cat(b5(hart_a), rs2a_a);
+      logic<10> reg_raddr1_a = cat(b5(hpc_a, 24), rs1a_a);
+      logic<10> reg_raddr2_a = cat(b5(hpc_a, 24), rs2a_a);
       logic<1>  regfile_cs_b = b4(addr_b, 28) == 0xE;
 
       if ((op_b == RV32I::OP_LOAD) && regfile_cs_b && (pc_a == 0)) {
@@ -326,6 +324,7 @@ public:
 
       hart_c    = hart_b;
       pc_c      = pc_b;
+      hpc_c     = hpc_b;
       insn_c    = insn_b;
 
       logic<32> next_addr_c    = 0;
@@ -334,13 +333,13 @@ public:
       addr_c    = next_addr_c;
       result_c  = next_result_c;
 
-      hart_b    = hart_a;
-      pc_b      = pc_a;
+      hart_b    = b8(hpc_a, 24);
+      pc_b      = b24(hpc_a);
       hpc_b     = hpc_a;
       insn_b    = pc_a == 0 ? b32(0) : code_rdata;
 
-      hart_a    = next_hart_a;
-      pc_a      = next_pc_a;
+      hart_a    = b8(next_hpc_a, 24);
+      pc_a      = b24(next_hpc_a);
       hpc_a     = next_hpc_a;
 
       ticks     = ticks + 1;
@@ -351,8 +350,6 @@ public:
   //----------------------------------------
   // metron_internal
 
-  logic<8>  next_hart_a;
-  logic<24> next_pc_a;
   logic<32> next_hpc_a;
 
   //----------------------------------------
