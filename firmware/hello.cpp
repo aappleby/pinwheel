@@ -235,23 +235,31 @@ inline uint32_t csr_swap_secondary_thread(uint32_t dst) {
 }
 
 int main(int argc, char** argv) {
-  uint32_t old_thread = csr_swap_secondary_thread(0xABCDEF89);
-  c1.printf("old_thread 0x%p\n", old_thread);
-
   int hart = get_hart();
-  c1.printf("hart    %d\n",   hart);
-  c1.printf("main    0x%p\n", main);
-  c1.printf("stack   0x%p\n", get_sp());
-  c1.printf("global  0x%p\n", get_gp());
 
-  c1.printf("decimal 1234567890 %d\n", 1234567890);
-  c1.printf("decimal -123456789 %d\n", -123456789);
-  c1.printf("hex     0x12345678 0x%x\n", 0x12345678);
-  c1.printf("hex     0x1234     0x%x\n", 0x1234);
-  c1.printf("pointer 0x12345678 0x%p\n", 0x12345678);
-  c1.printf("pointer 0x00001234 0x%p\n", 0x00001234);
-  c1.printf("char    !@#$\\%^&*() %c%c%c%c%c%c%c%c%c%c\n", '!', '@', '#', '$', '%', '^', '&', '*', '(', ')');
+  Console* c = hart == 0 ? &c1 : &c2;
 
+  do {
+    c->printf("hart    %d\n",   hart);
+    c->printf("main    0x%p\n", main);
+    c->printf("stack   0x%p\n", get_sp());
+    c->printf("global  0x%p\n", get_gp());
+
+    c->printf("decimal 1234567890 %d\n", 1234567890);
+    c->printf("decimal -123456789 %d\n", -123456789);
+    c->printf("hex     0x12345678 0x%x\n", 0x12345678);
+    c->printf("hex     0x1234     0x%x\n", 0x1234);
+    c->printf("pointer 0x12345678 0x%p\n", 0x12345678);
+    c->printf("pointer 0x00001234 0x%p\n", 0x00001234);
+    c->printf("char    !@#$\\%^&*() %c%c%c%c%c%c%c%c%c%c\n", '!', '@', '#', '$', '%', '^', '&', '*', '(', ')');
+  } while(hart == 1);
+
+  if (hart == 0) {
+    c->printf("Starting hart 1\n");
+    uint32_t old_thread = csr_swap_secondary_thread(0x01040000);
+    c->printf("old_thread 0x%p\n", old_thread);
+  }
+  while(1);
 
   /*
   if (hart == 0) {
@@ -265,7 +273,7 @@ int main(int argc, char** argv) {
   */
 
   *(volatile uint32_t*)0xFFFFFFF0 = 1;
-  c1.printf("Test pass\n\n\n");
+  c->printf("Test pass\n\n\n");
   return 0;
 }
 

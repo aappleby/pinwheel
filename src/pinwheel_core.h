@@ -62,7 +62,7 @@ public:
 
   //----------------------------------------
 
-  logic<32> execute_system(logic<32> insn) const {
+  logic<32> execute_system(logic<32> insn, logic<32> reg_a, logic<32> reg_b) const {
     logic<3>  f3  = b3(insn, 12);
     logic<12> csr = b12(insn, 20);
 
@@ -70,7 +70,7 @@ public:
     logic<32> result = 0;
     switch(f3) {
       case RV32I::F3_CSRRW: {
-        result = 0xF00DCAFE;
+        result = reg_a;
         break;
       }
       case RV32I::F3_CSRRS: {
@@ -97,20 +97,20 @@ public:
     logic<32> rs1_b  = rs1a_b ? regs.get_rs1() : b32(0);
     logic<32> rs2_b  = rs2a_b ? regs.get_rs2() : b32(0);
     logic<32> imm_b  = decode_imm(insn_b);
-    logic<32> addr_b = b32(rs1_b + imm_b);
+    next_addr  = b32(rs1_b + imm_b);
 
     //----------
     // Data bus
 
     {
-      logic<4>       temp_mask_b = 0;
-      if (f3_b == 0) temp_mask_b = 0b0001;
-      if (f3_b == 1) temp_mask_b = 0b0011;
-      if (f3_b == 2) temp_mask_b = 0b1111;
-      if (addr_b[0]) temp_mask_b = temp_mask_b << 1;
-      if (addr_b[1]) temp_mask_b = temp_mask_b << 2;
+      logic<4>          temp_mask_b = 0;
+      if (f3_b == 0)    temp_mask_b = 0b0001;
+      if (f3_b == 1)    temp_mask_b = 0b0011;
+      if (f3_b == 2)    temp_mask_b = 0b1111;
+      if (next_addr[0]) temp_mask_b = temp_mask_b << 1;
+      if (next_addr[1]) temp_mask_b = temp_mask_b << 2;
 
-      bus_addr   = addr_b;
+      bus_addr   = next_addr;
       bus_wdata  = rs2_b;
       bus_wmask  = temp_mask_b;
       bus_wren   = (op_b == RV32I::OP_STORE);
@@ -143,7 +143,7 @@ public:
       if (b24(hpc_b)) switch(op_b) {
         case RV32I::OP_BRANCH: next_hpc_a = take_branch ? hpc_b + imm_b : hpc_b + 4; break;
         case RV32I::OP_JAL:    next_hpc_a = hpc_b + imm_b; break;
-        case RV32I::OP_JALR:   next_hpc_a = addr_b; break;
+        case RV32I::OP_JALR:   next_hpc_a = next_addr; break;
         case RV32I::OP_LUI:    next_hpc_a = hpc_b + 4; break;
         case RV32I::OP_AUIPC:  next_hpc_a = hpc_b + 4; break;
         case RV32I::OP_LOAD:   next_hpc_a = hpc_b + 4; break;
@@ -154,6 +154,33 @@ public:
       }
 
       //hpc_b = cat(b8(next_hpc_a, 24), b24(hpc_b));
+    }
+
+    next_result_c  = 0;
+    switch(op_b) {
+      case RV32I::OP_BRANCH: next_result_c = DONTCARE;      break;
+      case RV32I::OP_JAL:    next_result_c = hpc_b + 4;     break;
+      case RV32I::OP_JALR:   next_result_c = hpc_b + 4;     break;
+      case RV32I::OP_LUI:    next_result_c = imm_b;         break;
+      case RV32I::OP_AUIPC:  next_result_c = hpc_b + imm_b; break;
+      case RV32I::OP_LOAD:   next_result_c = next_addr;     break;
+      case RV32I::OP_STORE:  next_result_c = rs2_b;         break;
+      case RV32I::OP_SYSTEM: next_result_c = execute_system(insn_b, rs1_b, rs2_b); break;
+      case RV32I::OP_OPIMM:  next_result_c = execute_alu   (insn_b, rs1_b, rs2_b); break;
+      case RV32I::OP_OP:     next_result_c = execute_alu   (insn_b, rs1_b, rs2_b); break;
+      default:               next_result_c = DONTCARE; printf("%x xxxxx\n", (int)op_b); break;
+    }
+
+    logic<5> op_c = b5(insn_c, 2);
+    logic<5> rd_c = b5(insn_c, 7);
+    logic<3> f3_c = b3(insn_c, 12);
+
+    if (op_c == RV32I::OP_SYSTEM && f3_c == RV32I::F3_CSRRW) {
+      printf("result_c   0x%08x\n", (int)result_c);
+      printf("next_hpc_a 0x%08x\n", (int)next_hpc_a);
+      logic<32> temp = result_c;
+      result_c = next_hpc_a;
+      next_hpc_a = temp;
     }
 
     //----------
@@ -192,32 +219,14 @@ public:
       code_wmask = 0;
       code_wren  = 0;
     }
-  }
-
-  //----------------------------------------
-
-  void tick(logic<1> reset_in, logic<32> code_rdata, logic<32> bus_rdata) {
-
-    logic<5>  op_b    = b5(insn_b, 2);
-    logic<3>  f3_b    = b3(insn_b, 12);
-    logic<5>  rs1a_b  = b5(insn_b, 15);
-    logic<5>  rs2a_b  = b5(insn_b, 20);
-    logic<32> rs1_b   = rs1a_b ? regs.get_rs1() : b32(0);
-    logic<32> rs2_b   = rs2a_b ? regs.get_rs2() : b32(0);
-    logic<32> imm_b   = decode_imm(insn_b);
-    logic<32> addr_b  = b32(rs1_b + imm_b);
-
-    logic<5>  op_c         = b5(insn_c, 2);
-    logic<5>  rd_c         = b5(insn_c, 7);
-    logic<3>  f3_c         = b3(insn_c, 12);
-    logic<4>  bus_tag_c    = b4(addr_c, 28);
-    logic<1>  regfile_cs_c = bus_tag_c == 0xE;
-    logic<32> data_out_c   = regfile_cs_c ? regs.get_rs1() : bus_rdata;
 
     //----------
     // Regfile write
 
     {
+      logic<4>  bus_tag_c    = b4(addr_c, 28);
+      logic<1>  regfile_cs_c = bus_tag_c == 0xE;
+      logic<32> data_out_c   = regfile_cs_c ? regs.get_rs1() : bus_rdata;
 
       logic<32>        unpacked_c = data_out_c;
       if (result_c[0]) unpacked_c = unpacked_c >> 8;
@@ -238,16 +247,19 @@ public:
       logic<5>  rs2a_a  = b5(insn_a, 20);
       logic<10> reg_raddr1_a = cat(b5(hpc_a, 24), rs1a_a);
       logic<10> reg_raddr2_a = cat(b5(hpc_a, 24), rs2a_a);
-      logic<1>  regfile_cs_b = b4(addr_b, 28) == 0xE;
+      logic<1>  regfile_cs_b = b4(next_addr, 28) == 0xE;
 
       if ((op_b == RV32I::OP_LOAD) && regfile_cs_b && (b24(hpc_a) == 0)) {
-        reg_raddr1_a = b10(addr_b >> 2);
+        reg_raddr1_a = b10(next_addr >> 2);
       }
 
       regs.tick(reg_raddr1_a, reg_raddr2_a, wb_addr_d, wb_data_d, wb_wren_d);
     }
+  }
 
-    //----------------------------------------
+  //----------------------------------------
+
+  void tick(logic<1> reset_in, logic<32> code_rdata, logic<32> bus_rdata) {
 
     if (reset_in) {
       hpc_a     = 0x00400000;
@@ -270,31 +282,13 @@ public:
       ticks     = 0;
     }
     else {
-
-      // FIXME jalr needs to write to _destination_ regfile.
-
-      logic<32> next_result_c  = 0;
-      switch(op_b) {
-        case RV32I::OP_BRANCH: next_result_c = DONTCARE;      break;
-        case RV32I::OP_JAL:    next_result_c = hpc_b + 4;     break;
-        case RV32I::OP_JALR:   next_result_c = hpc_b + 4;     break;
-        case RV32I::OP_LUI:    next_result_c = imm_b;         break;
-        case RV32I::OP_AUIPC:  next_result_c = hpc_b + imm_b; break;
-        case RV32I::OP_LOAD:   next_result_c = addr_b;        break;
-        case RV32I::OP_STORE:  next_result_c = rs2_b;         break;
-        case RV32I::OP_SYSTEM: next_result_c = execute_system(insn_b);            break;
-        case RV32I::OP_OPIMM:  next_result_c = execute_alu(insn_b, rs1_b, rs2_b); break;
-        case RV32I::OP_OP:     next_result_c = execute_alu(insn_b, rs1_b, rs2_b); break;
-        default:               next_result_c = DONTCARE; printf("%x xxxxx\n", (int)op_b); break;
-      }
-
       hpc_d     = hpc_c;
       insn_d    = insn_c;
       result_d  = result_c;
 
       hpc_c     = hpc_b;
       insn_c    = insn_b;
-      addr_c    = addr_b;
+      addr_c    = next_addr;
       result_c  = next_result_c;
 
       hpc_b     = hpc_a;
@@ -304,13 +298,14 @@ public:
 
       ticks     = ticks + 1;
     }
-
   }
 
   //----------------------------------------
   // metron_internal
 
   logic<32> next_hpc_a;
+  logic<32> next_result_c;
+  logic<32> next_addr;
 
   //----------------------------------------
   // Signals to code ram
