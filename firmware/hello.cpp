@@ -234,17 +234,6 @@ inline uint32_t csr_swap_secondary_thread(uint32_t dst) {
   return dst;
 }
 
-inline uint32_t csr_step_secondary_thread(uint32_t dst) {
-  __asm__ volatile (
-    R"(
-      csrrw %[dst], 0x800, %[dst]
-      csrrw %[dst], 0x800, %[dst]
-    )"
-    : [dst] "+r" (dst)
-  );
-  return dst;
-}
-
 int main(int argc, char** argv) {
   int hart = get_hart();
 

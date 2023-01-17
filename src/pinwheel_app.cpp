@@ -55,7 +55,8 @@ void PinwheelApp::app_init(int screen_w, int screen_h) {
   }
   */
 
-  const char* firmware_filename = "firmware/bin/hello";
+  //const char* firmware_filename = "firmware/bin/hello";
+  const char* firmware_filename = "microtests/bin/start_thread";
 
   LOG_G("Loading firmware %s...\n", firmware_filename);
   struct stat sb;
