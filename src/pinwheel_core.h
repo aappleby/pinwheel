@@ -264,7 +264,7 @@ public:
       logic<10> reg_raddr2_a = cat(b5(hpc_a, 24), rs2a_a);
       logic<1>  regfile_cs_b = b4(addr_b, 28) == 0xE;
 
-      if ((op_b == RV32I::OP_LOAD) && regfile_cs_b && (pc_a == 0)) {
+      if ((op_b == RV32I::OP_LOAD) && regfile_cs_b && (b24(hpc_a) == 0)) {
         reg_raddr1_a = b10(addr_b >> 2);
       }
 
@@ -274,8 +274,7 @@ public:
     //----------------------------------------
 
     if (reset_in) {
-      hart_a    = 1;
-      pc_a      = 0;
+      hpc_a     = 0x01000000;
 
       hart_b    = 0;
       pc_b      = 0x00400000 - 4;
@@ -330,10 +329,8 @@ public:
       hart_b    = b8(hpc_a, 24);
       pc_b      = b24(hpc_a);
       hpc_b     = hpc_a;
-      insn_b    = pc_a == 0 ? b32(0) : code_rdata;
+      insn_b    = b24(hpc_a) == 0 ? b32(0) : code_rdata;
 
-      hart_a    = b8(next_hpc_a, 24);
-      pc_a      = b24(next_hpc_a);
       hpc_a     = next_hpc_a;
 
       ticks     = ticks + 1;
@@ -368,8 +365,6 @@ public:
   regfile   regs;
   logic<32> ticks;
 
-  logic<8>  hart_a;
-  logic<24> pc_a;
   logic<32> hpc_a;
 
   logic<8>  hart_b;

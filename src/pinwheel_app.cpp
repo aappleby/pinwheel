@@ -182,7 +182,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
 
   auto& pinwheel = pinwheel_sim->states.top();
 
-  uint32_t insn_a = pinwheel.core.pc_a ? uint32_t(pinwheel.code_ram.rdata()) : 0;
+  uint32_t insn_a = b24(pinwheel.core.hpc_a) ? uint32_t(pinwheel.code_ram.rdata()) : 0;
 
   d("hpc_a         0x%08x\n", pinwheel.core.hpc_a);
   d("insn_a        0x%08x ",  insn_a); print_rv(d, insn_a); d("\n");
@@ -240,7 +240,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
 
   text_painter.render_string(view, screen_size, d.s.c_str(), 32, 32);
 
-  logic<24> hart0_pc = pinwheel.core.pc_a ? pinwheel.core.pc_a : pinwheel.core.pc_b;
+  logic<24> hart0_pc = b24(pinwheel.core.hpc_a) ? b24(pinwheel.core.hpc_a) : pinwheel.core.pc_b;
   {
     d.clear();
 
