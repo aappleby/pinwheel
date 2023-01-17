@@ -18,7 +18,7 @@ build obj/microtests.o : compile microtests.cpp
 build obj/pinwheel.o   : compile ../src/pinwheel.cpp
 build bin/microtests   : link obj/microtests.o obj/pinwheel.o
 
-build obj/microtests_pass : run_test bin/microtests
+build obj/microtests_pass : run_test bin/microtests | all_tests
 
 ################################################################################
 # RISC-V Rules
@@ -38,16 +38,22 @@ rule link_rv
 
 ################################################################################
 
-build obj/start.o : assemble_rv start.s
+build obj/start.o : assemble_rv tests/start.s
 
-build obj/basic.o        : compile_rv basic.cpp
-build obj/get_hart.o     : compile_rv get_hart.cpp
-build obj/start_thread.o : compile_rv start_thread.cpp
-build obj/stepping.o     : compile_rv stepping.cpp
+build obj/basic.o        : compile_rv tests/basic.cpp
+build obj/get_hart.o     : compile_rv tests/get_hart.cpp
+build obj/start_thread.o : compile_rv tests/start_thread.cpp
+build obj/stepping.o     : compile_rv tests/stepping.cpp
 
 build bin/basic          : link_rv obj/start.o obj/basic.o        | microtests.ld
 build bin/get_hart       : link_rv obj/start.o obj/get_hart.o     | microtests.ld
 build bin/start_thread   : link_rv obj/start.o obj/start_thread.o | microtests.ld
 build bin/stepping       : link_rv obj/start.o obj/stepping.o     | microtests.ld
+
+build all_tests : phony $
+  bin/basic $
+  bin/get_hart $
+  bin/start_thread $
+  bin/stepping
 
 ################################################################################
