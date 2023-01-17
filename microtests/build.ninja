@@ -16,9 +16,9 @@ rule run_test
 
 build obj/microtests.o : compile microtests.cpp
 build obj/pinwheel.o   : compile ../src/pinwheel.cpp
-build bin/microtests   : link obj/microtests.o obj/pinwheel.o
+build bin/microtests   : link obj/microtests.o obj/pinwheel.o | all_tests
 
-build obj/microtests_pass : run_test bin/microtests | all_tests
+build obj/microtests_pass : run_test bin/microtests
 
 ################################################################################
 # RISC-V Rules

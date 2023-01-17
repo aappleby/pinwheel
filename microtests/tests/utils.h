@@ -57,6 +57,15 @@ inline int csr_swap_secondary_thread(int dst) {
   return dst;
 }
 
+inline int pinwheel_start(int hart, void (*pc)()) {
+  int dst = ((hart & 0xFF) << 24) | (int(pc) & 0xFFFFFF);
+  return csr_swap_secondary_thread(dst);
+}
+
+inline int pinwheel_stop() {
+  return csr_swap_secondary_thread(0);
+}
+
 inline int csr_yield_thread(int dst) {
   __asm__ volatile (
     "csrrw %[dst], 0x801, %[dst]"

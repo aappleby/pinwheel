@@ -258,6 +258,8 @@ public:
       wb_data_d = op_c == RV32I::OP_LOAD ? unpacked_c : result_c;
       wb_wren_d = b24(hpc_c) && op_c != RV32I::OP_STORE && op_c != RV32I::OP_BRANCH;
 
+      if (b5(wb_addr_d) == 0) wb_wren_d = 0;
+
       logic<32> insn_a  = code_rdata;
       logic<5>  rs1a_a  = b5(insn_a, 15);
       logic<5>  rs2a_a  = b5(insn_a, 20);
