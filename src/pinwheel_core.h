@@ -78,7 +78,7 @@ public:
     switch(f3) {
       case 0:                result = 0; break;
       case RV32I::F3_CSRRW: {
-        printf("CSRRW 0x%x\n", (int)b12(insn, 20));
+        //printf("CSRRW 0x%x\n", (int)b12(insn, 20));
         result = 0xF00DCAFE;
         break;
       }
@@ -152,25 +152,25 @@ public:
     // Execute
 
     {
-      logic<32> next_hart_pc = 0;
+      next_hpc_a = 0;
 
       if (pc_b) switch(op_b) {
-        case RV32I::OP_BRANCH: next_hart_pc = take_branch ? cat(hart_b, b24(pc_b + imm_b)) : cat(hart_b, b24(pc_b + 4)); break;
-        case RV32I::OP_JAL:    next_hart_pc = cat(hart_b, b24(pc_b + imm_b)); break;
-        case RV32I::OP_JALR:   next_hart_pc = addr_b; break;
-        case RV32I::OP_LUI:    next_hart_pc = cat(hart_b, b24(pc_b + 4)); break;
-        case RV32I::OP_AUIPC:  next_hart_pc = cat(hart_b, b24(pc_b + 4)); break;
-        case RV32I::OP_LOAD:   next_hart_pc = cat(hart_b, b24(pc_b + 4)); break;
-        case RV32I::OP_STORE:  next_hart_pc = cat(hart_b, b24(pc_b + 4)); break;
-        case RV32I::OP_SYSTEM: next_hart_pc = cat(hart_b, b24(pc_b + 4)); break;
-        case RV32I::OP_OPIMM:  next_hart_pc = cat(hart_b, b24(pc_b + 4)); break;
-        case RV32I::OP_OP:     next_hart_pc = cat(hart_b, b24(pc_b + 4)); break;
+        case RV32I::OP_BRANCH: next_hpc_a = take_branch ? cat(hart_b, b24(pc_b + imm_b)) : cat(hart_b, b24(pc_b + 4)); break;
+        case RV32I::OP_JAL:    next_hpc_a = cat(hart_b, b24(pc_b + imm_b)); break;
+        case RV32I::OP_JALR:   next_hpc_a = addr_b; break;
+        case RV32I::OP_LUI:    next_hpc_a = cat(hart_b, b24(pc_b + 4)); break;
+        case RV32I::OP_AUIPC:  next_hpc_a = cat(hart_b, b24(pc_b + 4)); break;
+        case RV32I::OP_LOAD:   next_hpc_a = cat(hart_b, b24(pc_b + 4)); break;
+        case RV32I::OP_STORE:  next_hpc_a = cat(hart_b, b24(pc_b + 4)); break;
+        case RV32I::OP_SYSTEM: next_hpc_a = cat(hart_b, b24(pc_b + 4)); break;
+        case RV32I::OP_OPIMM:  next_hpc_a = cat(hart_b, b24(pc_b + 4)); break;
+        case RV32I::OP_OP:     next_hpc_a = cat(hart_b, b24(pc_b + 4)); break;
         default: printf("%x xxxxx\n", (int)op_b); next_hart_a = 0; next_pc_a = 0; break;
       }
 
-      next_hart_a = b8(next_hart_pc, 24);
-      next_pc_a   = b24(next_hart_pc);
-      hart_b      = b8(next_hart_pc, 24);
+      next_hart_a = b8(next_hpc_a, 24);
+      next_pc_a   = b24(next_hpc_a);
+      hart_b      = b8(next_hpc_a, 24);
     }
 
 
@@ -320,6 +320,7 @@ public:
 
       hart_d    = hart_c;
       pc_d      = pc_c;
+      hpc_d     = hpc_c;
       insn_d    = insn_c;
       result_d  = result_c;
 
@@ -335,10 +336,12 @@ public:
 
       hart_b    = hart_a;
       pc_b      = pc_a;
+      hpc_b     = hpc_a;
       insn_b    = pc_a == 0 ? b32(0) : code_rdata;
 
       hart_a    = next_hart_a;
       pc_a      = next_pc_a;
+      hpc_a     = next_hpc_a;
 
       ticks     = ticks + 1;
     }
@@ -348,8 +351,9 @@ public:
   //----------------------------------------
   // metron_internal
 
-  logic<24> next_hart_a;
+  logic<8>  next_hart_a;
   logic<24> next_pc_a;
+  logic<32> next_hpc_a;
 
   //----------------------------------------
   // Signals to code ram
@@ -375,19 +379,23 @@ public:
 
   logic<8>  hart_a;
   logic<24> pc_a;
+  logic<32> hpc_a;
 
   logic<8>  hart_b;
   logic<24> pc_b;
+  logic<32> hpc_b;
   logic<32> insn_b;
 
   logic<8>  hart_c;
   logic<24> pc_c;
+  logic<32> hpc_c;
   logic<32> insn_c;
   logic<32> addr_c;
   logic<32> result_c;
 
   logic<8>  hart_d;
   logic<24> pc_d;
+  logic<32> hpc_d;
   logic<32> insn_d;
   logic<32> result_d;
   logic<10> wb_addr_d;
