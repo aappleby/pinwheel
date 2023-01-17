@@ -57,6 +57,14 @@ inline int csr_swap_secondary_thread(int dst) {
   return dst;
 }
 
+inline int csr_yield_thread(int dst) {
+  __asm__ volatile (
+    "csrrw %[dst], 0x801, %[dst]"
+    : [dst] "+r" (dst)
+  );
+  return dst;
+}
+
 inline int csr_step_secondary_thread(int dst) {
   __asm__ volatile (
     R"(

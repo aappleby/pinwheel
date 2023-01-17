@@ -71,6 +71,7 @@ int main(int argc, const char** argv) {
   results += run_microtest("bin/get_hart");
   results += run_microtest("bin/start_thread");
   results += run_microtest("bin/stepping");
+  results += run_microtest("bin/yield");
   results.dump();
 
   LOG_B("Total tocks %f\n", double(total_tocks));

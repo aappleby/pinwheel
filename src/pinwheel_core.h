@@ -174,10 +174,17 @@ public:
     logic<5> op_c = b5(insn_c, 2);
     logic<5> rd_c = b5(insn_c, 7);
     logic<3> f3_c = b3(insn_c, 12);
+    logic<12> csr_c = b12(insn_c, 20);
 
-    if (op_c == RV32I::OP_SYSTEM && f3_c == RV32I::F3_CSRRW) {
-      //printf("result_c   0x%08x\n", (int)result_c);
-      //printf("next_hpc_a 0x%08x\n", (int)next_hpc_a);
+    logic<12> csr_b = b12(insn_b, 20);
+
+    if (op_b == RV32I::OP_SYSTEM && f3_b == RV32I::F3_CSRRW && csr_b == 0x801) {
+      logic<32> temp = next_result_c;
+      next_result_c = next_hpc_a;
+      next_hpc_a = temp;
+    }
+
+    if (op_c == RV32I::OP_SYSTEM && f3_c == RV32I::F3_CSRRW && csr_c == 0x800) {
       logic<32> temp = result_c;
       result_c = next_hpc_a;
       next_hpc_a = temp;
