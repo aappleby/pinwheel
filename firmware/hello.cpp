@@ -1,5 +1,8 @@
 #include <stdarg.h>
 
+// where is this?
+//#include <rvintrin.h>
+
 /*
 
 gdb command -
@@ -64,6 +67,15 @@ uint32_t start_hart(uint32_t hart, uint32_t address) {
     ret
   )");
 }
+
+__attribute__((naked))
+uint32_t csrrw_800(uint32_t val, uint32_t address) {
+  __asm__(R"(
+    csrrw a0, 800, a0
+    ret
+  )");
+}
+
 
 // https://sourceware.org/binutils/docs-2.34/as/RISC_002dV_002dFormats.html
 
@@ -212,7 +224,20 @@ Console c4 = { (uint32_t*)0x70000000 };
 
 typedef int (*start_func)(void);
 
+// Need to implement PC control via csr registers
+
+inline uint32_t csr_swap_secondary_thread(uint32_t dst) {
+  __asm__(
+    "csrrw %[dst], 0x800, %[dst]"
+    : [dst] "+r" (dst)
+  );
+  return dst;
+}
+
 int main(int argc, char** argv) {
+  uint32_t old_thread = csr_swap_secondary_thread(0xABCDEF89);
+  c1.printf("old_thread 0x%p\n", old_thread);
+
   int hart = get_hart();
   c1.printf("hart    %d\n",   hart);
   c1.printf("main    0x%p\n", main);
@@ -227,6 +252,8 @@ int main(int argc, char** argv) {
   c1.printf("pointer 0x00001234 0x%p\n", 0x00001234);
   c1.printf("char    !@#$\\%^&*() %c%c%c%c%c%c%c%c%c%c\n", '!', '@', '#', '$', '%', '^', '&', '*', '(', ')');
 
+
+  /*
   if (hart == 0) {
     c1.printf("Forking to hart 1\n");
     start_func start0 = reinterpret_cast<start_func>(_start);
@@ -235,6 +262,7 @@ int main(int argc, char** argv) {
     c1.printf("start1   0x%p\n", start1);
     start1();
   }
+  */
 
   *(volatile uint32_t*)0xFFFFFFF0 = 1;
   c1.printf("Test pass\n\n\n");

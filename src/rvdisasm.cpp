@@ -154,7 +154,7 @@ void print_rv(Dumper& d, uint32_t op_u32) {
       case 6: d("CSRSI "); break;
       case 7: d("CSRCI "); break;
       }
-      d("r%02d, 0x%03x", rs1, b12(op, 20));
+      d("r%02d, 0x%03x, r%02d", rd, (int)b12(op, 20), rs1);
       break;
     }
 

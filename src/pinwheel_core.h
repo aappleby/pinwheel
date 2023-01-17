@@ -77,8 +77,15 @@ public:
     logic<32> result = 0;
     switch(f3) {
       case 0:                result = 0; break;
-      case RV32I::F3_CSRRW:  result = 0; break;
-      case RV32I::F3_CSRRS:  if (csr == 0xF14) result = hart_b; break;
+      case RV32I::F3_CSRRW: {
+        printf("CSRRW 0x%x\n", (int)b12(insn, 20));
+        result = 0xF00DCAFE;
+        break;
+      }
+      case RV32I::F3_CSRRS: {
+        if (csr == 0xF14) result = hart_b;
+        break;
+      }
       case RV32I::F3_CSRRC:  result = 0; break;
       case 4:                result = 0; break;
       case RV32I::F3_CSRRWI: result = 0; break;
