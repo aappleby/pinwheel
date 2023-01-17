@@ -3,6 +3,12 @@
 
 #include "regfile.h"
 
+// Address Map
+// 0x0xxxxxxx - Code
+// 0x8xxxxxxx - Data
+// 0xExxxxxxx - Regfiles
+// 0xFxxxxxxx - Debug registers
+
 class pinwheel_core {
 public:
 
@@ -245,9 +251,12 @@ public:
         case 5:  unpacked_c = zero_extend<32>(b16(unpacked_c)); break;
       }
 
-      wb_addr_d = cat(b5(hpc_c, 24), rd_c);
+      // If we're using jalr to jump between threads, we use the address from HPC _A_
+      // as the target regfile for the write so that the link register will be written
+      // in the _destination_ regfile.
+      wb_addr_d = cat(b5(op_c == RV32I::OP_JALR ? hpc_a : hpc_c, 24), rd_c);
       wb_data_d = op_c == RV32I::OP_LOAD ? unpacked_c : result_c;
-      wb_wren_d = op_c != RV32I::OP_STORE && op_c != RV32I::OP_BRANCH;
+      wb_wren_d = b24(hpc_c) && op_c != RV32I::OP_STORE && op_c != RV32I::OP_BRANCH;
 
       logic<32> insn_a  = code_rdata;
       logic<5>  rs1a_a  = b5(insn_a, 15);

@@ -41,12 +41,14 @@ rule link_rv
 build obj/start.o : assemble_rv tests/start.s
 
 build obj/basic.o        : compile_rv tests/basic.cpp
+build obj/call_jalr.o    : compile_rv tests/call_jalr.cpp
 build obj/get_hart.o     : compile_rv tests/get_hart.cpp
 build obj/start_thread.o : compile_rv tests/start_thread.cpp
 build obj/stepping.o     : compile_rv tests/stepping.cpp
 build obj/yield.o        : compile_rv tests/yield.cpp
 
 build bin/basic          : link_rv obj/start.o obj/basic.o        | microtests.ld
+build bin/call_jalr      : link_rv obj/start.o obj/call_jalr.o    | microtests.ld
 build bin/get_hart       : link_rv obj/start.o obj/get_hart.o     | microtests.ld
 build bin/start_thread   : link_rv obj/start.o obj/start_thread.o | microtests.ld
 build bin/stepping       : link_rv obj/start.o obj/stepping.o     | microtests.ld
@@ -54,6 +56,7 @@ build bin/yield          : link_rv obj/start.o obj/yield.o        | microtests.l
 
 build all_tests : phony $
   bin/basic $
+  bin/call_jalr $
   bin/get_hart $
   bin/start_thread $
   bin/stepping $

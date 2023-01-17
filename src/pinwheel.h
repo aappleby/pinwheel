@@ -7,6 +7,12 @@
 #include "constants.h"
 #include "pinwheel_core.h"
 
+// Address Map
+// 0x0xxxxxxx - Code
+// 0x8xxxxxxx - Data
+// 0xExxxxxxx - Regfiles
+// 0xFxxxxxxx - Debug registers
+
 //------------------------------------------------------------------------------
 
 class pinwheel {

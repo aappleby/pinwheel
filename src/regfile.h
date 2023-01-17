@@ -17,7 +17,9 @@ public:
     out_1 = data[raddr1];
     out_2 = data[raddr2];
 
-    if (wren) data[waddr] = wdata;
+    if (wren) {
+      data[waddr] = wdata;
+    }
 
     if (wren && raddr1 == waddr) out_1 = wdata;
     if (wren && raddr2 == waddr) out_2 = wdata;

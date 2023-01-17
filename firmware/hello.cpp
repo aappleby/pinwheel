@@ -243,7 +243,7 @@ int main(int argc, char** argv) {
     c->printf("Starting hart 1\n");
     uint32_t old_thread = 0x01040000;
     while(1) {
-      old_thread = csr_step_secondary_thread(old_thread);
+      //old_thread = csr_step_secondary_thread(old_thread);
     }
   }
   else {

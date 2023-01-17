@@ -68,6 +68,7 @@ int main(int argc, const char** argv) {
 
   TestResults results;
   results += run_microtest("bin/basic");
+  results += run_microtest("bin/call_jalr");
   results += run_microtest("bin/get_hart");
   results += run_microtest("bin/start_thread");
   results += run_microtest("bin/stepping");
