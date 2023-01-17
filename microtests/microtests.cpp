@@ -74,6 +74,7 @@ int main(int argc, const char** argv) {
   results += run_microtest("bin/stepping");
   results += run_microtest("bin/write_regs");
   results += run_microtest("bin/yield");
+  results += run_microtest("bin/read_regs");
   results.dump();
 
   LOG_B("Total tocks %f\n", double(total_tocks));
