@@ -251,8 +251,8 @@ public:
         case 5:  unpacked_c = zero_extend<32>(b16(unpacked_c)); break;
       }
 
-      // If we're using jalr to jump between threads, we use the address from HPC _A_
-      // as the target regfile for the write so that the link register will be written
+      // If we're using jalr to jump between threads, we use the hart from HPC _A_
+      // as the target for the write so that the link register will be written
       // in the _destination_ regfile.
       wb_addr_d = cat(b5(op_c == RV32I::OP_JALR ? hpc_a : hpc_c, 24), rd_c);
       wb_data_d = op_c == RV32I::OP_LOAD ? unpacked_c : result_c;
@@ -267,6 +267,13 @@ public:
 
       if ((op_b == RV32I::OP_LOAD) && regfile_cs_b && (b24(hpc_a) == 0)) {
         reg_raddr1_a = b10(next_addr >> 2);
+      }
+
+      // Handle stores through the bus to the regfile.
+      if (op_c == RV32I::OP_STORE && regfile_cs_c) {
+        wb_addr_d = b10(addr_c >> 2);
+        wb_data_d = result_c;
+        wb_wren_d = 1;
       }
 
       regs.tick(reg_raddr1_a, reg_raddr2_a, wb_addr_d, wb_data_d, wb_wren_d);

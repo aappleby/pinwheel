@@ -17,7 +17,7 @@ double total_time = 0;
 
 //------------------------------------------------------------------------------
 
-TestResults run_microtest(const char* test_filename, int reps = 1, int max_cycles = 1000, bool expect_fail = false) {
+TestResults run_microtest(const char* test_filename, int reps = 1, int max_cycles = 100000, bool expect_fail = false) {
   TEST_INIT("'%-20s', %d reps: ", test_filename, reps);
 
   double time = 0;
@@ -72,6 +72,7 @@ int main(int argc, const char** argv) {
   results += run_microtest("bin/get_hart");
   results += run_microtest("bin/start_thread");
   results += run_microtest("bin/stepping");
+  results += run_microtest("bin/write_regs");
   results += run_microtest("bin/yield");
   results.dump();
 

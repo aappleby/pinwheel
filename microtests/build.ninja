@@ -34,7 +34,7 @@ rule assemble_rv
   command = riscv64-unknown-elf-gcc ${rv_opts} -c ${in} -o ${out}
 
 rule link_rv
-  command = riscv64-unknown-elf-gcc ${rv_opts} -nostdlib -nostartfiles -Wl,-T microtests.ld ${in} -o ${out}
+  command = riscv64-unknown-elf-gcc ${rv_opts} -nostdlib -nostartfiles -Wl,-T microtests.ld ${in} -o ${out} -lgcc
 
 ################################################################################
 
@@ -45,6 +45,7 @@ build obj/call_jalr.o    : compile_rv tests/call_jalr.cpp
 build obj/get_hart.o     : compile_rv tests/get_hart.cpp
 build obj/start_thread.o : compile_rv tests/start_thread.cpp
 build obj/stepping.o     : compile_rv tests/stepping.cpp
+build obj/write_regs.o   : compile_rv tests/write_regs.cpp
 build obj/yield.o        : compile_rv tests/yield.cpp
 
 build bin/basic          : link_rv obj/start.o obj/basic.o        | microtests.ld
@@ -52,6 +53,7 @@ build bin/call_jalr      : link_rv obj/start.o obj/call_jalr.o    | microtests.l
 build bin/get_hart       : link_rv obj/start.o obj/get_hart.o     | microtests.ld
 build bin/start_thread   : link_rv obj/start.o obj/start_thread.o | microtests.ld
 build bin/stepping       : link_rv obj/start.o obj/stepping.o     | microtests.ld
+build bin/write_regs     : link_rv obj/start.o obj/write_regs.o        | microtests.ld
 build bin/yield          : link_rv obj/start.o obj/yield.o        | microtests.ld
 
 build all_tests : phony $
@@ -60,6 +62,7 @@ build all_tests : phony $
   bin/get_hart $
   bin/start_thread $
   bin/stepping $
+  bin/write_regs $
   bin/yield
 
 ################################################################################
