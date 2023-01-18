@@ -48,6 +48,7 @@ build obj/stepping.o     : compile_rv tests/stepping.cpp
 build obj/write_regs.o   : compile_rv tests/write_regs.cpp
 build obj/yield.o        : compile_rv tests/yield.cpp
 build obj/read_regs.o    : compile_rv tests/read_regs.cpp
+build obj/write_code.o   : compile_rv tests/write_code.cpp
 
 build bin/basic          : link_rv obj/start.o obj/basic.o        | microtests.ld
 build bin/call_jalr      : link_rv obj/start.o obj/call_jalr.o    | microtests.ld
@@ -57,6 +58,7 @@ build bin/stepping       : link_rv obj/start.o obj/stepping.o     | microtests.l
 build bin/write_regs     : link_rv obj/start.o obj/write_regs.o   | microtests.ld
 build bin/yield          : link_rv obj/start.o obj/yield.o        | microtests.ld
 build bin/read_regs      : link_rv obj/start.o obj/read_regs.o    | microtests.ld
+build bin/write_code     : link_rv obj/start.o obj/write_code.o    | microtests.ld
 
 build all_tests : phony $
   bin/basic $
@@ -66,6 +68,7 @@ build all_tests : phony $
   bin/stepping $
   bin/write_regs $
   bin/read_regs $
+  bin/write_code $
   bin/yield
 
 ################################################################################

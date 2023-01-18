@@ -95,105 +95,116 @@ public:
 
   void tock(logic<1> reset_in, logic<32> code_rdata, logic<32> bus_rdata) {
 
-    logic<5> op_b   = b5(insn_b, 2);
-    logic<3> f3_b   = b3(insn_b, 12);
-    logic<5> rs1a_b = b5(insn_b, 15);
-    logic<5> rs2a_b = b5(insn_b, 20);
+    sig_insn_a  = b24(hpc_a) ? code_rdata : b32(0);
+    logic<5>  rs1a_a  = b5(sig_insn_a, 15);
+    logic<5>  rs2a_a  = b5(sig_insn_a, 20);
+    logic<10> reg_raddr1_a = cat(b5(hpc_a, 24), rs1a_a);
+    logic<10> reg_raddr2_a = cat(b5(hpc_a, 24), rs2a_a);
 
+    logic<5>  op_b   = b5(insn_b, 2);
+    logic<3>  f3_b   = b3(insn_b, 12);
+    logic<5>  rs1a_b = b5(insn_b, 15);
+    logic<5>  rs2a_b = b5(insn_b, 20);
     logic<32> rs1_b  = rs1a_b ? regs.get_rs1() : b32(0);
     logic<32> rs2_b  = rs2a_b ? regs.get_rs2() : b32(0);
     logic<32> imm_b  = decode_imm(insn_b);
-    next_addr  = b32(rs1_b + imm_b);
+    sig_addr_b  = b32(rs1_b + imm_b);
+    logic<1>  regfile_cs_b = b4(sig_addr_b, 28) == 0xE;
+    logic<12> csr_b = b12(insn_b, 20);
+
+    logic<5>  op_c  = b5(insn_c, 2);
+    logic<5>  rd_c  = b5(insn_c, 7);
+    logic<3>  f3_c  = b3(insn_c, 12);
+    logic<12> csr_c = b12(insn_c, 20);
+    logic<4>  bus_tag_c    = b4(addr_c, 28);
+    logic<1>  regfile_cs_c = bus_tag_c == 0xE;
+    logic<32> data_out_c   = regfile_cs_c ? regs.get_rs1() : bus_rdata;
 
     //----------
-    // Data bus
+    // Fetch
+
+    {
+      logic<1> take_branch;
+      if (b24(hpc_b)) {
+        logic<1> eq  = rs1_b == rs2_b;
+        logic<1> slt = signed(rs1_b) < signed(rs2_b);
+        logic<1> ult = rs1_b < rs2_b;
+
+        switch (f3_b) {
+          case 0:  take_branch =   eq; break;
+          case 1:  take_branch =  !eq; break;
+          case 2:  take_branch =   eq; break;
+          case 3:  take_branch =  !eq; break;
+          case 4:  take_branch =  slt; break;
+          case 5:  take_branch = !slt; break;
+          case 6:  take_branch =  ult; break;
+          case 7:  take_branch = !ult; break;
+          default: take_branch =    0; break;
+        }
+      }
+
+      sig_next_hpc_a = 0;
+      if (b24(hpc_b)) switch(op_b) {
+        case RV32I::OP_BRANCH: sig_next_hpc_a = take_branch ? hpc_b + imm_b : hpc_b + 4; break;
+        case RV32I::OP_JAL:    sig_next_hpc_a = hpc_b + imm_b; break;
+        case RV32I::OP_JALR:   sig_next_hpc_a = sig_addr_b; break;
+        case RV32I::OP_LUI:    sig_next_hpc_a = hpc_b + 4; break;
+        case RV32I::OP_AUIPC:  sig_next_hpc_a = hpc_b + 4; break;
+        case RV32I::OP_LOAD:   sig_next_hpc_a = hpc_b + 4; break;
+        case RV32I::OP_STORE:  sig_next_hpc_a = hpc_b + 4; break;
+        case RV32I::OP_SYSTEM: sig_next_hpc_a = hpc_b + 4; break;
+        case RV32I::OP_OPIMM:  sig_next_hpc_a = hpc_b + 4; break;
+        case RV32I::OP_OP:     sig_next_hpc_a = hpc_b + 4; break;
+      }
+    }
+
+    //----------
+    // Execute
+
+    {
+      sig_result_b  = 0;
+      switch(op_b) {
+        case RV32I::OP_BRANCH: sig_result_b = DONTCARE;      break;
+        case RV32I::OP_JAL:    sig_result_b = hpc_b + 4;     break;
+        case RV32I::OP_JALR:   sig_result_b = hpc_b + 4;     break;
+        case RV32I::OP_LUI:    sig_result_b = imm_b;         break;
+        case RV32I::OP_AUIPC:  sig_result_b = hpc_b + imm_b; break;
+        case RV32I::OP_LOAD:   sig_result_b = sig_addr_b;     break;
+        case RV32I::OP_STORE:  sig_result_b = rs2_b;         break;
+        case RV32I::OP_SYSTEM: sig_result_b = execute_system(insn_b, rs1_b, rs2_b); break;
+        case RV32I::OP_OPIMM:  sig_result_b = execute_alu   (insn_b, rs1_b, rs2_b); break;
+        case RV32I::OP_OP:     sig_result_b = execute_alu   (insn_b, rs1_b, rs2_b); break;
+        default:               sig_result_b = DONTCARE; printf("%x xxxxx\n", (int)op_b); break;
+      }
+
+      if (op_b == RV32I::OP_SYSTEM && f3_b == RV32I::F3_CSRRW && csr_b == 0x801) {
+        logic<32> temp = sig_result_b;
+        sig_result_b = sig_next_hpc_a;
+        sig_next_hpc_a = temp;
+      }
+
+      if (op_c == RV32I::OP_SYSTEM && f3_c == RV32I::F3_CSRRW && csr_c == 0x800) {
+        logic<32> temp = result_c;
+        result_c = sig_next_hpc_a;
+        sig_next_hpc_a = temp;
+      }
+    }
+
+    //----------
+    // Memory: Data bus
 
     {
       logic<4>          temp_mask_b = 0;
       if (f3_b == 0)    temp_mask_b = 0b0001;
       if (f3_b == 1)    temp_mask_b = 0b0011;
       if (f3_b == 2)    temp_mask_b = 0b1111;
-      if (next_addr[0]) temp_mask_b = temp_mask_b << 1;
-      if (next_addr[1]) temp_mask_b = temp_mask_b << 2;
+      if (sig_addr_b[0]) temp_mask_b = temp_mask_b << 1;
+      if (sig_addr_b[1]) temp_mask_b = temp_mask_b << 2;
 
-      bus_addr   = next_addr;
+      bus_addr   = sig_addr_b;
       bus_wdata  = rs2_b;
       bus_wmask  = temp_mask_b;
       bus_wren   = (op_b == RV32I::OP_STORE);
-    }
-
-    //----------
-    // Fetch
-
-    logic<1> take_branch;
-    if (b24(hpc_b)) {
-      logic<1> eq  = rs1_b == rs2_b;
-      logic<1> slt = signed(rs1_b) < signed(rs2_b);
-      logic<1> ult = rs1_b < rs2_b;
-
-      switch (f3_b) {
-        case 0:  take_branch =   eq; break;
-        case 1:  take_branch =  !eq; break;
-        case 2:  take_branch =   eq; break;
-        case 3:  take_branch =  !eq; break;
-        case 4:  take_branch =  slt; break;
-        case 5:  take_branch = !slt; break;
-        case 6:  take_branch =  ult; break;
-        case 7:  take_branch = !ult; break;
-        default: take_branch =    0; break;
-      }
-    }
-
-    {
-      next_hpc_a = 0;
-      if (b24(hpc_b)) switch(op_b) {
-        case RV32I::OP_BRANCH: next_hpc_a = take_branch ? hpc_b + imm_b : hpc_b + 4; break;
-        case RV32I::OP_JAL:    next_hpc_a = hpc_b + imm_b; break;
-        case RV32I::OP_JALR:   next_hpc_a = next_addr; break;
-        case RV32I::OP_LUI:    next_hpc_a = hpc_b + 4; break;
-        case RV32I::OP_AUIPC:  next_hpc_a = hpc_b + 4; break;
-        case RV32I::OP_LOAD:   next_hpc_a = hpc_b + 4; break;
-        case RV32I::OP_STORE:  next_hpc_a = hpc_b + 4; break;
-        case RV32I::OP_SYSTEM: next_hpc_a = hpc_b + 4; break;
-        case RV32I::OP_OPIMM:  next_hpc_a = hpc_b + 4; break;
-        case RV32I::OP_OP:     next_hpc_a = hpc_b + 4; break;
-      }
-
-      //hpc_b = cat(b8(next_hpc_a, 24), b24(hpc_b));
-    }
-
-    next_result_c  = 0;
-    switch(op_b) {
-      case RV32I::OP_BRANCH: next_result_c = DONTCARE;      break;
-      case RV32I::OP_JAL:    next_result_c = hpc_b + 4;     break;
-      case RV32I::OP_JALR:   next_result_c = hpc_b + 4;     break;
-      case RV32I::OP_LUI:    next_result_c = imm_b;         break;
-      case RV32I::OP_AUIPC:  next_result_c = hpc_b + imm_b; break;
-      case RV32I::OP_LOAD:   next_result_c = next_addr;     break;
-      case RV32I::OP_STORE:  next_result_c = rs2_b;         break;
-      case RV32I::OP_SYSTEM: next_result_c = execute_system(insn_b, rs1_b, rs2_b); break;
-      case RV32I::OP_OPIMM:  next_result_c = execute_alu   (insn_b, rs1_b, rs2_b); break;
-      case RV32I::OP_OP:     next_result_c = execute_alu   (insn_b, rs1_b, rs2_b); break;
-      default:               next_result_c = DONTCARE; printf("%x xxxxx\n", (int)op_b); break;
-    }
-
-    logic<5> op_c = b5(insn_c, 2);
-    logic<5> rd_c = b5(insn_c, 7);
-    logic<3> f3_c = b3(insn_c, 12);
-    logic<12> csr_c = b12(insn_c, 20);
-
-    logic<12> csr_b = b12(insn_b, 20);
-
-    if (op_b == RV32I::OP_SYSTEM && f3_b == RV32I::F3_CSRRW && csr_b == 0x801) {
-      logic<32> temp = next_result_c;
-      next_result_c = next_hpc_a;
-      next_hpc_a = temp;
-    }
-
-    if (op_c == RV32I::OP_SYSTEM && f3_c == RV32I::F3_CSRRW && csr_c == 0x800) {
-      logic<32> temp = result_c;
-      result_c = next_hpc_a;
-      next_hpc_a = temp;
     }
 
     //----------
@@ -207,7 +218,6 @@ public:
       // and we can't do it earlier or later (we can read it during C, but then it's not back
       // in time to write to the regfile).
 
-      /*
       logic<5> op_c   = b5(insn_c, 2);
       logic<3> f3_c   = b3(insn_c, 12);
 
@@ -219,28 +229,25 @@ public:
       if (addr_c[1]) temp_mask_c = temp_mask_c << 2;
 
       logic<4> bus_tag_c = b4(addr_c, 28);
-      logic<1> code_cs_c = bus_tag_c == 0x0 && b24(next_hpc_a) == 0;
+      logic<1> code_cs_c = bus_tag_c == 0x0 && b24(sig_next_hpc_a) == 0;
 
-      code_addr  = code_cs_c ? addr_c : b24(next_hpc_a);
+      code_addr  = code_cs_c ? b24(addr_c) : b24(sig_next_hpc_a);
       code_wdata = result_c;
       code_wmask = temp_mask_c;
       code_wren  = (op_c == RV32I::OP_STORE) && code_cs_c;
-      */
 
-      code_addr  = b24(next_hpc_a);
+      /*
+      code_addr  = b24(sig_next_hpc_a);
       code_wdata = 0;
       code_wmask = 0;
       code_wren  = 0;
+      */
     }
 
     //----------
     // Regfile write
 
     {
-      logic<4>  bus_tag_c    = b4(addr_c, 28);
-      logic<1>  regfile_cs_c = bus_tag_c == 0xE;
-      logic<32> data_out_c   = regfile_cs_c ? regs.get_rs1() : bus_rdata;
-
       logic<32>        unpacked_c = data_out_c;
       if (result_c[0]) unpacked_c = unpacked_c >> 8;
       if (result_c[1]) unpacked_c = unpacked_c >> 16;
@@ -254,31 +261,24 @@ public:
       // If we're using jalr to jump between threads, we use the hart from HPC _A_
       // as the target for the write so that the link register will be written
       // in the _destination_ regfile.
-      wb_addr_d = cat(b5(op_c == RV32I::OP_JALR ? hpc_a : hpc_c, 24), rd_c);
-      wb_data_d = op_c == RV32I::OP_LOAD ? unpacked_c : result_c;
-      wb_wren_d = b24(hpc_c) && op_c != RV32I::OP_STORE && op_c != RV32I::OP_BRANCH;
+      sig_wb_addr_c = cat(b5(op_c == RV32I::OP_JALR ? hpc_a : hpc_c, 24), rd_c);
+      sig_wb_data_c = op_c == RV32I::OP_LOAD ? unpacked_c : result_c;
+      sig_wb_wren_c = b24(hpc_c) && op_c != RV32I::OP_STORE && op_c != RV32I::OP_BRANCH;
 
-      if (b5(wb_addr_d) == 0) wb_wren_d = 0;
-
-      logic<32> insn_a  = code_rdata;
-      logic<5>  rs1a_a  = b5(insn_a, 15);
-      logic<5>  rs2a_a  = b5(insn_a, 20);
-      logic<10> reg_raddr1_a = cat(b5(hpc_a, 24), rs1a_a);
-      logic<10> reg_raddr2_a = cat(b5(hpc_a, 24), rs2a_a);
-      logic<1>  regfile_cs_b = b4(next_addr, 28) == 0xE;
+      if (b5(sig_wb_addr_c) == 0) sig_wb_wren_c = 0;
 
       if ((op_b == RV32I::OP_LOAD) && regfile_cs_b && (b24(hpc_a) == 0)) {
-        reg_raddr1_a = b10(next_addr >> 2);
+        reg_raddr1_a = b10(sig_addr_b >> 2);
       }
 
       // Handle stores through the bus to the regfile.
       if (op_c == RV32I::OP_STORE && regfile_cs_c) {
-        wb_addr_d = b10(addr_c >> 2);
-        wb_data_d = result_c;
-        wb_wren_d = 1;
+        sig_wb_addr_c = b10(addr_c >> 2);
+        sig_wb_data_c = result_c;
+        sig_wb_wren_c = 1;
       }
 
-      regs.tick(reg_raddr1_a, reg_raddr2_a, wb_addr_d, wb_data_d, wb_wren_d);
+      regs.tick(reg_raddr1_a, reg_raddr2_a, sig_wb_addr_c, sig_wb_data_c, sig_wb_wren_c);
     }
   }
 
@@ -310,16 +310,19 @@ public:
       hpc_d     = hpc_c;
       insn_d    = insn_c;
       result_d  = result_c;
+      wb_addr_d = sig_wb_addr_c;
+      wb_data_d = sig_wb_data_c;
+      wb_wren_d = sig_wb_wren_c;
 
       hpc_c     = hpc_b;
       insn_c    = insn_b;
-      addr_c    = next_addr;
-      result_c  = next_result_c;
+      addr_c    = sig_addr_b;
+      result_c  = sig_result_b;
 
       hpc_b     = hpc_a;
-      insn_b    = hpc_a ? code_rdata : b32(0);
+      insn_b    = sig_insn_a;
 
-      hpc_a     = next_hpc_a;
+      hpc_a     = sig_next_hpc_a;
 
       ticks     = ticks + 1;
     }
@@ -328,9 +331,15 @@ public:
   //----------------------------------------
   // metron_internal
 
-  logic<32> next_hpc_a;
-  logic<32> next_result_c;
-  logic<32> next_addr;
+  logic<32> sig_insn_a;     // Signal
+  logic<32> sig_next_hpc_a; // Signal
+
+  logic<32> sig_addr_b;     // Signal
+  logic<32> sig_result_b;   // Signal
+
+  logic<10> sig_wb_addr_c;  // Signal
+  logic<32> sig_wb_data_c;  // Signal
+  logic<1>  sig_wb_wren_c;  // Signal
 
   //----------------------------------------
   // Signals to code ram

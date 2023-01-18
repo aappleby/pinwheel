@@ -30,7 +30,9 @@ module regfile (
     out_1 <= data[tick_raddr1];
     out_2 <= data[tick_raddr2];
 
-    if (tick_wren) data[tick_waddr] <= tick_wdata;
+    if (tick_wren) begin
+      data[tick_waddr] <= tick_wdata;
+    end
 
     if (tick_wren && tick_raddr1 == tick_waddr) out_1 <= tick_wdata;
     if (tick_wren && tick_raddr2 == tick_waddr) out_2 <= tick_wdata;

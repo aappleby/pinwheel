@@ -1,5 +1,5 @@
 MEMORY {
-  ROM (rxai!w) : ORIGIN = 0x00400000, LENGTH = 2K
+  ROM (rxai!w) : ORIGIN = 0x00400000, LENGTH = 4K
   RAM (wxa!ri) : ORIGIN = 0x80000000, LENGTH = 4K
 }
 
