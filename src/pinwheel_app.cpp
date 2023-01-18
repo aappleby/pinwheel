@@ -211,9 +211,9 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
 
   d("hpc d         0x%08x\n", pinwheel.core.hpc_d);
   d("insn d        0x%08x ",  pinwheel.core.insn_d); print_rv(d, pinwheel.core.insn_d); d("\n");
-  d("wb addr d     0x%08x\n", pinwheel.core.wb_addr_d);
-  d("wb data d     0x%08x\n", pinwheel.core.wb_data_d);
-  d("wb wren d     0x%08x\n", pinwheel.core.wb_wren_d);
+  d("wb addr d     0x%08x\n", pinwheel.core.sig_reg_waddr);
+  d("wb data d     0x%08x\n", pinwheel.core.sig_reg_wdata);
+  d("wb wren d     0x%08x\n", pinwheel.core.sig_reg_wren);
   d("\n");
 
   d("debug_reg     0x%08x\n", pinwheel.debug_reg);

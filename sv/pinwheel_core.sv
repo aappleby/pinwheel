@@ -20,6 +20,9 @@ module pinwheel_core (
   output logic[31:0] sig_bus_wdata,
   output logic[3:0]  sig_bus_wmask,
   output logic  sig_bus_wren,
+  output logic[9:0] sig_reg_waddr,
+  output logic[31:0] sig_reg_wdata,
+  output logic  sig_reg_wren,
   // tock() ports
   input logic[31:0] tock_code_rdata,
   input logic[31:0] tock_bus_rdata,
@@ -214,7 +217,6 @@ module pinwheel_core (
 
     begin
       logic[31:0] unpacked_c;
-      logic[9:0] temp_wb_addr_c;
       unpacked_c = data_out_c;
       if (temp_result_c[0]) unpacked_c = unpacked_c >> 8;
       if (temp_result_c[1]) unpacked_c = unpacked_c >> 16;
@@ -229,11 +231,11 @@ module pinwheel_core (
       // as the target for the write so that the link register will be written
       // in the _destination_ regfile.
 
-      temp_wb_addr_c = {op_c == RV32I::OP_JALR ? hpc_a : hpc_c[28:24], rd_c};
-      sig_wb_data_c = op_c == RV32I::OP_LOAD ? unpacked_c : temp_result_c;
-      sig_wb_wren_c = 24'(hpc_c) && op_c != RV32I::OP_STORE && op_c != RV32I::OP_BRANCH;
+      sig_reg_waddr = {op_c == RV32I::OP_JALR ? hpc_a : hpc_c[28:24], rd_c};
+      sig_reg_wdata = op_c == RV32I::OP_LOAD ? unpacked_c : temp_result_c;
+      sig_reg_wren  = 24'(hpc_c) && op_c != RV32I::OP_STORE && op_c != RV32I::OP_BRANCH;
 
-      if (5'(temp_wb_addr_c) == 0) sig_wb_wren_c = 0;
+      if (rd_c == 0) sig_reg_wren = 0;
 
       if ((op_b == RV32I::OP_LOAD) && regfile_cs_b && (24'(hpc_a) == 0)) begin
         reg_raddr1_a = 10'(sig_addr_b >> 2);
@@ -241,17 +243,16 @@ module pinwheel_core (
 
       // Handle stores through the bus to the regfile.
       if (op_c == RV32I::OP_STORE && regfile_cs_c) begin
-        temp_wb_addr_c = 10'(addr_c >> 2);
-        sig_wb_data_c = temp_result_c;
-        sig_wb_wren_c = 1;
+        sig_reg_waddr = 10'(addr_c >> 2);
+        sig_reg_wdata = temp_result_c;
+        sig_reg_wren = 1;
       end
       regs_tick_raddr1 = reg_raddr1_a;
       regs_tick_raddr2 = reg_raddr2_a;
-      regs_tick_waddr = temp_wb_addr_c;
-      regs_tick_wdata = sig_wb_data_c;
-      regs_tick_wren = sig_wb_wren_c;
+      regs_tick_waddr = sig_reg_waddr;
+      regs_tick_wdata = sig_reg_wdata;
+      regs_tick_wren = sig_reg_wren;
 
-      sig_wb_addr_c = temp_wb_addr_c;
     end
 
     sig_result_c = temp_result_c;
@@ -275,9 +276,6 @@ module pinwheel_core (
       hpc_d     <= 0;
       insn_d    <= 0;
       result_d  <= 0;
-      wb_addr_d <= 0;
-      wb_data_d <= 0;
-      wb_wren_d <= 0;
 
       ticks     <= 0;
     end
@@ -285,9 +283,6 @@ module pinwheel_core (
       hpc_d     <= hpc_c;
       insn_d    <= insn_c;
       result_d  <= sig_result_c;
-      wb_addr_d <= sig_wb_addr_c;
-      wb_data_d <= sig_wb_data_c;
-      wb_wren_d <= sig_wb_wren_c;
 
       hpc_c     <= hpc_b;
       insn_c    <= insn_b;
@@ -316,6 +311,11 @@ module pinwheel_core (
   /* verilator lint_on UNUSEDSIGNAL */
 
   //----------------------------------------
+  // Signals to regfile
+  /* verilator lint_off UNUSEDSIGNAL */
+  /* verilator lint_on UNUSEDSIGNAL */
+
+  //----------------------------------------
   // metron_internal
 
   logic[31:0] sig_insn_a;     // Signal
@@ -325,9 +325,6 @@ module pinwheel_core (
   logic[31:0] sig_result_b;   // Signal
 
   logic[31:0] sig_result_c;   // Signal
-  logic[9:0] sig_wb_addr_c;  // Signal
-  logic[31:0] sig_wb_data_c;  // Signal
-  logic  sig_wb_wren_c;  // Signal
 
   //----------------------------------------
   // Registers
@@ -370,9 +367,6 @@ module pinwheel_core (
   logic[31:0] hpc_d;
   logic[31:0] insn_d;
   logic[31:0] result_d;
-  logic[9:0] wb_addr_d;
-  logic[31:0] wb_data_d;
-  logic  wb_wren_d;
   /* verilator lint_on UNUSEDSIGNAL */
 
   //----------------------------------------

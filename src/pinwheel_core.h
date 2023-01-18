@@ -179,11 +179,11 @@ public:
       // as the target for the write so that the link register will be written
       // in the _destination_ regfile.
 
-      logic<10> temp_wb_addr_c = cat(b5(op_c == RV32I::OP_JALR ? hpc_a : hpc_c, 24), rd_c);
-      sig_wb_data_c = op_c == RV32I::OP_LOAD ? unpacked_c : temp_result_c;
-      sig_wb_wren_c = b24(hpc_c) && op_c != RV32I::OP_STORE && op_c != RV32I::OP_BRANCH;
+      sig_reg_waddr = cat(b5(op_c == RV32I::OP_JALR ? hpc_a : hpc_c, 24), rd_c);
+      sig_reg_wdata = op_c == RV32I::OP_LOAD ? unpacked_c : temp_result_c;
+      sig_reg_wren  = b24(hpc_c) && op_c != RV32I::OP_STORE && op_c != RV32I::OP_BRANCH;
 
-      if (b5(temp_wb_addr_c) == 0) sig_wb_wren_c = 0;
+      if (rd_c == 0) sig_reg_wren = 0;
 
       if ((op_b == RV32I::OP_LOAD) && regfile_cs_b && (b24(hpc_a) == 0)) {
         reg_raddr1_a = b10(sig_addr_b >> 2);
@@ -191,13 +191,12 @@ public:
 
       // Handle stores through the bus to the regfile.
       if (op_c == RV32I::OP_STORE && regfile_cs_c) {
-        temp_wb_addr_c = b10(addr_c >> 2);
-        sig_wb_data_c = temp_result_c;
-        sig_wb_wren_c = 1;
+        sig_reg_waddr = b10(addr_c >> 2);
+        sig_reg_wdata = temp_result_c;
+        sig_reg_wren = 1;
       }
 
-      regs.tick(reg_raddr1_a, reg_raddr2_a, temp_wb_addr_c, sig_wb_data_c, sig_wb_wren_c);
-      sig_wb_addr_c = temp_wb_addr_c;
+      regs.tick(reg_raddr1_a, reg_raddr2_a, sig_reg_waddr, sig_reg_wdata, sig_reg_wren);
     }
 
     sig_result_c = temp_result_c;
@@ -221,9 +220,6 @@ public:
       hpc_d     = 0;
       insn_d    = 0;
       result_d  = 0;
-      wb_addr_d = 0;
-      wb_data_d = 0;
-      wb_wren_d = 0;
 
       ticks     = 0;
     }
@@ -231,9 +227,6 @@ public:
       hpc_d     = hpc_c;
       insn_d    = insn_c;
       result_d  = sig_result_c;
-      wb_addr_d = sig_wb_addr_c;
-      wb_data_d = sig_wb_data_c;
-      wb_wren_d = sig_wb_wren_c;
 
       hpc_c     = hpc_b;
       insn_c    = insn_b;
@@ -270,6 +263,16 @@ public:
   /* verilator lint_on UNUSEDSIGNAL */
 
   //----------------------------------------
+  // Signals to regfile
+  /* verilator lint_off UNUSEDSIGNAL */
+  logic<10> sig_reg_raddr1;
+  logic<10> sig_reg_raddr2;
+  logic<10> sig_reg_waddr;
+  logic<32> sig_reg_wdata;
+  logic<1>  sig_reg_wren;
+  /* verilator lint_on UNUSEDSIGNAL */
+
+  //----------------------------------------
   // metron_internal
 
   logic<32> sig_insn_a;     // Signal
@@ -279,9 +282,6 @@ public:
   logic<32> sig_result_b;   // Signal
 
   logic<32> sig_result_c;   // Signal
-  logic<10> sig_wb_addr_c;  // Signal
-  logic<32> sig_wb_data_c;  // Signal
-  logic<1>  sig_wb_wren_c;  // Signal
 
   //----------------------------------------
   // Registers
@@ -303,9 +303,6 @@ public:
   logic<32> hpc_d;
   logic<32> insn_d;
   logic<32> result_d;
-  logic<10> wb_addr_d;
-  logic<32> wb_data_d;
-  logic<1>  wb_wren_d;
   /* verilator lint_on UNUSEDSIGNAL */
 
   //----------------------------------------
