@@ -15,32 +15,23 @@ rule compile
 rule link
   command = g++ -g ${in} ${libs} -o ${out}
 
-rule lib
-  command = ar rcs ${out} ${in}
-
 rule run_test
   command = ${in} | grep "All tests pass" && touch ${out}
 
-rule do_subninja
-  command = ninja -C ${dir} ${target}
-
-rule compile_c
-  command = gcc -g -MMD ${build_mode} ${default_includes} ${includes} -MF ${out}.d -c ${in} -o ${out}
-  depfile = ${out}.d
-  deps = gcc
-
-rule run_command
-  command = $command
-
-rule check_sv
+rule verilator
   command = verilator -I. -Isv --lint-only -Wall -Wno-declfilename -Wno-multitop ${in} && touch ${out}
 
-#  command = yosys -q -p 'read_verilog -Isrc -sv ${in}; dump; synth_ice40 -json scratch.json;'
+rule yosys
+  command = yosys -p 'read_verilog -Isrc -sv ${in}; dump; synth_ice40 -json ${out};' | grep "Number of cells"
+
+rule iverilog
+  command = iverilog -g2012 -Wall -Isv -o ${out} ${in} 2> /dev/null
 
 rule metron
   command = submodules/Metron/bin/metron -q -v -e -c ${in} -o ${out}
 
 ################################################################################
+# Debugger app
 
 build obj/pinwheel_main.o: compile src/pinwheel_main.cpp
 build obj/pinwheel_app.o:  compile src/pinwheel_app.cpp
@@ -60,13 +51,19 @@ build bin/pinwheel: link $
   submodules/MetroLib/bin/AppLib.a $
   submodules/MetroLib/bin/CoreLib.a $
   submodules/bin/imgui.a $
-  submodules/bin/glad.a | firmware/bin/hello
+  submodules/bin/glad.a
+
+################################################################################
+# Functional tests
 
 build bin/pinwheel_test: link $
   obj/pinwheel.o $
-  obj/pinwheel_test.o
+  obj/pinwheel_test.o | feature_tests
 
 build obj/pinwheel_test_pass: run_test bin/pinwheel_test
+
+################################################################################
+# Metron conversion tests
 
 build sv/block_ram.sv     : metron src/block_ram.h
 build sv/constants.sv     : metron src/constants.h
@@ -74,21 +71,48 @@ build sv/pinwheel.sv      : metron src/pinwheel.h
 build sv/pinwheel_core.sv : metron src/pinwheel_core.h
 build sv/regfile.sv       : metron src/regfile.h
 
-build obj/check_block_ram_sv     : check_sv sv/block_ram.sv
-build obj/check_pinwheel_sv      : check_sv sv/pinwheel.sv
-build obj/check_pinwheel_core_sv : check_sv sv/pinwheel_core.sv
-build obj/check_regfile_sv       : check_sv sv/regfile.sv
-
-build check_sv : phony $
+build check_metron : phony $
   sv/constants.sv $
-  obj/check_block_ram_sv $
-  obj/check_pinwheel_sv $
-  obj/check_pinwheel_core_sv $
-  obj/check_regfile_sv
+  sv/block_ram.sv $
+  sv/pinwheel.sv $
+  sv/pinwheel_core.sv $
+  sv/regfile.sv
 
-# cmd = f"yosys -q -p 'read_verilog -Isrc -sv tests/metron_sv/{svname};'"
-# cmd = f"iverilog -g2012 -Wall -Isrc -o bin/{svname}.o tests/metron_sv/{svname}"
-# yosys -q -p 'read_verilog -sv wat.sv; dump; synth_ice40 -json wat.json'
+################################################################################
+# Verilator conversion tests
+
+build obj/block_ram.vh     : verilator sv/block_ram.sv
+build obj/pinwheel.vh      : verilator sv/pinwheel.sv
+build obj/pinwheel_core.vh : verilator sv/pinwheel_core.sv
+build obj/regfile.vh       : verilator sv/regfile.sv
+
+build check_verilator : phony $
+  obj/block_ram.vh $
+  obj/pinwheel.vh $
+  obj/pinwheel_core.vh $
+  obj/regfile.vh
+
+################################################################################
+# Yosys synthesis tests
+
+build obj/pinwheel_core.json  : yosys sv/pinwheel_core.sv
+
+build check_yosys : phony $
+  obj/pinwheel_core.json
+
+################################################################################
+# Icarus simulation tests
+
+build obj/block_ram.iv     : iverilog sv/block_ram.sv
+build obj/pinwheel.iv      : iverilog sv/pinwheel.sv
+build obj/pinwheel_core.iv : iverilog sv/pinwheel_core.sv
+build obj/regfile.iv       : iverilog sv/regfile.sv
+
+build check_iverilog : phony $
+  obj/block_ram.iv $
+  obj/pinwheel.iv $
+  obj/pinwheel_core.iv $
+  obj/regfile.iv
 
 ################################################################################
 # RISC-V Rules
@@ -104,9 +128,10 @@ rule assemble_rv
   command = riscv64-unknown-elf-gcc ${rv_opts} -c ${in} -o ${out}
 
 rule link_rv
-  command = riscv64-unknown-elf-gcc ${rv_opts} -nostdlib -nostartfiles -Wl,-T tests/microtests.ld ${in} -o ${out} -lgcc
+  command = riscv64-unknown-elf-gcc ${rv_opts} -nostdlib -nostartfiles -Wl,-T pinwheel.ld ${in} -o ${out} -lgcc
 
 ################################################################################
+# RISC-V test binaries
 
 build obj/tests/start.o : assemble_rv tests/start.s
 
@@ -120,17 +145,17 @@ build obj/tests/yield.o        : compile_rv tests/yield.cpp
 build obj/tests/read_regs.o    : compile_rv tests/read_regs.cpp
 build obj/tests/write_code.o   : compile_rv tests/write_code.cpp
 
-build bin/tests/basic          : link_rv obj/tests/start.o obj/tests/basic.o        | tests/microtests.ld
-build bin/tests/call_jalr      : link_rv obj/tests/start.o obj/tests/call_jalr.o    | tests/microtests.ld
-build bin/tests/get_hart       : link_rv obj/tests/start.o obj/tests/get_hart.o     | tests/microtests.ld
-build bin/tests/start_thread   : link_rv obj/tests/start.o obj/tests/start_thread.o | tests/microtests.ld
-build bin/tests/stepping       : link_rv obj/tests/start.o obj/tests/stepping.o     | tests/microtests.ld
-build bin/tests/write_regs     : link_rv obj/tests/start.o obj/tests/write_regs.o   | tests/microtests.ld
-build bin/tests/yield          : link_rv obj/tests/start.o obj/tests/yield.o        | tests/microtests.ld
-build bin/tests/read_regs      : link_rv obj/tests/start.o obj/tests/read_regs.o    | tests/microtests.ld
-build bin/tests/write_code     : link_rv obj/tests/start.o obj/tests/write_code.o   | tests/microtests.ld
+build bin/tests/basic          : link_rv obj/tests/start.o obj/tests/basic.o        | pinwheel.ld
+build bin/tests/call_jalr      : link_rv obj/tests/start.o obj/tests/call_jalr.o    | pinwheel.ld
+build bin/tests/get_hart       : link_rv obj/tests/start.o obj/tests/get_hart.o     | pinwheel.ld
+build bin/tests/start_thread   : link_rv obj/tests/start.o obj/tests/start_thread.o | pinwheel.ld
+build bin/tests/stepping       : link_rv obj/tests/start.o obj/tests/stepping.o     | pinwheel.ld
+build bin/tests/write_regs     : link_rv obj/tests/start.o obj/tests/write_regs.o   | pinwheel.ld
+build bin/tests/yield          : link_rv obj/tests/start.o obj/tests/yield.o        | pinwheel.ld
+build bin/tests/read_regs      : link_rv obj/tests/start.o obj/tests/read_regs.o    | pinwheel.ld
+build bin/tests/write_code     : link_rv obj/tests/start.o obj/tests/write_code.o   | pinwheel.ld
 
-build all_tests : phony $
+build feature_tests : phony $
   bin/tests/basic $
   bin/tests/call_jalr $
   bin/tests/get_hart $
@@ -140,3 +165,5 @@ build all_tests : phony $
   bin/tests/read_regs $
   bin/tests/write_code $
   bin/tests/yield
+
+################################################################################
