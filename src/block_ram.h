@@ -6,6 +6,10 @@
 class block_ram {
 public:
 
+  block_ram(const char* filename = nullptr) {
+    if (filename) readmemh(filename, data);
+  }
+
   logic<32> rdata() const {
     return data_out;
   }

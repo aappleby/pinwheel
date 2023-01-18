@@ -35,8 +35,10 @@ rule run_command
 rule check_sv
   command = verilator -I. -Isv --lint-only -Wall -Wno-declfilename -Wno-multitop ${in} && touch ${out}
 
+#  command = yosys -q -p 'read_verilog -Isrc -sv ${in}; dump; synth_ice40 -json scratch.json;'
+
 rule metron
-  command = submodules/Metron/bin/metron -v -e -c ${in} -o ${out}
+  command = submodules/Metron/bin/metron -q -v -e -c ${in} -o ${out}
 
 ################################################################################
 
@@ -66,20 +68,22 @@ build bin/pinwheel_test: link $
 
 build obj/pinwheel_test_pass: run_test bin/pinwheel_test
 
-build sv/block_ram.sv  : metron src/block_ram.h
-build sv/constants.sv  : metron src/constants.h
-build sv/pinwheel.sv   : metron src/pinwheel.h
-build sv/regfile.sv    : metron src/regfile.h
+build sv/block_ram.sv     : metron src/block_ram.h
+build sv/constants.sv     : metron src/constants.h
+build sv/pinwheel.sv      : metron src/pinwheel.h
+build sv/pinwheel_core.sv : metron src/pinwheel_core.h
+build sv/regfile.sv       : metron src/regfile.h
 
-build obj/check_block_ram_sv : check_sv sv/block_ram.sv
-#build obj/check_constants_sv     : check_sv sv/constants.sv
-build obj/check_pinwheel_sv : check_sv sv/pinwheel.sv
-build obj/check_regfile_sv   : check_sv sv/regfile.sv
+build obj/check_block_ram_sv     : check_sv sv/block_ram.sv
+build obj/check_pinwheel_sv      : check_sv sv/pinwheel.sv
+build obj/check_pinwheel_core_sv : check_sv sv/pinwheel_core.sv
+build obj/check_regfile_sv       : check_sv sv/regfile.sv
 
 build check_sv : phony $
   sv/constants.sv $
   obj/check_block_ram_sv $
   obj/check_pinwheel_sv $
+  obj/check_pinwheel_core_sv $
   obj/check_regfile_sv
 
 # cmd = f"yosys -q -p 'read_verilog -Isrc -sv tests/metron_sv/{svname};'"

@@ -18,9 +18,7 @@
 class pinwheel {
 public:
 
-  pinwheel(const char* text_file = nullptr, const char* data_file = nullptr) {
-    readmemh(text_file, code_ram.data);
-    readmemh(data_file, data_ram.data);
+  pinwheel(const char* text_file = nullptr, const char* data_file = nullptr) : code_ram(text_file), data_ram(data_file) {
   }
 
   // metron_noconvert
@@ -51,50 +49,54 @@ public:
 
     if (debug_reg_cs) bus_to_core = debug_reg;
 
-    core.tock(reset_in, code_to_core, bus_to_core);
+    /*reset_in,*/
+    core.tock(code_to_core, bus_to_core);
+
+    logic<4> bus_tag_b = b4(core.sig_bus_addr, 28);
+    logic<1> debug_cs_b = bus_tag_b == 0xF;
+    debug_reg_next = debug_reg;
+    debug_reg_cs_next = debug_cs_b;
+    if (core.sig_bus_wren && debug_cs_b) debug_reg_next = core.sig_bus_wdata;
+
+    code_ram.tick(b12(core.sig_code_addr), 1,                core.sig_code_wdata, core.sig_code_wmask, core.sig_code_wren && bus_tag_b == 0x0);
+    data_ram.tick(b12(core.sig_bus_addr),  bus_tag_b == 0x8, core.sig_bus_wdata,  core.sig_bus_wmask,  core.sig_bus_wren  && bus_tag_b == 0x8);
+
+    // metron_noconvert
+    console1.tick(reset_in, bus_tag_b == 0x4 && core.sig_bus_wren, core.sig_bus_wdata);
+    // metron_noconvert
+    console2.tick(reset_in, bus_tag_b == 0x5 && core.sig_bus_wren, core.sig_bus_wdata);
+    // metron_noconvert
+    console3.tick(reset_in, bus_tag_b == 0x6 && core.sig_bus_wren, core.sig_bus_wdata);
+    // metron_noconvert
+    console4.tick(reset_in, bus_tag_b == 0x7 && core.sig_bus_wren, core.sig_bus_wdata);
+
+    core.tick(reset_in);
   }
 
   //----------------------------------------
   // FIXME trace modules individually
 
   void tick(logic<1> reset_in) {
-
-    logic<4> bus_tag_b = b4(core.bus_addr, 28);
-
     if (reset_in) {
       debug_reg = 0;
       debug_reg_cs = 0;
     }
     else {
-      logic<1> debug_cs_b = bus_tag_b == 0xF;
-      if (core.bus_wren && debug_cs_b) debug_reg = core.bus_wdata;
-      debug_reg_cs = debug_cs_b;
+      debug_reg = debug_reg_next;
+      debug_reg_cs = debug_reg_cs_next;
     }
-
-    logic<32> code_to_core = code_ram.rdata();
-    logic<32> bus_to_core  = data_ram.rdata();
-
-    code_ram.tick(b12(core.code_addr), 1,                core.code_wdata, core.code_wmask, core.code_wren && bus_tag_b == 0x0);
-    data_ram.tick(b12(core.bus_addr),  bus_tag_b == 0x8, core.bus_wdata,  core.bus_wmask,  core.bus_wren  && bus_tag_b == 0x8);
-
-    // metron_noconvert
-    console1.tick(reset_in, bus_tag_b == 0x4 && core.bus_wren, core.bus_wdata);
-    // metron_noconvert
-    console2.tick(reset_in, bus_tag_b == 0x5 && core.bus_wren, core.bus_wdata);
-    // metron_noconvert
-    console3.tick(reset_in, bus_tag_b == 0x6 && core.bus_wren, core.bus_wdata);
-    // metron_noconvert
-    console4.tick(reset_in, bus_tag_b == 0x7 && core.bus_wren, core.bus_wdata);
-
-    core.tick(reset_in, code_to_core, bus_to_core);
   }
 
   //----------------------------------------
 
+  /* verilator lint_off UNUSED */
+
   // metron_internal
   pinwheel_core core;
 
+  logic<32> debug_reg_next;
   logic<32> debug_reg;
+  logic<1>  debug_reg_cs_next;
   logic<1>  debug_reg_cs;
 
   block_ram code_ram;
@@ -112,6 +114,8 @@ public:
   Console console3;
   // metron_noconvert
   Console console4;
+
+  /* verilator lint_on UNUSED */
 };
 
 // verilator lint_on unusedsignal

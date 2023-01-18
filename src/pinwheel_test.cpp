@@ -17,8 +17,8 @@ double total_time = 0;
 
 //------------------------------------------------------------------------------
 
-TestResults run_test(const char* test_name, int reps, int max_cycles) {
-  TEST_INIT("'%6s', %d reps: ", test_name, reps);
+TestResults run_test_elf(const char* test_filename, int reps = 1, int max_cycles = 100000, bool expect_fail = false) {
+  TEST_INIT("'%-30s', %d reps: ", test_filename, reps);
 
   double time = 0;
   int tocks = 0;
@@ -27,10 +27,7 @@ TestResults run_test(const char* test_name, int reps, int max_cycles) {
 
   pinwheel top;
 
-  char firmware_filename[256];
-  sprintf(firmware_filename, "rv_tests/%s.elf", test_name);
-
-  top.load_elf(firmware_filename);
+  top.load_elf(test_filename);
 
   for (int rep = 0; rep < reps; rep++) {
     top.tock(1);
@@ -42,7 +39,12 @@ TestResults run_test(const char* test_name, int reps, int max_cycles) {
       tocks++;
 
       if (top.get_debug()) {
-        EXPECT_EQ(top.get_debug(), 1, "FAIL @ %d", elapsed_cycles);
+        if (expect_fail) {
+          EXPECT_NE(top.get_debug(), 1, "FAIL @ %d", elapsed_cycles);
+        }
+        else {
+          EXPECT_EQ(top.get_debug(), 1, "FAIL @ %d", elapsed_cycles);
+        }
         break;
       }
     }
@@ -57,8 +59,8 @@ TestResults run_test(const char* test_name, int reps, int max_cycles) {
 
 //------------------------------------------------------------------------------
 
-TestResults test_instructions(int reps, int max_cycles) {
-  TEST_INIT("Testing %d reps up to %d cycles", reps, max_cycles);
+TestResults run_rv32i_tests(int reps, int max_cycles) {
+  TEST_INIT("Testing all rv32i instructions");
 
   const char* instructions[38] = {
     "add", "addi", "and", "andi", "auipc", "beq",  "bge", "bgeu",
@@ -71,9 +73,26 @@ TestResults test_instructions(int reps, int max_cycles) {
   const int instruction_count = sizeof(instructions) / sizeof(instructions[0]);
 
   for (int i = 0; i < instruction_count; i++) {
-    clear_cache();
-    results += run_test(instructions[i], reps, max_cycles);
+    char firmware_filename[256];
+    sprintf(firmware_filename, "rv_tests/%s.elf", instructions[i]);
+    results += run_test_elf(firmware_filename, reps, max_cycles);
   }
+  TEST_DONE();
+}
+
+//------------------------------------------------------------------------------
+
+TestResults run_microtests() {
+  TEST_INIT("Running microtests");
+  results += run_test_elf("microtests/bin/basic");
+  results += run_test_elf("microtests/bin/call_jalr");
+  results += run_test_elf("microtests/bin/get_hart");
+  results += run_test_elf("microtests/bin/start_thread");
+  results += run_test_elf("microtests/bin/stepping");
+  results += run_test_elf("microtests/bin/write_regs");
+  results += run_test_elf("microtests/bin/yield");
+  results += run_test_elf("microtests/bin/read_regs");
+  results += run_test_elf("microtests/bin/write_code");
   TEST_DONE();
 }
 
@@ -95,7 +114,8 @@ int main(int argc, const char** argv) {
   total_time = 0;
 
   TestResults results;
-  results += test_instructions(reps, max_cycles);
+  results += run_rv32i_tests(reps, max_cycles);
+  results += run_microtests();
   results.dump();
 
   LOG_B("Total tocks %f\n", double(total_tocks));

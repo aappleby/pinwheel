@@ -16,6 +16,11 @@ module block_ram (
 );
 /*public:*/
 
+  parameter filename = "";
+  initial begin
+    if (filename) $readmemh(filename, data);
+  end
+
   always_comb begin : rdata
     rdata_ret = data_out;
   end
