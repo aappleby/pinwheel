@@ -8,6 +8,8 @@
 // 0xExxxxxxx - Regfiles
 // 0xFxxxxxxx - Debug registers
 
+/* verilator lint_off UNUSEDSIGNAL */
+
 module pinwheel_core (
   // global clock
   input logic clock,
@@ -20,14 +22,17 @@ module pinwheel_core (
   output logic[31:0] sig_bus_wdata,
   output logic[3:0]  sig_bus_wmask,
   output logic  sig_bus_wren,
-  output logic[9:0] sig_reg_waddr,
-  output logic[31:0] sig_reg_wdata,
-  output logic  sig_reg_wren,
+  output logic[7:0]  sig_rf_raddr1,
+  output logic[7:0]  sig_rf_raddr2,
+  output logic[7:0]  sig_rf_waddr,
+  output logic[31:0] sig_rf_wdata,
+  output logic  sig_rf_wren,
   // tock() ports
+  input logic tock_reset_in,
   input logic[31:0] tock_code_rdata,
   input logic[31:0] tock_bus_rdata,
-  // tick() ports
-  input logic tick_reset_in
+  input logic[31:0] tock_reg_rdata1,
+  input logic[31:0] tock_reg_rdata2
 );
 /*public:*/
 
@@ -36,8 +41,6 @@ module pinwheel_core (
   always_comb begin : tock
     logic[4:0]  rs1a_a;
     logic[4:0]  rs2a_a;
-    logic[9:0] reg_raddr1_a;
-    logic[9:0] reg_raddr2_a;
     logic[4:0]  op_b;
     logic[2:0]  f3_b;
     logic[4:0]  rs1a_b;
@@ -58,32 +61,32 @@ module pinwheel_core (
     logic[31:0] next_hpc;
     logic[31:0] alu_result;
 
-    sig_insn_a  = 24'(hpc_a) ? tock_code_rdata : 32'd0;
+    sig_insn_a  = 24'(reg_hpc_a) ? tock_code_rdata : 32'd0;
     rs1a_a  = sig_insn_a[19:15];
     rs2a_a  = sig_insn_a[24:20];
-    reg_raddr1_a = {hpc_a[28:24], rs1a_a};
-    reg_raddr2_a = {hpc_a[28:24], rs2a_a};
+    sig_rf_raddr1 = {reg_hpc_a[26:24], rs1a_a};
+    sig_rf_raddr2 = {reg_hpc_a[26:24], rs2a_a};
 
-    op_b   = insn_b[6:2];
-    f3_b   = insn_b[14:12];
-    rs1a_b = insn_b[19:15];
-    rs2a_b = insn_b[24:20];
-    rs1_b  = rs1a_b ? regs_get_rs1_ret : 32'd0;
-    rs2_b  = rs2a_b ? regs_get_rs2_ret : 32'd0;
-    imm_b  = decode_imm(insn_b);
+    op_b   = reg_insn_b[6:2];
+    f3_b   = reg_insn_b[14:12];
+    rs1a_b = reg_insn_b[19:15];
+    rs2a_b = reg_insn_b[24:20];
+    rs1_b  = rs1a_b ? tock_reg_rdata1 : 32'd0;
+    rs2_b  = rs2a_b ? tock_reg_rdata2 : 32'd0;
+    imm_b  = decode_imm(reg_insn_b);
     sig_addr_b  = 32'(rs1_b + imm_b);
     regfile_cs_b = sig_addr_b[31:28] == 4'hE;
-    csr_b = insn_b[31:20];
+    csr_b = reg_insn_b[31:20];
 
-    op_c  = insn_c[6:2];
-    rd_c  = insn_c[11:7];
-    f3_c  = insn_c[14:12];
-    csr_c = insn_c[31:20];
-    bus_tag_c    = addr_c[31:28];
+    op_c  = reg_insn_c[6:2];
+    rd_c  = reg_insn_c[11:7];
+    f3_c  = reg_insn_c[14:12];
+    csr_c = reg_insn_c[31:20];
+    bus_tag_c    = reg_addr_c[31:28];
     regfile_cs_c = bus_tag_c == 4'hE;
-    data_out_c   = regfile_cs_c ? regs_get_rs1_ret : tock_bus_rdata;
+    data_out_c   = regfile_cs_c ? tock_reg_rdata1 : tock_bus_rdata;
 
-    temp_result_c = result_c;
+    temp_result_c = reg_result_c;
 
     //----------
     // Fetch
@@ -92,7 +95,7 @@ module pinwheel_core (
     begin
       logic take_branch;
       take_branch = 0;
-      if (24'(hpc_b)) begin
+      if (24'(reg_hpc_b)) begin
         logic eq;
         logic slt;
         logic ult;
@@ -113,18 +116,18 @@ module pinwheel_core (
         endcase
       end
 
-      if (24'(hpc_b)) begin
+      if (24'(reg_hpc_b)) begin
         case(op_b)
-          RV32I::OP_BRANCH: next_hpc = take_branch ? hpc_b + imm_b : hpc_b + 4;
-          RV32I::OP_JAL:    next_hpc = hpc_b + imm_b;
+          RV32I::OP_BRANCH: next_hpc = take_branch ? reg_hpc_b + imm_b : reg_hpc_b + 4;
+          RV32I::OP_JAL:    next_hpc = reg_hpc_b + imm_b;
           RV32I::OP_JALR:   next_hpc = sig_addr_b;
-          RV32I::OP_LUI:    next_hpc = hpc_b + 4;
-          RV32I::OP_AUIPC:  next_hpc = hpc_b + 4;
-          RV32I::OP_LOAD:   next_hpc = hpc_b + 4;
-          RV32I::OP_STORE:  next_hpc = hpc_b + 4;
-          RV32I::OP_SYSTEM: next_hpc = hpc_b + 4;
-          RV32I::OP_OPIMM:  next_hpc = hpc_b + 4;
-          RV32I::OP_OP:     next_hpc = hpc_b + 4;
+          RV32I::OP_LUI:    next_hpc = reg_hpc_b + 4;
+          RV32I::OP_AUIPC:  next_hpc = reg_hpc_b + 4;
+          RV32I::OP_LOAD:   next_hpc = reg_hpc_b + 4;
+          RV32I::OP_STORE:  next_hpc = reg_hpc_b + 4;
+          RV32I::OP_SYSTEM: next_hpc = reg_hpc_b + 4;
+          RV32I::OP_OPIMM:  next_hpc = reg_hpc_b + 4;
+          RV32I::OP_OP:     next_hpc = reg_hpc_b + 4;
         endcase
       end
     end
@@ -136,15 +139,15 @@ module pinwheel_core (
     begin
       case(op_b)
         RV32I::OP_BRANCH: alu_result = 32'bx;
-        RV32I::OP_JAL:    alu_result = hpc_b + 4;
-        RV32I::OP_JALR:   alu_result = hpc_b + 4;
+        RV32I::OP_JAL:    alu_result = reg_hpc_b + 4;
+        RV32I::OP_JALR:   alu_result = reg_hpc_b + 4;
         RV32I::OP_LUI:    alu_result = imm_b;
-        RV32I::OP_AUIPC:  alu_result = hpc_b + imm_b;
+        RV32I::OP_AUIPC:  alu_result = reg_hpc_b + imm_b;
         RV32I::OP_LOAD:   alu_result = sig_addr_b;
         RV32I::OP_STORE:  alu_result = rs2_b;
-        RV32I::OP_SYSTEM: alu_result = execute_system(insn_b, rs1_b, rs2_b);
-        RV32I::OP_OPIMM:  alu_result = execute_alu   (insn_b, rs1_b, rs2_b);
-        RV32I::OP_OP:     alu_result = execute_alu   (insn_b, rs1_b, rs2_b);
+        RV32I::OP_SYSTEM: alu_result = execute_system(reg_insn_b, rs1_b, rs2_b);
+        RV32I::OP_OPIMM:  alu_result = execute_alu   (reg_insn_b, rs1_b, rs2_b);
+        RV32I::OP_OP:     alu_result = execute_alu   (reg_insn_b, rs1_b, rs2_b);
         default:               alu_result = 32'bx;
       endcase
 
@@ -163,7 +166,7 @@ module pinwheel_core (
       end
 
     end
-    sig_next_hpc_a = next_hpc;
+    sig_hpc_a = next_hpc;
     sig_result_b = alu_result;
 
     //----------
@@ -201,12 +204,12 @@ module pinwheel_core (
       if (f3_c == 0) temp_mask_c = 4'b0001;
       if (f3_c == 1) temp_mask_c = 4'b0011;
       if (f3_c == 2) temp_mask_c = 4'b1111;
-      if (addr_c[0]) temp_mask_c = temp_mask_c << 1;
-      if (addr_c[1]) temp_mask_c = temp_mask_c << 2;
+      if (reg_addr_c[0]) temp_mask_c = temp_mask_c << 1;
+      if (reg_addr_c[1]) temp_mask_c = temp_mask_c << 2;
 
-      code_cs_c = bus_tag_c == 4'h0 && 24'(sig_next_hpc_a) == 0;
+      code_cs_c = bus_tag_c == 4'h0 && 24'(sig_hpc_a) == 0;
 
-      sig_code_addr  = code_cs_c ? 24'(addr_c) : 24'(sig_next_hpc_a);
+      sig_code_addr  = code_cs_c ? 24'(reg_addr_c) : 24'(sig_hpc_a);
       sig_code_wdata = temp_result_c;
       sig_code_wmask = temp_mask_c;
       sig_code_wren  = (op_c == RV32I::OP_STORE) && code_cs_c;
@@ -231,31 +234,27 @@ module pinwheel_core (
       // as the target for the write so that the link register will be written
       // in the _destination_ regfile.
 
-      sig_reg_waddr = {op_c == RV32I::OP_JALR ? hpc_a : hpc_c[28:24], rd_c};
-      sig_reg_wdata = op_c == RV32I::OP_LOAD ? unpacked_c : temp_result_c;
-      sig_reg_wren  = 24'(hpc_c) && op_c != RV32I::OP_STORE && op_c != RV32I::OP_BRANCH;
+      sig_rf_waddr = {op_c == RV32I::OP_JALR ? reg_hpc_a : reg_hpc_c[26:24], rd_c};
+      sig_rf_wdata = op_c == RV32I::OP_LOAD ? unpacked_c : temp_result_c;
+      sig_rf_wren  = 24'(reg_hpc_c) && op_c != RV32I::OP_STORE && op_c != RV32I::OP_BRANCH;
 
-      if (rd_c == 0) sig_reg_wren = 0;
+      if (rd_c == 0) sig_rf_wren = 0;
 
-      if ((op_b == RV32I::OP_LOAD) && regfile_cs_b && (24'(hpc_a) == 0)) begin
-        reg_raddr1_a = 10'(sig_addr_b >> 2);
+      if ((op_b == RV32I::OP_LOAD) && regfile_cs_b && (24'(reg_hpc_a) == 0)) begin
+        sig_rf_raddr1 = 10'(sig_addr_b >> 2);
       end
 
       // Handle stores through the bus to the regfile.
       if (op_c == RV32I::OP_STORE && regfile_cs_c) begin
-        sig_reg_waddr = 10'(addr_c >> 2);
-        sig_reg_wdata = temp_result_c;
-        sig_reg_wren = 1;
+        sig_rf_waddr = 10'(reg_addr_c >> 2);
+        sig_rf_wdata = temp_result_c;
+        sig_rf_wren = 1;
       end
-      regs_tick_raddr1 = reg_raddr1_a;
-      regs_tick_raddr2 = reg_raddr2_a;
-      regs_tick_waddr = sig_reg_waddr;
-      regs_tick_wdata = sig_reg_wdata;
-      regs_tick_wren = sig_reg_wren;
-
     end
 
     sig_result_c = temp_result_c;
+    tick_reset_in = tock_reset_in;
+
   end
 
   //----------------------------------------
@@ -263,116 +262,82 @@ module pinwheel_core (
   always_ff @(posedge clock) begin : tick
 
     if (tick_reset_in) begin
-      hpc_a     <= 32'h00400000;
+      reg_hpc_a     <= 32'h00400000;
 
-      hpc_b     <= 0;
-      insn_b    <= 0;
+      reg_hpc_b     <= 0;
+      reg_insn_b    <= 0;
 
-      hpc_c     <= 0;
-      insn_c    <= 0;
-      addr_c    <= 0;
-      result_c  <= 0;
+      reg_hpc_c     <= 0;
+      reg_insn_c    <= 0;
+      reg_addr_c    <= 0;
+      reg_result_c  <= 0;
 
-      hpc_d     <= 0;
-      insn_d    <= 0;
-      result_d  <= 0;
+      reg_hpc_d     <= 0;
+      reg_insn_d    <= 0;
+      reg_result_d  <= 0;
 
-      ticks     <= 0;
+      reg_ticks     <= 0;
     end
     else begin
-      hpc_d     <= hpc_c;
-      insn_d    <= insn_c;
-      result_d  <= sig_result_c;
+      reg_hpc_d     <= reg_hpc_c;
+      reg_insn_d    <= reg_insn_c;
+      reg_result_d  <= sig_result_c;
 
-      hpc_c     <= hpc_b;
-      insn_c    <= insn_b;
-      addr_c    <= sig_addr_b;
-      result_c  <= sig_result_b;
+      reg_hpc_c     <= reg_hpc_b;
+      reg_insn_c    <= reg_insn_b;
+      reg_addr_c    <= sig_addr_b;
+      reg_result_c  <= sig_result_b;
 
-      hpc_b     <= hpc_a;
-      insn_b    <= sig_insn_a;
+      reg_hpc_b     <= reg_hpc_a;
+      reg_insn_b    <= sig_insn_a;
 
-      hpc_a     <= sig_next_hpc_a;
+      reg_hpc_a     <= sig_hpc_a;
 
-      ticks     <= ticks + 1;
+      reg_ticks     <= reg_ticks + 1;
     end
   end
+  logic tick_reset_in;
 
   //----------------------------------------
   // Signals to code ram
 
-  /* verilator lint_off UNUSEDSIGNAL */
-  /* verilator lint_on UNUSEDSIGNAL */
 
   //----------------------------------------
   // Signals to data bus
 
-  /* verilator lint_off UNUSEDSIGNAL */
-  /* verilator lint_on UNUSEDSIGNAL */
 
   //----------------------------------------
   // Signals to regfile
-  /* verilator lint_off UNUSEDSIGNAL */
-  /* verilator lint_on UNUSEDSIGNAL */
+
 
   //----------------------------------------
+  // Internal signals and registers
   // metron_internal
 
-  logic[31:0] sig_insn_a;     // Signal
-  logic[31:0] sig_next_hpc_a; // Signal
+  logic[31:0] sig_hpc_a;
+  logic[31:0] reg_hpc_a;
+  logic[31:0] sig_insn_a;
 
-  logic[31:0] sig_addr_b;     // Signal
-  logic[31:0] sig_result_b;   // Signal
+  logic[31:0] reg_hpc_b;
+  logic[31:0] reg_insn_b;
+  logic[31:0] sig_addr_b;
+  logic[31:0] sig_result_b;
 
-  logic[31:0] sig_result_c;   // Signal
+  logic[31:0] reg_hpc_c;
+  logic[31:0] reg_insn_c;
+  logic[31:0] reg_addr_c;
+  logic[31:0] sig_result_c;
+  logic[31:0] reg_result_c;
 
-  //----------------------------------------
-  // Registers
+  logic[31:0] reg_hpc_d;
+  logic[31:0] reg_insn_d;
+  logic[31:0] reg_result_d;
 
-  regfile   regs(
-    // Global clock
-    .clock(clock),
-    // tick() ports
-    .tick_raddr1(regs_tick_raddr1),
-    .tick_raddr2(regs_tick_raddr2),
-    .tick_waddr(regs_tick_waddr),
-    .tick_wdata(regs_tick_wdata),
-    .tick_wren(regs_tick_wren),
-    // get_rs1() ports
-    .get_rs1_ret(regs_get_rs1_ret),
-    // get_rs2() ports
-    .get_rs2_ret(regs_get_rs2_ret)
-  );
-  logic[9:0] regs_tick_raddr1;
-  logic[9:0] regs_tick_raddr2;
-  logic[9:0] regs_tick_waddr;
-  logic[31:0] regs_tick_wdata;
-  logic regs_tick_wren;
-  logic[31:0] regs_get_rs1_ret;
-  logic[31:0] regs_get_rs2_ret;
-
-  logic[31:0] ticks;
-
-  logic[31:0] hpc_a;
-
-  logic[31:0] hpc_b;
-  logic[31:0] insn_b;
-
-  logic[31:0] hpc_c;
-  logic[31:0] insn_c;
-  logic[31:0] addr_c;
-  logic[31:0] result_c;
-
-  /* verilator lint_off UNUSEDSIGNAL */
-  logic[31:0] hpc_d;
-  logic[31:0] insn_d;
-  logic[31:0] result_d;
-  /* verilator lint_on UNUSEDSIGNAL */
+  logic[31:0] reg_ticks;
 
   //----------------------------------------
   // FIXME support static
 
-  /* verilator lint_off UNUSEDSIGNAL */
   function logic[31:0] decode_imm(logic[31:0] insn);
     logic[4:0]  op;
     logic[31:0] imm_i;
@@ -402,7 +367,6 @@ module pinwheel_core (
     endcase
     decode_imm = result;
   endfunction
-  /* verilator lint_on UNUSEDSIGNAL */
 
   //----------------------------------------
 
@@ -439,7 +403,6 @@ module pinwheel_core (
 
   //----------------------------------------
 
-  /* verilator lint_off UNUSEDSIGNAL */
   function logic[31:0] execute_system(logic[31:0] insn, logic[31:0] reg_a, logic[31:0] reg_b);
     logic[2:0]  f3;
     logic[11:0] csr;
@@ -454,7 +417,7 @@ module pinwheel_core (
         result = reg_a;
       end
       RV32I::F3_CSRRS: begin
-        if (csr == 12'hF14) result = hpc_b[31:24];
+        if (csr == 12'hF14) result = reg_hpc_b[31:24];
       end
       RV32I::F3_CSRRC:  result = 0;
       RV32I::F3_CSRRWI: result = 0;
@@ -463,6 +426,8 @@ module pinwheel_core (
     endcase
     execute_system = result;
   endfunction
-  /* verilator lint_on UNUSEDSIGNAL */
+
 
 endmodule
+
+/* verilator lint_on UNUSEDSIGNAL */

@@ -12,6 +12,8 @@
 // 0xExxxxxxx - Regfiles
 // 0xFxxxxxxx - Debug registers
 
+// verilator lint_off unusedsignal
+
 //------------------------------------------------------------------------------
 
 module pinwheel (
@@ -62,8 +64,17 @@ module pinwheel (
     if (debug_reg_cs) bus_to_core = debug_reg;
 
     /*reset_in,*/
+    core_tock_reset_in = tock_reset_in;
     core_tock_code_rdata = code_to_core;
     core_tock_bus_rdata = bus_to_core;
+    core_tock_reg_rdata1 = regs_get_rs1_ret;
+    core_tock_reg_rdata2 = regs_get_rs2_ret;
+    regs_tick_raddr1 = core_sig_rf_raddr1;
+    regs_tick_raddr2 = core_sig_rf_raddr2;
+    regs_tick_waddr = core_sig_rf_waddr;
+    regs_tick_wdata = core_sig_rf_wdata;
+    regs_tick_wren = core_sig_rf_wren;
+
 
     bus_tag_b = core_sig_bus_addr[31:28];
     debug_cs_b = bus_tag_b == 4'hF;
@@ -90,8 +101,6 @@ module pinwheel (
     /*console3.tick(reset_in, bus_tag_b == 0x6 && core.sig_bus_wren, core.sig_bus_wdata);*/
     // metron_noconvert
     /*console4.tick(reset_in, bus_tag_b == 0x7 && core.sig_bus_wren, core.sig_bus_wdata);*/
-    core_tick_reset_in = tock_reset_in;
-
   end
 
   //----------------------------------------
@@ -109,10 +118,8 @@ module pinwheel (
   end
 
   //----------------------------------------
-
-  /* verilator lint_off UNUSED */
-
   // metron_internal
+
   pinwheel_core core(
     // Global clock
     .clock(clock),
@@ -125,15 +132,23 @@ module pinwheel (
     .sig_bus_wdata(core_sig_bus_wdata),
     .sig_bus_wmask(core_sig_bus_wmask),
     .sig_bus_wren(core_sig_bus_wren),
+    .sig_rf_raddr1(core_sig_rf_raddr1),
+    .sig_rf_raddr2(core_sig_rf_raddr2),
+    .sig_rf_waddr(core_sig_rf_waddr),
+    .sig_rf_wdata(core_sig_rf_wdata),
+    .sig_rf_wren(core_sig_rf_wren),
     // tock() ports
+    .tock_reset_in(core_tock_reset_in),
     .tock_code_rdata(core_tock_code_rdata),
     .tock_bus_rdata(core_tock_bus_rdata),
-    // tick() ports
-    .tick_reset_in(core_tick_reset_in)
+    .tock_reg_rdata1(core_tock_reg_rdata1),
+    .tock_reg_rdata2(core_tock_reg_rdata2)
   );
+  logic core_tock_reset_in;
   logic[31:0] core_tock_code_rdata;
   logic[31:0] core_tock_bus_rdata;
-  logic core_tick_reset_in;
+  logic[31:0] core_tock_reg_rdata1;
+  logic[31:0] core_tock_reg_rdata2;
   logic[31:0] core_sig_code_addr;
   logic[31:0] core_sig_code_wdata;
   logic[3:0]  core_sig_code_wmask;
@@ -142,6 +157,33 @@ module pinwheel (
   logic[31:0] core_sig_bus_wdata;
   logic[3:0]  core_sig_bus_wmask;
   logic  core_sig_bus_wren;
+  logic[7:0]  core_sig_rf_raddr1;
+  logic[7:0]  core_sig_rf_raddr2;
+  logic[7:0]  core_sig_rf_waddr;
+  logic[31:0] core_sig_rf_wdata;
+  logic  core_sig_rf_wren;
+
+  regfile       regs(
+    // Global clock
+    .clock(clock),
+    // tick() ports
+    .tick_raddr1(regs_tick_raddr1),
+    .tick_raddr2(regs_tick_raddr2),
+    .tick_waddr(regs_tick_waddr),
+    .tick_wdata(regs_tick_wdata),
+    .tick_wren(regs_tick_wren),
+    // get_rs1() ports
+    .get_rs1_ret(regs_get_rs1_ret),
+    // get_rs2() ports
+    .get_rs2_ret(regs_get_rs2_ret)
+  );
+  logic[7:0] regs_tick_raddr1;
+  logic[7:0] regs_tick_raddr2;
+  logic[7:0] regs_tick_waddr;
+  logic[31:0] regs_tick_wdata;
+  logic regs_tick_wren;
+  logic[31:0] regs_get_rs1_ret;
+  logic[31:0] regs_get_rs2_ret;
 
 
   logic[31:0] debug_reg_next;
@@ -206,8 +248,6 @@ module pinwheel (
   /*Console console3;*/
   // metron_noconvert
   /*Console console4;*/
-
-  /* verilator lint_on UNUSED */
 endmodule
 
 // verilator lint_on unusedsignal

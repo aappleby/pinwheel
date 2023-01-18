@@ -84,15 +84,15 @@ TestResults run_rv32i_tests(int reps, int max_cycles) {
 
 TestResults run_microtests() {
   TEST_INIT("Running microtests");
-  results += run_test_elf("microtests/bin/basic");
-  results += run_test_elf("microtests/bin/call_jalr");
-  results += run_test_elf("microtests/bin/get_hart");
-  results += run_test_elf("microtests/bin/start_thread");
-  results += run_test_elf("microtests/bin/stepping");
-  results += run_test_elf("microtests/bin/write_regs");
-  results += run_test_elf("microtests/bin/yield");
-  results += run_test_elf("microtests/bin/read_regs");
-  results += run_test_elf("microtests/bin/write_code");
+  results += run_test_elf("bin/tests/basic");
+  results += run_test_elf("bin/tests/call_jalr");
+  results += run_test_elf("bin/tests/get_hart");
+  results += run_test_elf("bin/tests/start_thread");
+  results += run_test_elf("bin/tests/stepping");
+  results += run_test_elf("bin/tests/write_regs");
+  results += run_test_elf("bin/tests/yield");
+  results += run_test_elf("bin/tests/read_regs");
+  results += run_test_elf("bin/tests/write_code");
   TEST_DONE();
 }
 

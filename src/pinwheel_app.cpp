@@ -225,17 +225,18 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   d("\n");
 
   for (int hart = 0; hart < 4; hart++) {
-    auto r = &pinwheel.regs.get_data()[hart << 5];
+    auto& r = pinwheel.regs;
+    int c = hart << 5;
     d("hart %d", hart);
     d("\n");
-    d("r00 %08X  r08 %08X  r16 %08X  r24 %08X\n", r[ 0], r[ 8], r[16], r[24]);
-    d("r01 %08X  r09 %08X  r17 %08X  r25 %08X\n", r[ 1], r[ 9], r[17], r[25]);
-    d("r02 %08X  r10 %08X  r18 %08X  r26 %08X\n", r[ 2], r[10], r[18], r[26]);
-    d("r03 %08X  r11 %08X  r19 %08X  r27 %08X\n", r[ 3], r[11], r[19], r[27]);
-    d("r04 %08X  r12 %08X  r20 %08X  r28 %08X\n", r[ 4], r[12], r[20], r[28]);
-    d("r05 %08X  r13 %08X  r21 %08X  r29 %08X\n", r[ 5], r[13], r[21], r[29]);
-    d("r06 %08X  r14 %08X  r22 %08X  r30 %08X\n", r[ 6], r[14], r[22], r[30]);
-    d("r07 %08X  r15 %08X  r23 %08X  r31 %08X\n", r[ 7], r[15], r[23], r[31]);
+    d("r00 %08X  r08 %08X  r16 %08X  r24 %08X\n", r.get(c +  0), r.get(c +  8), r.get(c + 16), r.get(c + 24));
+    d("r01 %08X  r09 %08X  r17 %08X  r25 %08X\n", r.get(c +  1), r.get(c +  9), r.get(c + 17), r.get(c + 25));
+    d("r02 %08X  r10 %08X  r18 %08X  r26 %08X\n", r.get(c +  2), r.get(c + 10), r.get(c + 18), r.get(c + 26));
+    d("r03 %08X  r11 %08X  r19 %08X  r27 %08X\n", r.get(c +  3), r.get(c + 11), r.get(c + 19), r.get(c + 27));
+    d("r04 %08X  r12 %08X  r20 %08X  r28 %08X\n", r.get(c +  4), r.get(c + 12), r.get(c + 20), r.get(c + 28));
+    d("r05 %08X  r13 %08X  r21 %08X  r29 %08X\n", r.get(c +  5), r.get(c + 13), r.get(c + 21), r.get(c + 29));
+    d("r06 %08X  r14 %08X  r22 %08X  r30 %08X\n", r.get(c +  6), r.get(c + 14), r.get(c + 22), r.get(c + 30));
+    d("r07 %08X  r15 %08X  r23 %08X  r31 %08X\n", r.get(c +  7), r.get(c + 15), r.get(c + 23), r.get(c + 31));
     d("\n");
   }
 

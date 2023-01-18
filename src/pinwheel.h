@@ -13,6 +13,8 @@
 // 0xExxxxxxx - Regfiles
 // 0xFxxxxxxx - Debug registers
 
+// verilator lint_off unusedsignal
+
 //------------------------------------------------------------------------------
 
 class pinwheel {
@@ -71,8 +73,6 @@ public:
     console3.tick(reset_in, bus_tag_b == 0x6 && core.sig_bus_wren, core.sig_bus_wdata);
     // metron_noconvert
     console4.tick(reset_in, bus_tag_b == 0x7 && core.sig_bus_wren, core.sig_bus_wdata);
-
-    core.tick(reset_in);
   }
 
   //----------------------------------------
@@ -90,10 +90,8 @@ public:
   }
 
   //----------------------------------------
-
-  /* verilator lint_off UNUSED */
-
   // metron_internal
+
   pinwheel_core core;
   regfile       regs;
 
@@ -117,8 +115,6 @@ public:
   Console console3;
   // metron_noconvert
   Console console4;
-
-  /* verilator lint_on UNUSED */
 };
 
 // verilator lint_on unusedsignal

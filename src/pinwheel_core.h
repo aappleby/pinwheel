@@ -9,6 +9,8 @@
 // 0xExxxxxxx - Regfiles
 // 0xFxxxxxxx - Debug registers
 
+/* verilator lint_off UNUSEDSIGNAL */
+
 class pinwheel_core {
 public:
 
@@ -19,8 +21,8 @@ public:
     sig_insn_a  = b24(reg_hpc_a) ? code_rdata : b32(0);
     logic<5>  rs1a_a  = b5(sig_insn_a, 15);
     logic<5>  rs2a_a  = b5(sig_insn_a, 20);
-    sig_rf_raddr1 = cat(b5(reg_hpc_a, 24), rs1a_a);
-    sig_rf_raddr2 = cat(b5(reg_hpc_a, 24), rs2a_a);
+    sig_rf_raddr1 = cat(b3(reg_hpc_a, 24), rs1a_a);
+    sig_rf_raddr2 = cat(b3(reg_hpc_a, 24), rs2a_a);
 
     logic<5>  op_b   = b5(reg_insn_b, 2);
     logic<3>  f3_b   = b3(reg_insn_b, 12);
@@ -179,7 +181,7 @@ public:
       // as the target for the write so that the link register will be written
       // in the _destination_ regfile.
 
-      sig_rf_waddr = cat(b5(op_c == RV32I::OP_JALR ? reg_hpc_a : reg_hpc_c, 24), rd_c);
+      sig_rf_waddr = cat(b3(op_c == RV32I::OP_JALR ? reg_hpc_a : reg_hpc_c, 24), rd_c);
       sig_rf_wdata = op_c == RV32I::OP_LOAD ? unpacked_c : temp_result_c;
       sig_rf_wren  = b24(reg_hpc_c) && op_c != RV32I::OP_STORE && op_c != RV32I::OP_BRANCH;
 
@@ -198,6 +200,8 @@ public:
     }
 
     sig_result_c = temp_result_c;
+
+    tick(reset_in);
   }
 
   //----------------------------------------
@@ -243,68 +247,56 @@ public:
   //----------------------------------------
   // Signals to code ram
 
-  /* verilator lint_off UNUSEDSIGNAL */
   logic<32> sig_code_addr;
   logic<32> sig_code_wdata;
   logic<4>  sig_code_wmask;
   logic<1>  sig_code_wren;
-  /* verilator lint_on UNUSEDSIGNAL */
 
   //----------------------------------------
   // Signals to data bus
 
-  /* verilator lint_off UNUSEDSIGNAL */
   logic<32> sig_bus_addr;
   logic<32> sig_bus_wdata;
   logic<4>  sig_bus_wmask;
   logic<1>  sig_bus_wren;
-  /* verilator lint_on UNUSEDSIGNAL */
 
   //----------------------------------------
   // Signals to regfile
-  /* verilator lint_off UNUSEDSIGNAL */
-  logic<10> sig_rf_raddr1;
-  logic<10> sig_rf_raddr2;
-  logic<10> sig_rf_waddr;
+
+  logic<8>  sig_rf_raddr1;
+  logic<8>  sig_rf_raddr2;
+  logic<8>  sig_rf_waddr;
   logic<32> sig_rf_wdata;
   logic<1>  sig_rf_wren;
-  /* verilator lint_on UNUSEDSIGNAL */
 
   //----------------------------------------
+  // Internal signals and registers
   // metron_internal
 
-  /* verilator lint_off UNUSEDSIGNAL */
-
-  logic<32> sig_insn_a;
   logic<32> sig_hpc_a;
   logic<32> reg_hpc_a;
-
-  logic<32> sig_addr_b;
-  logic<32> sig_result_b;
-
-  logic<32> sig_result_c;
-
-  logic<32> reg_ticks;
-
+  logic<32> sig_insn_a;
 
   logic<32> reg_hpc_b;
   logic<32> reg_insn_b;
+  logic<32> sig_addr_b;
+  logic<32> sig_result_b;
 
   logic<32> reg_hpc_c;
   logic<32> reg_insn_c;
   logic<32> reg_addr_c;
+  logic<32> sig_result_c;
   logic<32> reg_result_c;
 
   logic<32> reg_hpc_d;
   logic<32> reg_insn_d;
   logic<32> reg_result_d;
 
-  /* verilator lint_on UNUSEDSIGNAL */
+  logic<32> reg_ticks;
 
   //----------------------------------------
   // FIXME support static
 
-  /* verilator lint_off UNUSEDSIGNAL */
   logic<32> decode_imm(logic<32> insn) const {
     logic<5>  op    = b5(insn, 2);
     logic<32> imm_i = sign_extend<32>(b12(insn, 20));
@@ -328,7 +320,6 @@ public:
     }
     return result;
   }
-  /* verilator lint_on UNUSEDSIGNAL */
 
   //----------------------------------------
 
@@ -359,7 +350,6 @@ public:
 
   //----------------------------------------
 
-  /* verilator lint_off UNUSEDSIGNAL */
   logic<32> execute_system(logic<32> insn, logic<32> reg_a, logic<32> reg_b) const {
     logic<3>  f3  = b3(insn, 12);
     logic<12> csr = b12(insn, 20);
@@ -382,6 +372,8 @@ public:
     }
     return result;
   }
-  /* verilator lint_on UNUSEDSIGNAL */
+
 
 };
+
+/* verilator lint_on UNUSEDSIGNAL */
