@@ -50,7 +50,9 @@ public:
     if (debug_reg_cs) bus_to_core = debug_reg;
 
     /*reset_in,*/
-    core.tock(code_to_core, bus_to_core);
+    core.tock(reset_in, code_to_core, bus_to_core, regs.get_rs1(), regs.get_rs2());
+
+    regs.tick(core.sig_reg_raddr1, core.sig_reg_raddr2, core.sig_reg_waddr, core.sig_reg_wdata, core.sig_reg_wren);
 
     logic<4> bus_tag_b = b4(core.sig_bus_addr, 28);
     logic<1> debug_cs_b = bus_tag_b == 0xF;
@@ -93,6 +95,7 @@ public:
 
   // metron_internal
   pinwheel_core core;
+  regfile       regs;
 
   logic<32> debug_reg_next;
   logic<32> debug_reg;

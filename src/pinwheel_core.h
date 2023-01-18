@@ -14,20 +14,20 @@ public:
 
   //----------------------------------------
 
-  void tock(logic<32> code_rdata, logic<32> bus_rdata) {
+  void tock(logic<1> reset_in, logic<32> code_rdata, logic<32> bus_rdata, logic<32> reg_rdata1, logic<32> reg_rdata2) {
 
     sig_insn_a  = b24(hpc_a) ? code_rdata : b32(0);
     logic<5>  rs1a_a  = b5(sig_insn_a, 15);
     logic<5>  rs2a_a  = b5(sig_insn_a, 20);
-    logic<10> reg_raddr1_a = cat(b5(hpc_a, 24), rs1a_a);
-    logic<10> reg_raddr2_a = cat(b5(hpc_a, 24), rs2a_a);
+    sig_reg_raddr1 = cat(b5(hpc_a, 24), rs1a_a);
+    sig_reg_raddr2 = cat(b5(hpc_a, 24), rs2a_a);
 
     logic<5>  op_b   = b5(insn_b, 2);
     logic<3>  f3_b   = b3(insn_b, 12);
     logic<5>  rs1a_b = b5(insn_b, 15);
     logic<5>  rs2a_b = b5(insn_b, 20);
-    logic<32> rs1_b  = rs1a_b ? regs.get_rs1() : b32(0);
-    logic<32> rs2_b  = rs2a_b ? regs.get_rs2() : b32(0);
+    logic<32> rs1_b  = rs1a_b ? reg_rdata1 : b32(0);
+    logic<32> rs2_b  = rs2a_b ? reg_rdata2 : b32(0);
     logic<32> imm_b  = decode_imm(insn_b);
     sig_addr_b  = b32(rs1_b + imm_b);
     logic<1>  regfile_cs_b = b4(sig_addr_b, 28) == 0xE;
@@ -39,7 +39,7 @@ public:
     logic<12> csr_c = b12(insn_c, 20);
     logic<4>  bus_tag_c    = b4(addr_c, 28);
     logic<1>  regfile_cs_c = bus_tag_c == 0xE;
-    logic<32> data_out_c   = regfile_cs_c ? regs.get_rs1() : bus_rdata;
+    logic<32> data_out_c   = regfile_cs_c ? reg_rdata1 : bus_rdata;
 
     logic<32> temp_result_c = result_c;
 
@@ -186,7 +186,7 @@ public:
       if (rd_c == 0) sig_reg_wren = 0;
 
       if ((op_b == RV32I::OP_LOAD) && regfile_cs_b && (b24(hpc_a) == 0)) {
-        reg_raddr1_a = b10(sig_addr_b >> 2);
+        sig_reg_raddr1 = b10(sig_addr_b >> 2);
       }
 
       // Handle stores through the bus to the regfile.
@@ -195,8 +195,6 @@ public:
         sig_reg_wdata = temp_result_c;
         sig_reg_wren = 1;
       }
-
-      regs.tick(reg_raddr1_a, reg_raddr2_a, sig_reg_waddr, sig_reg_wdata, sig_reg_wren);
     }
 
     sig_result_c = temp_result_c;
@@ -286,7 +284,6 @@ public:
   //----------------------------------------
   // Registers
 
-  regfile   regs;
   logic<32> ticks;
 
   logic<32> hpc_a;
