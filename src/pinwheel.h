@@ -52,7 +52,7 @@ public:
     /*reset_in,*/
     core.tock(reset_in, code_to_core, bus_to_core, regs.get_rs1(), regs.get_rs2());
 
-    regs.tick(core.sig_reg_raddr1, core.sig_reg_raddr2, core.sig_reg_waddr, core.sig_reg_wdata, core.sig_reg_wren);
+    regs.tick(core.sig_rf_raddr1, core.sig_rf_raddr2, core.sig_rf_waddr, core.sig_rf_wdata, core.sig_rf_wren);
 
     logic<4> bus_tag_b = b4(core.sig_bus_addr, 28);
     logic<1> debug_cs_b = bus_tag_b == 0xF;
