@@ -132,6 +132,7 @@ public:
       if (sig_addr_b[1]) temp_mask_b = temp_mask_b << 2;
 
       sig_bus_addr   = sig_addr_b;
+      sig_bus_rden   = (op_b == RV32I::OP_LOAD);
       sig_bus_wdata  = rs2_b;
       sig_bus_wmask  = temp_mask_b;
       sig_bus_wren   = (op_b == RV32I::OP_STORE);
@@ -256,6 +257,7 @@ public:
   // Signals to data bus
 
   logic<32> sig_bus_addr;
+  logic<1>  sig_bus_rden;
   logic<32> sig_bus_wdata;
   logic<4>  sig_bus_wmask;
   logic<1>  sig_bus_wren;

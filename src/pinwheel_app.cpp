@@ -18,6 +18,8 @@
 #include <elf.h>
 #include <sys/stat.h>
 
+#include "tilelink.h"
+
 //------------------------------------------------------------------------------
 
 PinwheelApp::PinwheelApp() {
@@ -90,8 +92,8 @@ void PinwheelApp::app_init(int screen_w, int screen_h) {
   }
 
 
-  p.tock(true);
-  p.tick(true);
+  p.tock(true, 0, 0);
+  p.tick(true, 0, 0);
 
   sim_thread->start();
 }

@@ -21,8 +21,12 @@ module pinwheel (
   input logic clock,
   // tock() ports
   input logic tock_reset_in,
+  input logic tock__serial_valid,
+  input logic[7:0] tock__serial_data,
   // tick() ports
-  input logic tick_reset_in
+  input logic tick_reset_in,
+  input logic tick__serial_valid,
+  input logic[7:0] tick__serial_data
 );
 /*public:*/
 
@@ -56,19 +60,23 @@ module pinwheel (
     logic[31:0] code_to_core;
     logic[31:0] bus_to_core;
     logic[3:0] bus_tag_b;
-    logic debug_cs_b;
 
     code_to_core = code_ram_rdata_ret;
     bus_to_core  = data_ram_rdata_ret;
 
     if (debug_reg_cs) bus_to_core = debug_reg;
+    if (serial_cs)    bus_to_core = serial_reg;
 
-    /*reset_in,*/
+    //----------
     core_tock_reset_in = tock_reset_in;
     core_tock_code_rdata = code_to_core;
     core_tock_bus_rdata = bus_to_core;
     core_tock_reg_rdata1 = regs_get_rs1_ret;
     core_tock_reg_rdata2 = regs_get_rs2_ret;
+
+    bus_tag_b = core_sig_bus_addr[31:28];
+
+    //----------
     regs_tick_raddr1 = core_sig_rf_raddr1;
     regs_tick_raddr2 = core_sig_rf_raddr2;
     regs_tick_waddr = core_sig_rf_waddr;
@@ -76,11 +84,42 @@ module pinwheel (
     regs_tick_wren = core_sig_rf_wren;
 
 
-    bus_tag_b = core_sig_bus_addr[31:28];
-    debug_cs_b = bus_tag_b == 4'hF;
-    debug_reg_next = debug_reg;
-    debug_reg_cs_next = debug_cs_b;
-    if (core_sig_bus_wren && debug_cs_b) debug_reg_next = core_sig_bus_wdata;
+    begin
+      logic debug_cs_b;
+      debug_cs_b = bus_tag_b == 4'hF;
+      debug_reg_next = debug_reg;
+      debug_reg_cs_next = debug_cs_b;
+      if (core_sig_bus_wren && debug_cs_b) debug_reg_next = core_sig_bus_wdata;
+    end
+
+    begin
+      serial_cs_next = 0;
+      serial_valid_next = 0;
+      serial_reg_next = 0;
+      serial_out_next = 0;
+      serial_out_valid_next = 0;
+    end
+
+    /*
+    {
+      logic<1> serial_cs_b = bus_tag_b == 0xC;
+
+      if (core.sig_bus_wren && serial_cs_b) {
+        serial_out_next = core.sig_bus_wdata;
+        serial_out_valid_next = 1;
+      } else {
+        serial_out_next = 0;
+        serial_out_valid_next = 0;
+      }
+
+      if (core.sig_bus_rden && serial_cs_b) {
+        serial_cs_next = serial_cs_b;
+      }
+      else {
+        serial_cs_next = 0;
+      }
+    }
+    */
     code_ram_tick_addr = 12'(core_sig_code_addr);
     code_ram_tick_cs = 1;
     code_ram_tick_wdata = core_sig_code_wdata;
@@ -110,10 +149,20 @@ module pinwheel (
     if (tick_reset_in) begin
       debug_reg <= 0;
       debug_reg_cs <= 0;
+      serial_cs <= 0;
+      serial_out <= 0;
+      serial_out_valid <= 0;
+      serial_reg <= 0;
     end
     else begin
       debug_reg <= debug_reg_next;
       debug_reg_cs <= debug_reg_cs_next;
+
+      serial_cs        <= serial_cs_next;
+      serial_valid     <= serial_valid_next;
+      serial_reg       <= serial_reg_next;
+      serial_out       <= serial_out_next;
+      serial_out_valid <= serial_out_valid_next;
     end
   end
 
@@ -129,6 +178,7 @@ module pinwheel (
     .sig_code_wmask(core_sig_code_wmask),
     .sig_code_wren(core_sig_code_wren),
     .sig_bus_addr(core_sig_bus_addr),
+    .sig_bus_rden(core_sig_bus_rden),
     .sig_bus_wdata(core_sig_bus_wdata),
     .sig_bus_wmask(core_sig_bus_wmask),
     .sig_bus_wren(core_sig_bus_wren),
@@ -154,6 +204,7 @@ module pinwheel (
   logic[3:0]  core_sig_code_wmask;
   logic  core_sig_code_wren;
   logic[31:0] core_sig_bus_addr;
+  logic  core_sig_bus_rden;
   logic[31:0] core_sig_bus_wdata;
   logic[3:0]  core_sig_bus_wmask;
   logic  core_sig_bus_wren;
@@ -239,6 +290,18 @@ module pinwheel (
   /*logic<32> gpio_dir;*/
   /*logic<32> gpio_in;*/
   /*logic<32> gpio_out;*/
+
+  logic  serial_cs_next;
+  logic  serial_valid_next;
+  logic[31:0] serial_reg_next;
+  logic[31:0] serial_out_next;
+  logic  serial_out_valid_next;
+
+  logic  serial_cs;
+  logic  serial_valid;
+  logic[31:0] serial_reg;
+  logic[31:0] serial_out;
+  logic  serial_out_valid;
 
   // metron_noconvert
   /*Console console1;*/

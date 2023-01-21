@@ -30,12 +30,12 @@ TestResults run_test_elf(const char* test_filename, int reps = 1, int max_cycles
   top.load_elf(test_filename);
 
   for (int rep = 0; rep < reps; rep++) {
-    top.tock(1);
-    top.tick(1);
+    top.tock(1, 0, 0);
+    top.tick(1, 0, 0);
     time -= timestamp();
     for (elapsed_cycles = 0; elapsed_cycles < max_cycles; elapsed_cycles++) {
-      top.tock(0);
-      top.tick(0);
+      top.tock(0, 0, 0);
+      top.tick(0, 0, 0);
       tocks++;
 
       if (top.get_debug()) {

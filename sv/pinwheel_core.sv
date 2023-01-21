@@ -19,6 +19,7 @@ module pinwheel_core (
   output logic[3:0]  sig_code_wmask,
   output logic  sig_code_wren,
   output logic[31:0] sig_bus_addr,
+  output logic  sig_bus_rden,
   output logic[31:0] sig_bus_wdata,
   output logic[3:0]  sig_bus_wmask,
   output logic  sig_bus_wren,
@@ -182,6 +183,7 @@ module pinwheel_core (
       if (sig_addr_b[1]) temp_mask_b = temp_mask_b << 2;
 
       sig_bus_addr   = sig_addr_b;
+      sig_bus_rden   = (op_b == RV32I::OP_LOAD);
       sig_bus_wdata  = rs2_b;
       sig_bus_wmask  = temp_mask_b;
       sig_bus_wren   = (op_b == RV32I::OP_STORE);
