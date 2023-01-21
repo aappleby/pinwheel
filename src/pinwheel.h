@@ -6,6 +6,7 @@
 #include "console.h"
 #include "constants.h"
 #include "pinwheel_core.h"
+#include "tilelink.h"
 
 // Address Map
 // 0x0xxxxxxx - Code

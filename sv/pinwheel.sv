@@ -5,6 +5,7 @@
 /*#include "console.h"*/
 `include "constants.sv"
 `include "pinwheel_core.sv"
+`include "tilelink.sv"
 
 // Address Map
 // 0x0xxxxxxx - Code

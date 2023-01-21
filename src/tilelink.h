@@ -1,6 +1,6 @@
 #pragma once
+#include "metron_tools.h"
 
-template <int awidth>
 struct TileLinkA {
   logic<3>  a_opcode;
   logic<3>  a_param;
