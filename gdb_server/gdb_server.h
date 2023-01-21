@@ -9,6 +9,19 @@ public:
   using getter = char (*)();
 
   GDBServer(getter _get, putter _put) : _get_byte(_get), _put_byte(_put)  {}
+  void loop();
+
+private:
+
+  using handler_func = void (GDBServer::*)(void);
+
+  struct handler {
+    const char* name;
+    handler_func handler;
+  };
+
+  static const handler handler_tab[];
+  static const int handler_count;
 
   void put_byte(char b);
   char get_byte();
@@ -16,6 +29,7 @@ public:
   void packet_start();
   void packet_data(const char* buf, int len);
   void packet_string(const char* buf);
+  void packet_u8(char x);
   void packet_u32(int x);
   void packet_end();
   bool wait_packet_ack();
@@ -24,30 +38,22 @@ public:
   void send_packet(const char* packet);
   void send_ack();
   void send_nack();
+  void send_ok();
+  void send_empty();
+  void send_nothing();
 
-  void handle_extended();
   void handle_questionmark();
-  void handle_D();
   void handle_H();
   void handle_g();
-  void handle_k();
   void handle_p();
   void handle_qAttached();
   void handle_qC();
   void handle_qL();
-  void handle_qOffsets();
-  void handle_qSupported();
-  void handle_qSymbol();
   void handle_qTStatus();
-  void handle_qTfP();
-  void handle_qTfV();
   void handle_qfThreadInfo();
   void handle_qsThreadInfo();
-  void handle_vKill();
-  void handle_vMustReplyEmpty();
 
   void dispatch_command();
-  void loop();
 
 private:
 

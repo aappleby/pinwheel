@@ -1,9 +1,9 @@
 ################################################################################
 # Rules
 
-default_gpp      = g++ -g -MMD -std=gnu++2a -rdynamic
+default_gpp      = g++ -MMD -std=gnu++2a -rdynamic
 build_mode       = -DCONFIG_RELEASE -O3
-#build_mode       = -DCONFIG_DEBUG -O0
+#build_mode       = -DCONFIG_DEBUG -O0 -g
 default_includes = -Isrc -Isubmodules -Isubmodules/MetroLib/src
 libs             = -lSDL2
 
@@ -117,7 +117,7 @@ build check_iverilog : phony $
 ################################################################################
 # RISC-V Rules
 
-rv_opts = -std=gnu++2a -mabi=ilp32 -march=rv32i -mstrict-align -g
+rv_opts = -std=gnu++2a -mabi=ilp32 -march=rv32i -mstrict-align
 
 rule compile_rv
   command = riscv64-unknown-elf-gcc ${rv_opts} -Os -MMD -MF ${out}.d -c ${in} -o ${out}
@@ -172,5 +172,9 @@ build feature_tests : phony $
 build obj/gdb_server.o : compile gdb_server/gdb_server.cpp
 build obj/gdb_main.o   : compile gdb_server/gdb_main.cpp
 build bin/gdb_test     : link obj/gdb_server.o obj/gdb_main.o
+
+build obj/gdb_server_rv.o : compile_rv gdb_server/gdb_server.cpp
+build obj/gdb_main_rv.o   : compile_rv gdb_server/gdb_main.cpp
+build bin/gdb_test_rv     : link_rv obj/gdb_server_rv.o obj/gdb_main_rv.o
 
 ################################################################################

@@ -1,3 +1,16 @@
+#include "gdb_server.h"
+
+#ifdef __riscv
+
+void put_byte(char b) {
+}
+
+char get_byte() {
+  return 0;
+}
+
+#else
+
 #include <fcntl.h>
 #include <stdio.h>
 #include <sys/poll.h>
@@ -5,7 +18,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "gdb_server.h"
 
 static int serial_fd = 0;
 static char rbuf[256];
@@ -40,10 +52,13 @@ char get_byte() {
   auto result = rbuf[rcursor++];
   return result;
 }
+#endif
 
 //------------------------------------------------------------------------------
 
 int main(int argc, char** argv) {
+
+#ifndef __riscv
   if (argc < 2) {
     printf("gdb_server <pty path>\n");
     return 1;
@@ -51,12 +66,15 @@ int main(int argc, char** argv) {
 
   serial_fd = open(argv[1], O_RDWR | O_NOCTTY);
   printf("File descriptor is %d\n", serial_fd);
+#endif
 
   GDBServer s(get_byte, put_byte);
   s.loop();
 
+#ifndef __riscv
   close(serial_fd);
   serial_fd = 0;
+#endif
 
   return 0;
 }
