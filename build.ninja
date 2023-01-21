@@ -30,6 +30,23 @@ rule iverilog
 rule metron
   command = submodules/Metron/bin/metron -q -v -e -c ${in} -o ${out}
 
+##########
+# RISC-V Rules
+
+rv_opts = -std=gnu++2a -mabi=ilp32 -march=rv32i -mstrict-align -g -O0
+#rv_opts = -std=gnu++2a -mabi=ilp32 -march=rv32i -mstrict-align -Os
+
+rule compile_rv
+  command = riscv64-unknown-elf-gcc ${rv_opts} -MMD -MF ${out}.d -c ${in} -o ${out}
+  depfile = ${out}.d
+  deps = gcc
+
+rule assemble_rv
+  command = riscv64-unknown-elf-gcc ${rv_opts} -c ${in} -o ${out}
+
+rule link_rv
+  command = riscv64-unknown-elf-gcc ${rv_opts} -nostdlib -nostartfiles -Wl,-T pinwheel.ld ${in} -o ${out} -lgcc
+
 ################################################################################
 # Debugger app
 
@@ -113,22 +130,6 @@ build check_iverilog : phony $
   obj/pinwheel.iv $
   obj/pinwheel_core.iv $
   obj/regfile.iv
-
-################################################################################
-# RISC-V Rules
-
-rv_opts = -std=gnu++2a -mabi=ilp32 -march=rv32i -mstrict-align
-
-rule compile_rv
-  command = riscv64-unknown-elf-gcc ${rv_opts} -Os -MMD -MF ${out}.d -c ${in} -o ${out}
-  depfile = ${out}.d
-  deps = gcc
-
-rule assemble_rv
-  command = riscv64-unknown-elf-gcc ${rv_opts} -c ${in} -o ${out}
-
-rule link_rv
-  command = riscv64-unknown-elf-gcc ${rv_opts} -nostdlib -nostartfiles -Wl,-T pinwheel.ld ${in} -o ${out} -lgcc
 
 ################################################################################
 # RISC-V test binaries

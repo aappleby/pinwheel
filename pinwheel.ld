@@ -1,6 +1,6 @@
 MEMORY {
-  ROM (xai!rw) : ORIGIN = 0x00400000, LENGTH = 4K
-  RAM (wai!rx) : ORIGIN = 0x80000000, LENGTH = 4K
+  ROM (xai!rw) : ORIGIN = 0x00400000, LENGTH = 64K
+  RAM (wai!rx) : ORIGIN = 0x80000000, LENGTH = 64K
 }
 
 _stack_top = ORIGIN(RAM) + LENGTH(RAM);

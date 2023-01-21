@@ -27,6 +27,44 @@ void clear_color() {
 #endif
 
 //------------------------------------------------------------------------------
+/*
+At a minimum, a stub is required to support the ‘?’ command to tell GDB the
+reason for halting, ‘g’ and ‘G’ commands for register access, and the ‘m’ and
+‘M’ commands for memory access. Stubs that only control single-threaded targets
+can implement run control with the ‘c’ (continue) command, and if the target
+architecture supports hardware-assisted single-stepping, the ‘s’ (step) command.
+Stubs that support multi-threading targets should support the ‘vCont’ command.
+All other commands are optional.
+*/
+
+
+const GDBServer::handler GDBServer::handler_tab[] = {
+  { "?",               &GDBServer::handle_questionmark },
+  { "D",               &GDBServer::send_ok },
+  { "g",               &GDBServer::handle_g },
+  { "H",               &GDBServer::handle_H },
+  { "k",               &GDBServer::send_nothing }, // 'k' always kills the target and explicitly does _not_ have a reply.
+  { "p",               &GDBServer::handle_p },
+  { "qAttached",       &GDBServer::handle_qAttached },
+  { "qC",              &GDBServer::handle_qC },
+  { "qfThreadInfo",    &GDBServer::handle_qfThreadInfo },
+  { "qL",              &GDBServer::handle_qL },
+  { "qOffsets",        &GDBServer::send_empty },
+  { "qsThreadInfo",    &GDBServer::handle_qsThreadInfo },
+  { "qSupported",      &GDBServer::send_empty },
+  { "qSymbol",         &GDBServer::send_ok },
+  { "qTfP",            &GDBServer::send_empty },
+  { "qTfV",            &GDBServer::send_empty },
+  { "qTStatus",        &GDBServer::handle_qTStatus },
+  { "s",               &GDBServer::handle_s },
+  { "vCont?",          &GDBServer::handle_vCont },
+  { "vKill",           &GDBServer::send_ok },
+  { "vMustReplyEmpty", &GDBServer::send_empty },
+};
+
+const int GDBServer::handler_count = sizeof(GDBServer::handler_tab) / sizeof(GDBServer::handler_tab[0]);
+
+//------------------------------------------------------------------------------
 
 char to_hex(int x) {
   if (x >= 0  && x <= 9)  return '0' + x;
@@ -74,44 +112,6 @@ int _atoi(const char* cursor) {
 }
 
 //------------------------------------------------------------------------------
-/*
-At a minimum, a stub is required to support the ‘?’ command to tell GDB the
-reason for halting, ‘g’ and ‘G’ commands for register access, and the ‘m’ and
-‘M’ commands for memory access. Stubs that only control single-threaded targets
-can implement run control with the ‘c’ (continue) command, and if the target
-architecture supports hardware-assisted single-stepping, the ‘s’ (step) command.
-Stubs that support multi-threading targets should support the ‘vCont’ command.
-All other commands are optional.
-*/
-
-
-// Keep sorted in ASCII order
-const GDBServer::handler GDBServer::handler_tab[] = {
-  { "?",               &GDBServer::handle_questionmark },
-  { "D",               &GDBServer::send_ok },
-  { "H",               &GDBServer::handle_H },
-  { "g",               &GDBServer::handle_g },
-  // 'k' always kills the target and explicitly does _not_ have a reply.
-  { "k",               &GDBServer::send_nothing },
-  { "p",               &GDBServer::handle_p },
-  { "qAttached",       &GDBServer::handle_qAttached },
-  { "qC",              &GDBServer::handle_qC },
-  { "qL",              &GDBServer::handle_qL },
-  { "qOffsets",        &GDBServer::send_empty },
-  { "qSupported",      &GDBServer::send_empty },
-  { "qSymbol",         &GDBServer::send_ok },
-  { "qTStatus",        &GDBServer::handle_qTStatus },
-  { "qTfP",            &GDBServer::send_empty },
-  { "qTfV",            &GDBServer::send_empty },
-  { "qfThreadInfo",    &GDBServer::handle_qfThreadInfo },
-  { "qsThreadInfo",    &GDBServer::handle_qsThreadInfo },
-  { "vKill",           &GDBServer::send_ok },
-  { "vMustReplyEmpty", &GDBServer::send_empty },
-};
-
-const int GDBServer::handler_count = sizeof(GDBServer::handler_tab) / sizeof(GDBServer::handler_tab[0]);
-
-//------------------------------------------------------------------------------
 
 void GDBServer::put_byte(char b) {
   send_checksum += b;
@@ -148,7 +148,7 @@ void GDBServer::packet_u8(char x) {
 
 void GDBServer::packet_u32(int x) {
   for(int i = 0; i < 4; i++) {
-    put_byte(x);
+    packet_u8(x);
     x = x >> 8;
   }
 }
@@ -163,11 +163,13 @@ bool GDBServer::wait_packet_ack() {
   char c = 0;
   do { c = get_byte(); }
   while (c != '+' && c != '-');
+  /*
   if (c == '-') {
     LOG_R("==============================\n");
     LOG_R("===========  NACK  ===========\n");
     LOG_R("==============================\n");
   }
+  */
   return c == '+';
 }
 
@@ -191,12 +193,21 @@ void GDBServer::send_nothing() { }
 
 //------------------------------------------------------------------------------
 
+void GDBServer::handle_vCont() {
+  // FIXME
+}
+
+void GDBServer::handle_s() {
+  // FIXME
+}
+
 void GDBServer::handle_questionmark() {
   //  SIGINT = 2
   send_packet("T02");
 }
 
 void GDBServer::handle_H() {
+  /*
   packet_cursor++;
   int thread_id = _atoi(packet_cursor);
   if (thread_id == 0 || thread_id == 1) {
@@ -205,6 +216,8 @@ void GDBServer::handle_H() {
   else {
     send_packet("E01");
   }
+  */
+  send_ok();
 }
 
 void GDBServer::handle_g() {
@@ -212,6 +225,7 @@ void GDBServer::handle_g() {
   for (int i = 0; i < 32; i++) {
     packet_u32(0xF00D0000 + i);
   }
+  packet_u32(0x00400020); // main() in basic
   packet_end();
 }
 

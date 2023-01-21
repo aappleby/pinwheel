@@ -42,16 +42,18 @@ private:
   void send_empty();
   void send_nothing();
 
-  void handle_questionmark();
-  void handle_H();
   void handle_g();
+  void handle_H();
   void handle_p();
   void handle_qAttached();
   void handle_qC();
-  void handle_qL();
-  void handle_qTStatus();
   void handle_qfThreadInfo();
+  void handle_qL();
   void handle_qsThreadInfo();
+  void handle_qTStatus();
+  void handle_questionmark();
+  void handle_s();
+  void handle_vCont();
 
   void dispatch_command();
 

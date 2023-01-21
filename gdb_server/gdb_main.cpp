@@ -28,7 +28,7 @@ static int rsize = 0;
 
 void put_byte(char b) {
   //printf("%c", b);
-  //fflush(stdout);
+  fflush(stdout);
   int result = write(serial_fd, &b, 1);
 }
 
