@@ -117,7 +117,7 @@ build check_iverilog : phony $
 ################################################################################
 # RISC-V Rules
 
-rv_opts = -std=gnu++2a -mabi=ilp32 -march=rv32i -mstrict-align
+rv_opts = -std=gnu++2a -mabi=ilp32 -march=rv32i -mstrict-align -g
 
 rule compile_rv
   command = riscv64-unknown-elf-gcc ${rv_opts} -Os -MMD -MF ${out}.d -c ${in} -o ${out}
@@ -165,5 +165,12 @@ build feature_tests : phony $
   bin/tests/read_regs $
   bin/tests/write_code $
   bin/tests/yield
+
+################################################################################
+# GDB server
+
+build obj/gdb_server.o : compile gdb_server/gdb_server.cpp
+build obj/gdb_main.o   : compile gdb_server/gdb_main.cpp
+build bin/gdb_test     : link obj/gdb_server.o obj/gdb_main.o
 
 ################################################################################
