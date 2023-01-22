@@ -1,9 +1,14 @@
 `include "metron_tools.sv"
 
 `include "regfile.sv"
+`include "tilelink.sv"
 
 // Address Map
 // 0x0xxxxxxx - Code
+// 0x4xxxxxxx - Console 1
+// 0x5xxxxxxx - Console 2
+// 0x6xxxxxxx - Console 3
+// 0x7xxxxxxx - Console 4
 // 0x8xxxxxxx - Data
 // 0xExxxxxxx - Regfiles
 // 0xFxxxxxxx - Debug registers
@@ -33,7 +38,9 @@ module pinwheel_core (
   input logic[31:0] tock_code_rdata,
   input logic[31:0] tock_bus_rdata,
   input logic[31:0] tock_reg_rdata1,
-  input logic[31:0] tock_reg_rdata2
+  input logic[31:0] tock_reg_rdata2,
+  // tick() ports
+  input logic tick_reset_in
 );
 /*public:*/
 
@@ -255,8 +262,6 @@ module pinwheel_core (
     end
 
     sig_result_c = temp_result_c;
-    tick_reset_in = tock_reset_in;
-
   end
 
   //----------------------------------------
@@ -298,7 +303,6 @@ module pinwheel_core (
       reg_ticks     <= reg_ticks + 1;
     end
   end
-  logic tick_reset_in;
 
   //----------------------------------------
   // Signals to code ram

@@ -6,6 +6,7 @@
 #include "console.h"
 #include "constants.h"
 #include "pinwheel_core.h"
+#include "serial.h"
 #include "tilelink.h"
 
 // Address Map
@@ -60,7 +61,6 @@ public:
 
     //----------
 
-    regs.tick(core.sig_rf_raddr1, core.sig_rf_raddr2, core.sig_rf_waddr, core.sig_rf_wdata, core.sig_rf_wren);
 
     {
       logic<1> debug_cs_b = bus_tag_b == 0xF;
@@ -97,6 +97,9 @@ public:
       }
     }
     */
+
+    core.tick(reset_in);
+    regs.tick(core.sig_rf_raddr1, core.sig_rf_raddr2, core.sig_rf_waddr, core.sig_rf_wdata, core.sig_rf_wren);
 
     code_ram.tick(b12(core.sig_code_addr), 1,                core.sig_code_wdata, core.sig_code_wmask, core.sig_code_wren && bus_tag_b == 0x0);
     data_ram.tick(b12(core.sig_bus_addr),  bus_tag_b == 0x8, core.sig_bus_wdata,  core.sig_bus_wmask,  core.sig_bus_wren  && bus_tag_b == 0x8);

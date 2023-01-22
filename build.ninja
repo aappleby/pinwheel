@@ -88,20 +88,22 @@ build sv/pinwheel.sv      : metron src/pinwheel.h
 build sv/pinwheel_core.sv : metron src/pinwheel_core.h
 build sv/regfile.sv       : metron src/regfile.h
 build sv/tilelink.sv      : metron src/tilelink.h
+build sv/serial.sv        : metron src/serial.h
 
-build check_metron : phony $
+build all_pinwheel_sv : phony $
   sv/constants.sv $
   sv/block_ram.sv $
   sv/pinwheel.sv $
   sv/pinwheel_core.sv $
-  sv/regfile.sv
+  sv/regfile.sv $
+  sv/serial.sv
 
 ################################################################################
 # Verilator conversion tests
 
 build obj/block_ram.vh     : verilator sv/block_ram.sv
-build obj/pinwheel.vh      : verilator sv/pinwheel.sv | sv/tilelink.sv
-build obj/pinwheel_core.vh : verilator sv/pinwheel_core.sv | sv/pinwheel.sv sv/tilelink.sv
+build obj/pinwheel.vh      : verilator sv/pinwheel.sv | all_pinwheel_sv
+build obj/pinwheel_core.vh : verilator sv/pinwheel_core.sv | all_pinwheel_sv
 build obj/regfile.vh       : verilator sv/regfile.sv
 build obj/tilelink.vh      : verilator sv/tilelink.sv
 
@@ -124,8 +126,8 @@ build check_yosys : phony $
 # Icarus simulation tests
 
 build obj/block_ram.iv     : iverilog sv/block_ram.sv
-build obj/pinwheel.iv      : iverilog sv/pinwheel.sv | sv/tilelink.sv
-build obj/pinwheel_core.iv : iverilog sv/pinwheel_core.sv | sv/pinwheel.sv sv/tilelink.sv
+build obj/pinwheel.iv      : iverilog sv/pinwheel.sv | all_pinwheel_sv
+build obj/pinwheel_core.iv : iverilog sv/pinwheel_core.sv | all_pinwheel_sv
 build obj/regfile.iv       : iverilog sv/regfile.sv
 #build obj/tilelink.iv      : iverilog sv/tilelink.sv
 

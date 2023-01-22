@@ -1,6 +1,32 @@
+`ifndef TILELINK_H
+`define TILELINK_H
 `include "metron_tools.sv"
 
+//------------------------------------------------------------------------------
+
+// verilator lint_off unusedparam
+package TL;
+  parameter int PutFullData = 0;
+  parameter int PutPartialData = 1;
+  parameter int ArithmeticData = 2;
+  parameter int LogicalData = 3;
+  parameter int Get = 4;
+  parameter int Intent = 5;
+  parameter int Acquire = 6;
+
+  parameter int AccessAck = 0;
+  parameter int AccessAckData = 1;
+  parameter int HintAck = 2;
+  parameter int Grant = 4;
+  parameter int GrantData = 5;
+  parameter int ReleaseAck = 6;
+endpackage
+// verilator lint_on unusedparam
+
+//------------------------------------------------------------------------------
+
 typedef struct packed {
+  // FIXME enums inside structs are broken in Metron
   logic[2:0]  a_opcode;
   logic[2:0]  a_param;
   logic[2:0]  a_size;
@@ -10,7 +36,9 @@ typedef struct packed {
   logic[31:0] a_data;
   logic  a_valid;
   logic  a_ready;
-} TileLinkA;
+} tilelink_a;
+
+//------------------------------------------------------------------------------
 
 typedef struct packed {
   logic[2:0]  d_opcode;
@@ -22,4 +50,8 @@ typedef struct packed {
   logic  d_error;
   logic  d_valid;
   logic  d_ready;
-} TileLinkD;
+} tilelink_d;
+
+//------------------------------------------------------------------------------
+
+`endif

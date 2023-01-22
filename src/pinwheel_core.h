@@ -2,9 +2,14 @@
 #include "metron_tools.h"
 
 #include "regfile.h"
+#include "tilelink.h"
 
 // Address Map
 // 0x0xxxxxxx - Code
+// 0x4xxxxxxx - Console 1
+// 0x5xxxxxxx - Console 2
+// 0x6xxxxxxx - Console 3
+// 0x7xxxxxxx - Console 4
 // 0x8xxxxxxx - Data
 // 0xExxxxxxx - Regfiles
 // 0xFxxxxxxx - Debug registers
@@ -201,8 +206,6 @@ public:
     }
 
     sig_result_c = temp_result_c;
-
-    tick(reset_in);
   }
 
   //----------------------------------------

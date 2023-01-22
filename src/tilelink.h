@@ -1,7 +1,32 @@
-#pragma once
+#ifndef TILELINK_H
+#define TILELINK_H
 #include "metron_tools.h"
 
-struct TileLinkA {
+//------------------------------------------------------------------------------
+
+// verilator lint_off unusedparam
+namespace TL {
+  const int PutFullData = 0;
+  const int PutPartialData = 1;
+  const int ArithmeticData = 2;
+  const int LogicalData = 3;
+  const int Get = 4;
+  const int Intent = 5;
+  const int Acquire = 6;
+
+  const int AccessAck = 0;
+  const int AccessAckData = 1;
+  const int HintAck = 2;
+  const int Grant = 4;
+  const int GrantData = 5;
+  const int ReleaseAck = 6;
+};
+// verilator lint_on unusedparam
+
+//------------------------------------------------------------------------------
+
+struct tilelink_a {
+  // FIXME enums inside structs are broken in Metron
   logic<3>  a_opcode;
   logic<3>  a_param;
   logic<3>  a_size;
@@ -13,7 +38,9 @@ struct TileLinkA {
   logic<1>  a_ready;
 };
 
-struct TileLinkD {
+//------------------------------------------------------------------------------
+
+struct tilelink_d {
   logic<3>  d_opcode;
   logic<2>  d_param;
   logic<3>  d_size;
@@ -24,3 +51,7 @@ struct TileLinkD {
   logic<1>  d_valid;
   logic<1>  d_ready;
 };
+
+//------------------------------------------------------------------------------
+
+#endif

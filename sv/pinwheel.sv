@@ -5,6 +5,7 @@
 /*#include "console.h"*/
 `include "constants.sv"
 `include "pinwheel_core.sv"
+`include "serial.sv"
 `include "tilelink.sv"
 
 // Address Map
@@ -78,11 +79,6 @@ module pinwheel (
     bus_tag_b = core_sig_bus_addr[31:28];
 
     //----------
-    regs_tick_raddr1 = core_sig_rf_raddr1;
-    regs_tick_raddr2 = core_sig_rf_raddr2;
-    regs_tick_waddr = core_sig_rf_waddr;
-    regs_tick_wdata = core_sig_rf_wdata;
-    regs_tick_wren = core_sig_rf_wren;
 
 
     begin
@@ -121,6 +117,13 @@ module pinwheel (
       }
     }
     */
+    core_tick_reset_in = tock_reset_in;
+
+    regs_tick_raddr1 = core_sig_rf_raddr1;
+    regs_tick_raddr2 = core_sig_rf_raddr2;
+    regs_tick_waddr = core_sig_rf_waddr;
+    regs_tick_wdata = core_sig_rf_wdata;
+    regs_tick_wren = core_sig_rf_wren;
     code_ram_tick_addr = 12'(core_sig_code_addr);
     code_ram_tick_cs = 1;
     code_ram_tick_wdata = core_sig_code_wdata;
@@ -193,13 +196,16 @@ module pinwheel (
     .tock_code_rdata(core_tock_code_rdata),
     .tock_bus_rdata(core_tock_bus_rdata),
     .tock_reg_rdata1(core_tock_reg_rdata1),
-    .tock_reg_rdata2(core_tock_reg_rdata2)
+    .tock_reg_rdata2(core_tock_reg_rdata2),
+    // tick() ports
+    .tick_reset_in(core_tick_reset_in)
   );
   logic core_tock_reset_in;
   logic[31:0] core_tock_code_rdata;
   logic[31:0] core_tock_bus_rdata;
   logic[31:0] core_tock_reg_rdata1;
   logic[31:0] core_tock_reg_rdata2;
+  logic core_tick_reset_in;
   logic[31:0] core_sig_code_addr;
   logic[31:0] core_sig_code_wdata;
   logic[3:0]  core_sig_code_wmask;
