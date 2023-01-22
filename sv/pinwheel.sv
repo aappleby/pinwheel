@@ -58,6 +58,7 @@ module pinwheel (
   //----------------------------------------
   // FIXME const local variable should not become parameter
 
+
   always_comb begin : tock
     logic[31:0] code_to_core;
     logic[31:0] bus_to_core;
@@ -117,6 +118,57 @@ module pinwheel (
       }
     }
     */
+
+    begin
+      tilelink_a code_tla;
+      code_tla.a_opcode = TL::Get;
+      code_tla.a_param = 3'bx;
+      code_tla.a_size = 0;
+      code_tla.a_source = 1'bx;
+      code_tla.a_address = core_sig_code_addr;
+      code_tla.a_mask = core_sig_code_wmask;
+      code_tla.a_data = 32'bx;
+      code_tla.a_valid = 0;
+      code_tla.a_ready = 1;
+
+      if (core_sig_code_wren && bus_tag_b == 4'h0) begin
+        code_tla.a_opcode = TL::PutPartialData;
+        code_tla.a_data = core_sig_code_wdata;
+        code_tla.a_valid = 1;
+      end
+      else begin
+        code_tla.a_opcode = TL::Get;
+      end
+      code_ram_tick_tla = code_tla;
+      code_ram_tick_cs = 1;
+      code_ram_tick_wren = core_sig_code_wren && bus_tag_b == 4'h0;
+
+    end
+
+    begin
+      tilelink_a bus_tla;
+      bus_tla.a_param = 3'bx;
+      bus_tla.a_size = 0; // fixme
+      bus_tla.a_source = 1'bx;
+      bus_tla.a_address = core_sig_bus_addr;
+      bus_tla.a_mask = core_sig_bus_wmask;
+      bus_tla.a_data = 32'bx;
+      bus_tla.a_valid = 0;
+      bus_tla.a_ready = 1;
+
+      if (core_sig_bus_wren && bus_tag_b == 4'h8) begin
+        bus_tla.a_opcode = TL::PutPartialData;
+        bus_tla.a_data = core_sig_bus_wdata;
+        bus_tla.a_valid = 1;
+      end
+      else begin
+        bus_tla.a_opcode = TL::Get;
+      end
+      data_ram_tick_tla = bus_tla;
+      data_ram_tick_cs = bus_tag_b == 4'h8;
+      data_ram_tick_wren = core_sig_bus_wren  && bus_tag_b == 4'h8;
+
+    end
     core_tick_reset_in = tock_reset_in;
 
     regs_tick_raddr1 = core_sig_rf_raddr1;
@@ -124,17 +176,6 @@ module pinwheel (
     regs_tick_waddr = core_sig_rf_waddr;
     regs_tick_wdata = core_sig_rf_wdata;
     regs_tick_wren = core_sig_rf_wren;
-    code_ram_tick_addr = 12'(core_sig_code_addr);
-    code_ram_tick_cs = 1;
-    code_ram_tick_wdata = core_sig_code_wdata;
-    code_ram_tick_wmask = core_sig_code_wmask;
-    code_ram_tick_wren = core_sig_code_wren && bus_tag_b == 4'h0;
-
-    data_ram_tick_addr = 12'(core_sig_bus_addr);
-    data_ram_tick_cs = bus_tag_b == 4'h8;
-    data_ram_tick_wdata = core_sig_bus_wdata;
-    data_ram_tick_wmask = core_sig_bus_wmask;
-    data_ram_tick_wren = core_sig_bus_wren  && bus_tag_b == 4'h8;
 
     // metron_noconvert
     /*console1.tick(reset_in, bus_tag_b == 0x4 && core.sig_bus_wren, core.sig_bus_wdata);*/
@@ -257,19 +298,18 @@ module pinwheel (
     .clock(clock),
     // rdata() ports
     .rdata_ret(code_ram_rdata_ret),
+    // get_tld() ports
+    .get_tld_ret(code_ram_get_tld_ret),
     // tick() ports
-    .tick_addr(code_ram_tick_addr),
+    .tick_tla(code_ram_tick_tla),
     .tick_cs(code_ram_tick_cs),
-    .tick_wdata(code_ram_tick_wdata),
-    .tick_wmask(code_ram_tick_wmask),
     .tick_wren(code_ram_tick_wren)
   );
-  logic[11:0] code_ram_tick_addr;
+  tilelink_a code_ram_tick_tla;
   logic code_ram_tick_cs;
-  logic[31:0] code_ram_tick_wdata;
-  logic[3:0] code_ram_tick_wmask;
   logic code_ram_tick_wren;
   logic[31:0] code_ram_rdata_ret;
+  tilelink_d code_ram_get_tld_ret;
 
   block_ram #(
     // Constructor Parameters
@@ -279,19 +319,18 @@ module pinwheel (
     .clock(clock),
     // rdata() ports
     .rdata_ret(data_ram_rdata_ret),
+    // get_tld() ports
+    .get_tld_ret(data_ram_get_tld_ret),
     // tick() ports
-    .tick_addr(data_ram_tick_addr),
+    .tick_tla(data_ram_tick_tla),
     .tick_cs(data_ram_tick_cs),
-    .tick_wdata(data_ram_tick_wdata),
-    .tick_wmask(data_ram_tick_wmask),
     .tick_wren(data_ram_tick_wren)
   );
-  logic[11:0] data_ram_tick_addr;
+  tilelink_a data_ram_tick_tla;
   logic data_ram_tick_cs;
-  logic[31:0] data_ram_tick_wdata;
-  logic[3:0] data_ram_tick_wmask;
   logic data_ram_tick_wren;
   logic[31:0] data_ram_rdata_ret;
+  tilelink_d data_ram_get_tld_ret;
  // FIXME having this named data and a field inside block_ram named data breaks context resolve
 
   /*logic<32> gpio_dir;*/

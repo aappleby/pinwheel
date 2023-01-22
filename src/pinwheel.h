@@ -46,6 +46,7 @@ public:
   //----------------------------------------
   // FIXME const local variable should not become parameter
 
+
   void tock(logic<1> reset_in, logic<1> _serial_valid, logic<8> _serial_data) {
 
     logic<32> code_to_core = code_ram.rdata();
@@ -98,11 +99,55 @@ public:
     }
     */
 
+    {
+      tilelink_a code_tla;
+      code_tla.a_opcode = TL::Get;
+      code_tla.a_param = b3(DONTCARE);
+      code_tla.a_size = 0;
+      code_tla.a_source = b1(DONTCARE);
+      code_tla.a_address = core.sig_code_addr;
+      code_tla.a_mask = core.sig_code_wmask;
+      code_tla.a_data = b32(DONTCARE);
+      code_tla.a_valid = 0;
+      code_tla.a_ready = 1;
+
+      if (core.sig_code_wren && bus_tag_b == 0x0) {
+        code_tla.a_opcode = TL::PutPartialData;
+        code_tla.a_data = core.sig_code_wdata;
+        code_tla.a_valid = 1;
+      }
+      else {
+        code_tla.a_opcode = TL::Get;
+      }
+
+      code_ram.tick(code_tla, 1, core.sig_code_wren && bus_tag_b == 0x0);
+    }
+
+    {
+      tilelink_a bus_tla;
+      bus_tla.a_param = b3(DONTCARE);
+      bus_tla.a_size = 0; // fixme
+      bus_tla.a_source = b1(DONTCARE);
+      bus_tla.a_address = core.sig_bus_addr;
+      bus_tla.a_mask = core.sig_bus_wmask;
+      bus_tla.a_data = b32(DONTCARE);
+      bus_tla.a_valid = 0;
+      bus_tla.a_ready = 1;
+
+      if (core.sig_bus_wren && bus_tag_b == 0x8) {
+        bus_tla.a_opcode = TL::PutPartialData;
+        bus_tla.a_data = core.sig_bus_wdata;
+        bus_tla.a_valid = 1;
+      }
+      else {
+        bus_tla.a_opcode = TL::Get;
+      }
+
+      data_ram.tick(bus_tla, bus_tag_b == 0x8, core.sig_bus_wren  && bus_tag_b == 0x8);
+    }
+
     core.tick(reset_in);
     regs.tick(core.sig_rf_raddr1, core.sig_rf_raddr2, core.sig_rf_waddr, core.sig_rf_wdata, core.sig_rf_wren);
-
-    code_ram.tick(b12(core.sig_code_addr), 1,                core.sig_code_wdata, core.sig_code_wmask, core.sig_code_wren && bus_tag_b == 0x0);
-    data_ram.tick(b12(core.sig_bus_addr),  bus_tag_b == 0x8, core.sig_bus_wdata,  core.sig_bus_wmask,  core.sig_bus_wren  && bus_tag_b == 0x8);
 
     // metron_noconvert
     console1.tick(reset_in, bus_tag_b == 0x4 && core.sig_bus_wren, core.sig_bus_wdata);
