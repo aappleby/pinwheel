@@ -20,6 +20,13 @@ package TL;
   parameter int Grant = 4;
   parameter int GrantData = 5;
   parameter int ReleaseAck = 6;
+
+  /*
+  // FIXME metron doesn't like functions in namespaces
+  logic<32> expand_bitmask(logic<4> mask) {
+    return cat(dup<8>(mask[3]), dup<8>(mask[2]), dup<8>(mask[1]), dup<8>(mask[0]));
+  }
+  */
 endpackage
 // verilator lint_on unusedparam
 

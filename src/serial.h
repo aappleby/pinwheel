@@ -12,87 +12,42 @@ public:
   tilelink_a tla;
   tilelink_d tld;
 
-  /*
-  // Get
-  a_opcode = 4;
-  a_param;
-  a_size;
-  a_source;
-  a_address;
-  a_mask;
-  a_data = b32(DONTCARE);
-  a_valid;
-  a_ready;
-  */
-
-  /*
-  // PutFullData
-  a_opcode = 0;
-  a_param = 0;
-  a_size;
-  a_source;
-  a_address;
-  a_mask;
-  a_data;
-  a_valid;
-  a_ready;
-  */
-
-  /*
-  // PutPartialData
-  a_opcode = 1;
-  a_param = 0;
-  a_size;
-  a_source;
-  a_address;
-  a_mask;
-  a_data;
-  a_valid;
-  a_ready;
-  */
-
   void tock() {
+    tick();
   }
 
 private:
 
+  logic<32> test_reg;
+
   void tick() {
-    tld.d_size = tla.a_size;
+    tld.d_param  = 0;
+    tld.d_size   = tla.a_size;
+    tld.d_source = tla.a_source;
+    tld.d_sink   = b3(DONTCARE);
+    tld.d_data   = b32(DONTCARE);
+    tld.d_error  = 0;
+    tld.d_valid  = 0;
+    tld.d_ready  = 1;
 
     if (tla.a_opcode == TL::Get) {
       tld.d_opcode = TL::AccessAckData;
-      tld.d_param  = 0;
-      tld.d_size   = tla.a_size;
-      tld.d_source = tla.a_source;
-      tld.d_sink   = b3(DONTCARE);
-      tld.d_data   = b32(0xDEADBEEF);
-      tld.d_error  = 0;
-      tld.d_valid  = 1;
-      tld.d_ready  = 1;
+      if (b4(tla.a_address, 28) == 0x5) {
+        tld.d_data   = test_reg;
+        tld.d_valid  = 1;
+      }
     }
-    else if (tla.a_opcode == TL::PutFullData) {
+    else if (tla.a_opcode == TL::PutFullData || tla.a_opcode == TL::PutPartialData) {
       tld.d_opcode = TL::AccessAck;
-      tld.d_param  = 0;
-      tld.d_size   = tla.a_size;
-      tld.d_source = tla.a_source;
-      tld.d_sink   = 0;
-      tld.d_data   = b32(DONTCARE);
-      tld.d_error  = 0;
-      tld.d_valid  = 0;
-      tld.d_ready  = 1;
-    }
-    else if (tla.a_opcode == TL::PutPartialData) {
-      tld.d_opcode = TL::AccessAck;
-      tld.d_param  = 0;
-      tld.d_size   = tla.a_size;
-      tld.d_source = tla.a_source;
-      tld.d_sink   = 0;
-      tld.d_data   = b32(DONTCARE);
-      tld.d_error  = 0;
-      tld.d_valid  = 0;
-      tld.d_ready  = 1;
+      logic<32> bitmask = expand_bitmask(tla.a_mask);
+      test_reg = (test_reg & ~bitmask) | (tla.a_data & bitmask);
     }
   }
+
+  logic<32> expand_bitmask(logic<4> mask) {
+    return cat(dup<8>(mask[3]), dup<8>(mask[2]), dup<8>(mask[1]), dup<8>(mask[0]));
+  }
+
 };
 
 // verilator lint_on unusedsignal
