@@ -206,6 +206,16 @@ public:
     }
 
     sig_result_c = temp_result_c;
+
+    bus_tla.a_opcode  = sig_bus_wren ? TL::PutPartialData : TL::Get;
+    bus_tla.a_param   = b3(DONTCARE);
+    bus_tla.a_size    = 0; // fixme
+    bus_tla.a_source  = b1(DONTCARE);
+    bus_tla.a_address = sig_bus_addr;
+    bus_tla.a_mask    = sig_bus_wmask;
+    bus_tla.a_data    = sig_bus_wdata;
+    bus_tla.a_valid   = 1;
+    bus_tla.a_ready   = 1;
   }
 
   //----------------------------------------
@@ -247,6 +257,10 @@ public:
       reg_ticks     = reg_ticks + 1;
     }
   }
+
+  //----------------------------------------
+
+  tilelink_a bus_tla;
 
   //----------------------------------------
   // Signals to code ram

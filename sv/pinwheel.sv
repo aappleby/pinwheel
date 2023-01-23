@@ -164,6 +164,7 @@ module pinwheel (
     // Global clock
     .clock(clock),
     // Output signals
+    .bus_tla(core_bus_tla),
     .sig_code_addr(core_sig_code_addr),
     .sig_code_wdata(core_sig_code_wdata),
     .sig_code_wmask(core_sig_code_wmask),
@@ -193,6 +194,7 @@ module pinwheel (
   logic[31:0] core_tock_reg_rdata1;
   logic[31:0] core_tock_reg_rdata2;
   logic core_tick_reset_in;
+  tilelink_a core_bus_tla;
   logic[31:0] core_sig_code_addr;
   logic[31:0] core_sig_code_wdata;
   logic[3:0]  core_sig_code_wmask;

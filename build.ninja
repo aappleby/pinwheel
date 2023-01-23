@@ -83,63 +83,41 @@ build obj/pinwheel_test_pass: run_test bin/pinwheel_test
 # Metron conversion tests
 
 build sv/block_ram.sv     : metron src/block_ram.h | src/tilelink.h
-build sv/test_reg.sv      : metron src/test_reg.h | src/tilelink.h
 build sv/constants.sv     : metron src/constants.h
-build sv/pinwheel.sv      : metron src/pinwheel.h | src/block_ram.h src/pinwheel_core.h
 build sv/pinwheel_core.sv : metron src/pinwheel_core.h | src/tilelink.h
+build sv/pinwheel.sv      : metron src/pinwheel.h | src/block_ram.h src/pinwheel_core.h
 build sv/regfile.sv       : metron src/regfile.h
-build sv/tilelink.sv      : metron src/tilelink.h
 build sv/serial.sv        : metron src/serial.h | src/tilelink.h
+build sv/test_reg.sv      : metron src/test_reg.h | src/tilelink.h
+build sv/tilelink.sv      : metron src/tilelink.h
 
 build all_pinwheel_sv : phony $
-  sv/constants.sv $
   sv/block_ram.sv $
-  sv/test_reg.sv $
-  sv/pinwheel.sv $
+  sv/constants.sv $
   sv/pinwheel_core.sv $
+  sv/pinwheel.sv $
   sv/regfile.sv $
-  sv/serial.sv
+  sv/serial.sv $
+  sv/test_reg.sv $
+  sv/tilelink.sv
 
 ################################################################################
 # Verilator conversion tests
 
-build obj/block_ram.vh     : verilator sv/block_ram.sv
-build obj/pinwheel.vh      : verilator sv/pinwheel.sv | all_pinwheel_sv
-build obj/pinwheel_core.vh : verilator sv/pinwheel_core.sv | all_pinwheel_sv
-build obj/regfile.vh       : verilator sv/regfile.sv
-build obj/tilelink.vh      : verilator sv/tilelink.sv
-
-build check_verilator : phony $
-  obj/block_ram.vh $
-  obj/pinwheel.vh $
-  obj/pinwheel_core.vh $
-  obj/regfile.vh $
-  obj/tilelink.vh
+build obj/pinwheel.vh : verilator sv/pinwheel.sv | all_pinwheel_sv
+build check_verilator : phony obj/pinwheel.vh
 
 ################################################################################
 # Yosys synthesis tests
 
-build obj/pinwheel_core.json  : yosys sv/pinwheel_core.sv
-
-build check_yosys : phony $
-  obj/pinwheel_core.json
+build obj/pinwheel_core.json : yosys sv/pinwheel_core.sv | all_pinwheel_sv
+build check_yosys            : phony obj/pinwheel_core.json
 
 ################################################################################
 # Icarus simulation tests
 
-build obj/block_ram.iv     : iverilog sv/block_ram.sv
-build obj/pinwheel.iv      : iverilog sv/pinwheel.sv | all_pinwheel_sv
-build obj/pinwheel_core.iv : iverilog sv/pinwheel_core.sv | all_pinwheel_sv
-build obj/regfile.iv       : iverilog sv/regfile.sv
-#build obj/tilelink.iv      : iverilog sv/tilelink.sv
-
-build check_iverilog : phony $
-  obj/block_ram.iv $
-  obj/pinwheel.iv $
-  obj/pinwheel_core.iv $
-  obj/regfile.iv
-
-#  obj/tilelink.iv
+build obj/pinwheel.iv : iverilog sv/pinwheel.sv | all_pinwheel_sv
+build check_iverilog  : phony obj/pinwheel.iv
 
 ################################################################################
 # RISC-V test binaries

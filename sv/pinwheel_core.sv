@@ -19,6 +19,7 @@ module pinwheel_core (
   // global clock
   input logic clock,
   // output signals
+  output tilelink_a bus_tla,
   output logic[31:0] sig_code_addr,
   output logic[31:0] sig_code_wdata,
   output logic[3:0]  sig_code_wmask,
@@ -262,6 +263,16 @@ module pinwheel_core (
     end
 
     sig_result_c = temp_result_c;
+
+    bus_tla.a_opcode  = sig_bus_wren ? TL::PutPartialData : TL::Get;
+    bus_tla.a_param   = 3'bx;
+    bus_tla.a_size    = 0; // fixme
+    bus_tla.a_source  = 1'bx;
+    bus_tla.a_address = sig_bus_addr;
+    bus_tla.a_mask    = sig_bus_wmask;
+    bus_tla.a_data    = sig_bus_wdata;
+    bus_tla.a_valid   = 1;
+    bus_tla.a_ready   = 1;
   end
 
   //----------------------------------------
@@ -303,6 +314,9 @@ module pinwheel_core (
       reg_ticks     <= reg_ticks + 1;
     end
   end
+
+  //----------------------------------------
+
 
   //----------------------------------------
   // Signals to code ram
