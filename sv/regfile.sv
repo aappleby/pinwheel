@@ -1,17 +1,23 @@
+`ifndef REGFILE_H
+`define REGFILE_H
 `include "metron_tools.sv"
 
 //------------------------------------------------------------------------------
 // verilator lint_off unusedsignal
 
+typedef struct packed {
+  logic[7:0]  raddr1;
+  logic[7:0]  raddr2;
+  logic[7:0]  waddr;
+  logic[31:0] wdata;
+  logic  wren;
+} regfile_in;
+
 module regfile (
   // global clock
   input logic clock,
   // tick() ports
-  input logic[7:0] tick_raddr1,
-  input logic[7:0] tick_raddr2,
-  input logic[7:0] tick_waddr,
-  input logic[31:0] tick_wdata,
-  input logic tick_wren,
+  input regfile_in tick_in,
   // get_rs1() ports
   output logic[31:0] get_rs1_ret,
   // get_rs2() ports
@@ -30,17 +36,17 @@ module regfile (
   end
 
   always_ff @(posedge clock) begin : tick
-    if (tick_wren) begin
-      out_1 <= tick_raddr1 == tick_waddr ? tick_wdata : {data1_hi[tick_raddr1], data1_lo[tick_raddr1]};
-      out_2 <= tick_raddr2 == tick_waddr ? tick_wdata : {data2_hi[tick_raddr2], data2_lo[tick_raddr2]};
-      data1_hi[tick_waddr] <= tick_wdata[31:16];
-      data1_lo[tick_waddr] <= tick_wdata[15:0];
-      data2_hi[tick_waddr] <= tick_wdata[31:16];
-      data2_lo[tick_waddr] <= tick_wdata[15:0];
+    if (tick_in.wren) begin
+      out_1 <= tick_in.raddr1 == tick_in.waddr ? tick_in.wdata : {data1_hi[tick_in.raddr1], data1_lo[tick_in.raddr1]};
+      out_2 <= tick_in.raddr2 == tick_in.waddr ? tick_in.wdata : {data2_hi[tick_in.raddr2], data2_lo[tick_in.raddr2]};
+      data1_hi[tick_in.waddr] <= tick_in.wdata[31:16];
+      data1_lo[tick_in.waddr] <= tick_in.wdata[15:0];
+      data2_hi[tick_in.waddr] <= tick_in.wdata[31:16];
+      data2_lo[tick_in.waddr] <= tick_in.wdata[15:0];
     end
     else begin
-      out_1 <= {data1_hi[tick_raddr1], data1_lo[tick_raddr1]};
-      out_2 <= {data2_hi[tick_raddr2], data2_lo[tick_raddr2]};
+      out_1 <= {data1_hi[tick_in.raddr1], data1_lo[tick_in.raddr1]};
+      out_2 <= {data2_hi[tick_in.raddr2], data2_lo[tick_in.raddr2]};
     end
   end
 
@@ -63,3 +69,5 @@ endmodule
 
 //------------------------------------------------------------------------------
 // verilator lint_on unusedsignal
+
+`endif

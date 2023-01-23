@@ -1,18 +1,11 @@
-#pragma once
+#ifndef PINWHEEL_CORE_H
+#define PINWHEEL_CORE_H
+
 #include "metron_tools.h"
 
 #include "constants.h"
+#include "regfile.h"
 #include "tilelink.h"
-
-// Address Map
-// 0x0xxxxxxx - Code
-// 0x4xxxxxxx - Console 1
-// 0x5xxxxxxx - Console 2
-// 0x6xxxxxxx - Console 3
-// 0x7xxxxxxx - Console 4
-// 0x8xxxxxxx - Data
-// 0xExxxxxxx - Regfiles
-// 0xFxxxxxxx - Debug registers
 
 /* verilator lint_off UNUSEDSIGNAL */
 
@@ -21,9 +14,9 @@ public:
 
   //----------------------------------------
 
-  void tock(logic<1> reset_in, logic<32> code_rdata, logic<32> bus_rdata, logic<32> reg_rdata1, logic<32> reg_rdata2) {
+  void tock(logic<1> reset_in, tilelink_d code_tld, tilelink_d bus_tld, logic<32> reg_rdata1, logic<32> reg_rdata2) {
 
-    sig_insn_a  = b24(reg_hpc_a) ? code_rdata : b32(0);
+    sig_insn_a  = b24(reg_hpc_a) ? code_tld.d_data : b32(0);
     logic<5>  rs1a_a  = b5(sig_insn_a, 15);
     logic<5>  rs2a_a  = b5(sig_insn_a, 20);
     sig_rf_raddr1 = cat(b3(reg_hpc_a, 24), rs1a_a);
@@ -46,7 +39,7 @@ public:
     logic<12> csr_c = b12(reg_insn_c, 20);
     logic<4>  bus_tag_c    = b4(reg_addr_c, 28);
     logic<1>  regfile_cs_c = bus_tag_c == 0xE;
-    logic<32> data_out_c   = regfile_cs_c ? reg_rdata1 : bus_rdata;
+    logic<32> data_out_c   = regfile_cs_c ? reg_rdata1 : bus_tld.d_data;
 
     logic<32> temp_result_c = reg_result_c;
 
@@ -226,6 +219,12 @@ public:
     code_tla.a_data    = sig_code_wdata;
     code_tla.a_valid   = 1;
     code_tla.a_ready   = 1;
+
+    core_to_reg.raddr1 = sig_rf_raddr1;
+    core_to_reg.raddr2 = sig_rf_raddr2;
+    core_to_reg.waddr = sig_rf_waddr;
+    core_to_reg.wdata = sig_rf_wdata;
+    core_to_reg.wren = sig_rf_wren;
   }
 
   //----------------------------------------
@@ -272,6 +271,8 @@ public:
 
   tilelink_a bus_tla;
   tilelink_a code_tla;
+
+  regfile_in core_to_reg;
 
   //----------------------------------------
   // Signals to code ram
@@ -407,3 +408,5 @@ public:
 };
 
 /* verilator lint_on UNUSEDSIGNAL */
+
+#endif

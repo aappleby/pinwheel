@@ -1,3 +1,6 @@
+`ifndef BLOCK_RAM_H
+`define BLOCK_RAM_H
+
 `include "metron_tools.sv"
 `include "tilelink.sv"
 
@@ -76,3 +79,5 @@ endmodule
 // verilator lint_on unusedsignal
 // verilator lint_off unusedparam
 //------------------------------------------------------------------------------
+
+`endif

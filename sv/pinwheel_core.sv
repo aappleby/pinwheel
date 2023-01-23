@@ -1,17 +1,11 @@
+`ifndef PINWHEEL_CORE_H
+`define PINWHEEL_CORE_H
+
 `include "metron_tools.sv"
 
 `include "constants.sv"
+`include "regfile.sv"
 `include "tilelink.sv"
-
-// Address Map
-// 0x0xxxxxxx - Code
-// 0x4xxxxxxx - Console 1
-// 0x5xxxxxxx - Console 2
-// 0x6xxxxxxx - Console 3
-// 0x7xxxxxxx - Console 4
-// 0x8xxxxxxx - Data
-// 0xExxxxxxx - Regfiles
-// 0xFxxxxxxx - Debug registers
 
 /* verilator lint_off UNUSEDSIGNAL */
 
@@ -21,6 +15,7 @@ module pinwheel_core (
   // output signals
   output tilelink_a bus_tla,
   output tilelink_a code_tla,
+  output regfile_in core_to_reg,
   output logic[31:0] sig_code_addr,
   output logic[31:0] sig_code_wdata,
   output logic[3:0]  sig_code_wmask,
@@ -37,8 +32,8 @@ module pinwheel_core (
   output logic  sig_rf_wren,
   // tock() ports
   input logic tock_reset_in,
-  input logic[31:0] tock_code_rdata,
-  input logic[31:0] tock_bus_rdata,
+  input tilelink_d tock_code_tld,
+  input tilelink_d tock_bus_tld,
   input logic[31:0] tock_reg_rdata1,
   input logic[31:0] tock_reg_rdata2,
   // tick() ports
@@ -71,7 +66,7 @@ module pinwheel_core (
     logic[31:0] next_hpc;
     logic[31:0] alu_result;
 
-    sig_insn_a  = 24'(reg_hpc_a) ? tock_code_rdata : 32'd0;
+    sig_insn_a  = 24'(reg_hpc_a) ? tock_code_tld.d_data : 32'd0;
     rs1a_a  = sig_insn_a[19:15];
     rs2a_a  = sig_insn_a[24:20];
     sig_rf_raddr1 = {reg_hpc_a[26:24], rs1a_a};
@@ -94,7 +89,7 @@ module pinwheel_core (
     csr_c = reg_insn_c[31:20];
     bus_tag_c    = reg_addr_c[31:28];
     regfile_cs_c = bus_tag_c == 4'hE;
-    data_out_c   = regfile_cs_c ? tock_reg_rdata1 : tock_bus_rdata;
+    data_out_c   = regfile_cs_c ? tock_reg_rdata1 : tock_bus_tld.d_data;
 
     temp_result_c = reg_result_c;
 
@@ -284,6 +279,12 @@ module pinwheel_core (
     code_tla.a_data    = sig_code_wdata;
     code_tla.a_valid   = 1;
     code_tla.a_ready   = 1;
+
+    core_to_reg.raddr1 = sig_rf_raddr1;
+    core_to_reg.raddr2 = sig_rf_raddr2;
+    core_to_reg.waddr = sig_rf_waddr;
+    core_to_reg.wdata = sig_rf_wdata;
+    core_to_reg.wren = sig_rf_wren;
   end
 
   //----------------------------------------
@@ -327,6 +328,7 @@ module pinwheel_core (
   end
 
   //----------------------------------------
+
 
 
   //----------------------------------------
@@ -462,3 +464,5 @@ module pinwheel_core (
 endmodule
 
 /* verilator lint_on UNUSEDSIGNAL */
+
+`endif

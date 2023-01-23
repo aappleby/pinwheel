@@ -1,8 +1,17 @@
-#pragma once
+#ifndef REGFILE_H
+#define REGFILE_H
 #include "metron_tools.h"
 
 //------------------------------------------------------------------------------
 // verilator lint_off unusedsignal
+
+struct regfile_in {
+  logic<8>  raddr1;
+  logic<8>  raddr2;
+  logic<8>  waddr;
+  logic<32> wdata;
+  logic<1>  wren;
+};
 
 class regfile {
 public:
@@ -16,18 +25,18 @@ public:
     }
   }
 
-  void tick(logic<8> raddr1 , logic<8> raddr2, logic<8> waddr, logic<32> wdata, logic<1> wren) {
-    if (wren) {
-      out_1 = raddr1 == waddr ? wdata : cat(data1_hi[raddr1], data1_lo[raddr1]);
-      out_2 = raddr2 == waddr ? wdata : cat(data2_hi[raddr2], data2_lo[raddr2]);
-      data1_hi[waddr] = b16(wdata, 16);
-      data1_lo[waddr] = b16(wdata, 0);
-      data2_hi[waddr] = b16(wdata, 16);
-      data2_lo[waddr] = b16(wdata, 0);
+  void tick(regfile_in in) {
+    if (in.wren) {
+      out_1 = in.raddr1 == in.waddr ? in.wdata : cat(data1_hi[in.raddr1], data1_lo[in.raddr1]);
+      out_2 = in.raddr2 == in.waddr ? in.wdata : cat(data2_hi[in.raddr2], data2_lo[in.raddr2]);
+      data1_hi[in.waddr] = b16(in.wdata, 16);
+      data1_lo[in.waddr] = b16(in.wdata, 0);
+      data2_hi[in.waddr] = b16(in.wdata, 16);
+      data2_lo[in.waddr] = b16(in.wdata, 0);
     }
     else {
-      out_1 = cat(data1_hi[raddr1], data1_lo[raddr1]);
-      out_2 = cat(data2_hi[raddr2], data2_lo[raddr2]);
+      out_1 = cat(data1_hi[in.raddr1], data1_lo[in.raddr1]);
+      out_2 = cat(data2_hi[in.raddr2], data2_lo[in.raddr2]);
     }
   }
 
@@ -50,3 +59,5 @@ public:
 
 //------------------------------------------------------------------------------
 // verilator lint_on unusedsignal
+
+#endif

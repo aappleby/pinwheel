@@ -1,4 +1,3 @@
-#pragma once
 #include "metron_tools.h"
 
 #include "block_ram.h"
@@ -11,11 +10,8 @@
 // metron_noconvert
 #include "console.h"
 
-// Address Map
-// 0x0xxxxxxx - Code
-// 0x8xxxxxxx - Data
-// 0xExxxxxxx - Regfiles
-// 0xFxxxxxxx - Debug registers
+#ifndef PINWHEEL_H
+#define PINWHEEL_H
 
 //------------------------------------------------------------------------------
 // verilator lint_off unusedsignal
@@ -24,7 +20,6 @@
 class pinwheel {
 public:
 
-  // FIXME debug_reg2(0x1234) is here because icarus doesn't like it if we don't assign module params
   pinwheel(const char* text_file = nullptr, const char* data_file = nullptr)
   : code_ram(text_file),
     data_ram(data_file) {
@@ -46,33 +41,37 @@ public:
   // metron_noconvert
   uint32_t* get_data() { return data_ram.get_data(); }
   // metron_noconvert
-  logic<32> get_debug() const { return debug_reg2.get(); }
+  logic<32> get_debug() const { return debug_reg.get(); }
 
   //----------------------------------------
   // FIXME const local variable should not become parameter
 
-
   void tock(logic<1> reset_in, logic<1> _serial_valid, logic<8> _serial_data) {
 
-    logic<32> bus_to_core = 0;
+    tilelink_d bus_tld;
+    bus_tld.d_opcode = b3(DONTCARE);
+    bus_tld.d_param  = b2(DONTCARE);
+    bus_tld.d_size   = b3(DONTCARE);
+    bus_tld.d_source = b1(DONTCARE);
+    bus_tld.d_sink   = b3(DONTCARE);
+    bus_tld.d_data   = b32(DONTCARE);
+    bus_tld.d_error  = b1(DONTCARE);
+    bus_tld.d_valid  = b1(DONTCARE);
+    bus_tld.d_ready  = b1(DONTCARE);
 
-    if (data_ram.bus_tld.d_valid == 1)   bus_to_core |= data_ram.bus_tld.d_data;
-    if (debug_reg2.bus_tld.d_valid == 1) bus_to_core |= debug_reg2.bus_tld.d_data;
+    if (data_ram.bus_tld.d_valid == 1)  bus_tld = data_ram.bus_tld;
+    if (debug_reg.bus_tld.d_valid == 1) bus_tld = debug_reg.bus_tld;
 
     //----------
 
-    core.tock(reset_in, code_ram.bus_tld.d_data, bus_to_core, regs.get_rs1(), regs.get_rs2());
-    logic<4> bus_tag_b = b4(core.sig_bus_addr, 28);
+    core.tock(reset_in, code_ram.bus_tld, bus_tld, regs.get_rs1(), regs.get_rs2());
 
-    //----------
-
-
-    debug_reg2.tick(core.bus_tla);
+    debug_reg.tick(core.bus_tla);
     code_ram.tick(core.code_tla);
     data_ram.tick(core.bus_tla);
-
     core.tick(reset_in);
-    regs.tick(core.sig_rf_raddr1, core.sig_rf_raddr2, core.sig_rf_waddr, core.sig_rf_wdata, core.sig_rf_wren);
+
+    regs.tick(core.core_to_reg);
 
     // metron_noconvert
     console1.tick(reset_in, core.bus_tla);
@@ -88,10 +87,6 @@ public:
   // FIXME trace modules individually
 
   void tick(logic<1> reset_in, logic<1> _serial_valid, logic<8> _serial_data) {
-    if (reset_in) {
-    }
-    else {
-    }
   }
 
   //----------------------------------------
@@ -100,27 +95,23 @@ public:
   pinwheel_core core;
   regfile       regs;
 
-  test_reg <0xF0000000, 0xF0000000> debug_reg2;
 
   block_ram<0xF0000000, 0x00000000> code_ram;
+
+  // metron_noconvert
+  Console  <0xF0000000, 0x40000000> console1;
+  // metron_noconvert
+  Console  <0xF0000000, 0x50000000> console2;
+  // metron_noconvert
+  Console  <0xF0000000, 0x60000000> console3;
+  // metron_noconvert
+  Console  <0xF0000000, 0x70000000> console4;
   block_ram<0xF0000000, 0x80000000> data_ram; // FIXME having this named data and a field inside block_ram named data breaks context resolve
-
-  /*
-  logic<32> gpio_dir;
-  logic<32> gpio_in;
-  logic<32> gpio_out;
-  */
-
-  // metron_noconvert
-  Console<0xF0000000, 0x40000000> console1;
-  // metron_noconvert
-  Console<0xF0000000, 0x50000000> console2;
-  // metron_noconvert
-  Console<0xF0000000, 0x60000000> console3;
-  // metron_noconvert
-  Console<0xF0000000, 0x70000000> console4;
+  test_reg <0xF0000000, 0xF0000000> debug_reg;
 };
 
 // verilator lint_on unusedsignal
 // verilator lint_off undriven
 //------------------------------------------------------------------------------
+
+#endif

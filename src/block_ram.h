@@ -1,4 +1,6 @@
-#pragma once
+#ifndef BLOCK_RAM_H
+#define BLOCK_RAM_H
+
 #include "metron_tools.h"
 #include "tilelink.h"
 
@@ -66,3 +68,5 @@ public:
 // verilator lint_on unusedsignal
 // verilator lint_off unusedparam
 //------------------------------------------------------------------------------
+
+#endif
