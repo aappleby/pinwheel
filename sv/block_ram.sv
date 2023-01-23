@@ -24,6 +24,9 @@ module block_ram (
     if (filename) $readmemh(filename, data);
   end
 
+  // metron_noconvert
+  /*logic<32> get() const { return bus_tld.d_data; }*/
+
   always_ff @(posedge clock) begin : tick
     bus_tld.d_opcode <= 3'bx;
     bus_tld.d_param  <= 2'bx;

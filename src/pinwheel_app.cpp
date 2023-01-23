@@ -184,7 +184,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
 
   auto& pinwheel = pinwheel_sim->states.top();
 
-  uint32_t insn_a = b24(pinwheel.core.reg_hpc_a) ? uint32_t(pinwheel.code_ram.bus_tld.d_data) : 0;
+  uint32_t insn_a = b24(pinwheel.core.reg_hpc_a) ? uint32_t(pinwheel.code_ram.get()) : 0;
 
   d("hpc_a         0x%08x\n", pinwheel.core.reg_hpc_a);
   d("insn_a        0x%08x ",  insn_a); print_rv(d, insn_a); d("\n");
@@ -207,7 +207,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   d("insn c        0x%08x ",  pinwheel.core.reg_insn_c); print_rv(d, pinwheel.core.reg_insn_c); d("\n");
   d("addr c        0x%08x\n", pinwheel.core.reg_addr_c);
   d("result c      0x%08x\n", pinwheel.core.reg_result_c);
-  d("data c        0x%08x\n", pinwheel.data_ram.bus_tld.d_data);
+  d("data c        0x%08x\n", pinwheel.data_ram.get());
   d("\n");
 
   d("hpc d         0x%08x\n", pinwheel.core.reg_hpc_d);

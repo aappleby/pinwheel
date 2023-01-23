@@ -16,6 +16,9 @@ public:
     if (filename) readmemh(filename, data);
   }
 
+  // metron_noconvert
+  logic<32> get() const { return bus_tld.d_data; }
+
   void tick(tilelink_a tla) {
     bus_tld.d_opcode = b3(DONTCARE);
     bus_tld.d_param  = b2(DONTCARE);
