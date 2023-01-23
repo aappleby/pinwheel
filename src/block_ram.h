@@ -4,35 +4,30 @@
 
 //------------------------------------------------------------------------------
 // verilator lint_off unusedsignal
+// verilator lint_off unusedparam
 
+template <uint32_t addr_mask = 0xF0000000, uint32_t addr_tag = 0x00000000>
 class block_ram {
 public:
 
+  tilelink_d bus_tld;
+
   block_ram(const char* filename = nullptr) {
     if (filename) readmemh(filename, data);
-    oe = 0;
-  }
-
-  logic<32> rdata() const {
-    return data_out;
-  }
-
-  tilelink_d get_tld() const {
-    tilelink_d bus_tld;
-    bus_tld.d_opcode = 0;
-    bus_tld.d_param = 0;
-    bus_tld.d_size = 0;
-    bus_tld.d_source = 0;
-    bus_tld.d_sink = 0;
-    bus_tld.d_data = 0;
-    bus_tld.d_error = 0;
-    bus_tld.d_valid = 0;
-    bus_tld.d_ready = 0;
-    return bus_tld;
   }
 
   void tick(tilelink_a tla) {
-    if (tla.a_valid) {
+    bus_tld.d_opcode = b3(DONTCARE);
+    bus_tld.d_param  = b2(DONTCARE);
+    bus_tld.d_size   = b3(DONTCARE);
+    bus_tld.d_source = b1(DONTCARE);
+    bus_tld.d_sink   = b3(DONTCARE);
+    bus_tld.d_data   = b32(DONTCARE);
+    bus_tld.d_error  = 0;
+    bus_tld.d_valid  = 0;
+    bus_tld.d_ready  = 1;
+
+    if (tla.a_valid && ((tla.a_address & addr_mask) == addr_tag)) {
       if (tla.a_opcode == TL::PutPartialData) {
         logic<32> old_data = data[b10(tla.a_address, 2)];
         logic<32> new_data = tla.a_data;
@@ -44,17 +39,15 @@ public:
                   ((tla.a_mask[3] ? new_data : old_data) & 0xFF000000);
 
         data[b10(tla.a_address, 2)] = new_data;
-        data_out = new_data;
-        oe = 1;
+        bus_tld.d_opcode = TL::AccessAckData;
+        bus_tld.d_data = new_data;
+        bus_tld.d_valid = 1;
       }
       else {
-        data_out = data[b10(tla.a_address, 2)];
-        oe = 1;
+        bus_tld.d_opcode = TL::AccessAckData;
+        bus_tld.d_data = data[b10(tla.a_address, 2)];
+        bus_tld.d_valid = 1;
       }
-    }
-    else {
-      data_out = b32(DONTCARE);
-      oe = 0;
     }
   }
 
@@ -65,9 +58,8 @@ public:
 
   // metron_internal
   logic<32> data[16384];
-  logic<32> data_out;
-  logic<1>  oe;
 };
 
 // verilator lint_on unusedsignal
+// verilator lint_off unusedparam
 //------------------------------------------------------------------------------

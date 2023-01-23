@@ -3,45 +3,39 @@
 
 //------------------------------------------------------------------------------
 // verilator lint_off unusedsignal
+// verilator lint_off unusedparam
 
 module block_ram (
   // global clock
   input logic clock,
-  // rdata() ports
-  output logic[31:0] rdata_ret,
-  // get_tld() ports
-  output tilelink_d get_tld_ret,
+  // output signals
+  output tilelink_d bus_tld,
   // tick() ports
   input tilelink_a tick_tla
 );
+  parameter addr_mask = 32'hF0000000;
+  parameter addr_tag = 32'h00000000;
+
 /*public:*/
+
 
   parameter filename = "";
   initial begin
     if (filename) $readmemh(filename, data);
-    oe = 0;
-  end
-
-  always_comb begin : rdata
-    rdata_ret = data_out;
-  end
-
-  always_comb begin : get_tld
-    tilelink_d bus_tld;
-    bus_tld.d_opcode = 0;
-    bus_tld.d_param = 0;
-    bus_tld.d_size = 0;
-    bus_tld.d_source = 0;
-    bus_tld.d_sink = 0;
-    bus_tld.d_data = 0;
-    bus_tld.d_error = 0;
-    bus_tld.d_valid = 0;
-    bus_tld.d_ready = 0;
-    get_tld_ret = bus_tld;
   end
 
   always_ff @(posedge clock) begin : tick
-    if (tick_tla.a_valid) begin
+    bus_tld.d_opcode <= 3'bx;
+    bus_tld.d_param  <= 2'bx;
+    bus_tld.d_size   <= 3'bx;
+    bus_tld.d_source <= 1'bx;
+    bus_tld.d_sink   <= 3'bx;
+    bus_tld.d_data   <= 32'bx;
+    bus_tld.d_error  <= 0;
+    bus_tld.d_valid  <= 0;
+    bus_tld.d_ready  <= 1;
+
+    if (tick_tla.a_valid && ((tick_tla.a_address & addr_mask) == addr_tag)) begin
       if (tick_tla.a_opcode == TL::PutPartialData) begin
         logic[31:0] old_data;
         logic[31:0] new_data;
@@ -55,17 +49,15 @@ module block_ram (
                   ((tick_tla.a_mask[3] ? new_data : old_data) & 32'hFF000000);
 
         data[tick_tla.a_address[11:2]] <= new_data;
-        data_out <= new_data;
-        oe <= 1;
+        bus_tld.d_opcode <= TL::AccessAckData;
+        bus_tld.d_data <= new_data;
+        bus_tld.d_valid <= 1;
       end
       else begin
-        data_out <= data[tick_tla.a_address[11:2]];
-        oe <= 1;
+        bus_tld.d_opcode <= TL::AccessAckData;
+        bus_tld.d_data <= data[tick_tla.a_address[11:2]];
+        bus_tld.d_valid <= 1;
       end
-    end
-    else begin
-      data_out <= 32'bx;
-      oe <= 0;
     end
   end
 
@@ -76,9 +68,8 @@ module block_ram (
 
   // metron_internal
   logic[31:0] data[16384];
-  logic[31:0] data_out;
-  logic  oe;
 endmodule
 
 // verilator lint_on unusedsignal
+// verilator lint_off unusedparam
 //------------------------------------------------------------------------------

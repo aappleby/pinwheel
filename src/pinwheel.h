@@ -49,15 +49,13 @@ public:
 
   void tock(logic<1> reset_in, logic<1> _serial_valid, logic<8> _serial_data) {
 
-    logic<32> code_to_core = code_ram.rdata();
-    logic<32> bus_to_core  = data_ram.rdata();
-
+    logic<32> bus_to_core  = data_ram.bus_tld.d_data;
     if (debug_reg_cs) bus_to_core = debug_reg;
     if (serial_cs)    bus_to_core = serial_reg;
 
     //----------
 
-    core.tock(reset_in, code_to_core, bus_to_core, regs.get_rs1(), regs.get_rs2());
+    core.tock(reset_in, code_ram.bus_tld.d_data, bus_to_core, regs.get_rs1(), regs.get_rs2());
     logic<4> bus_tag_b = b4(core.sig_bus_addr, 28);
 
     //----------
@@ -101,38 +99,30 @@ public:
 
     {
       tilelink_a code_tla;
-      code_tla.a_opcode = TL::Get;
-      code_tla.a_param = b3(DONTCARE);
-      code_tla.a_size = 0;
-      code_tla.a_source = b1(DONTCARE);
+      code_tla.a_opcode  = core.sig_code_wren ? TL::PutPartialData : TL::Get;
+      code_tla.a_param   = b3(DONTCARE);
+      code_tla.a_size    = 2;
+      code_tla.a_source  = b1(DONTCARE);
       code_tla.a_address = core.sig_code_addr;
-      code_tla.a_mask = core.sig_code_wmask;
-      code_tla.a_data = core.sig_code_wdata;
-      code_tla.a_valid = 1;
-      code_tla.a_ready = 1;
-
-      if (bus_tag_b == 0x0) {
-        code_tla.a_opcode = core.sig_code_wren ? TL::PutPartialData : TL::Get;
-      }
+      code_tla.a_mask    = core.sig_code_wmask;
+      code_tla.a_data    = core.sig_code_wdata;
+      code_tla.a_valid   = 1;
+      code_tla.a_ready   = 1;
 
       code_ram.tick(code_tla);
     }
 
     {
       tilelink_a bus_tla;
-      bus_tla.a_param = b3(DONTCARE);
-      bus_tla.a_size = 0; // fixme
-      bus_tla.a_source = b1(DONTCARE);
+      bus_tla.a_opcode  = core.sig_bus_wren ? TL::PutPartialData : TL::Get;
+      bus_tla.a_param   = b3(DONTCARE);
+      bus_tla.a_size    = 0; // fixme
+      bus_tla.a_source  = b1(DONTCARE);
       bus_tla.a_address = core.sig_bus_addr;
-      bus_tla.a_mask = core.sig_bus_wmask;
-      bus_tla.a_data = core.sig_bus_wdata;
-      bus_tla.a_valid = 0;
-      bus_tla.a_ready = 1;
-
-      if (bus_tag_b == 0x8) {
-        bus_tla.a_valid = 1;
-        bus_tla.a_opcode = core.sig_bus_wren ? TL::PutPartialData : TL::Get;
-      }
+      bus_tla.a_mask    = core.sig_bus_wmask;
+      bus_tla.a_data    = core.sig_bus_wdata;
+      bus_tla.a_valid   = 1;
+      bus_tla.a_ready   = 1;
 
       data_ram.tick(bus_tla);
     }
@@ -185,8 +175,8 @@ public:
   logic<1>  debug_reg_cs_next;
   logic<1>  debug_reg_cs;
 
-  block_ram code_ram;
-  block_ram data_ram; // FIXME having this named data and a field inside block_ram named data breaks context resolve
+  block_ram<0xF0000000,0x00000000> code_ram;
+  block_ram<0xF0000000,0x80000000> data_ram; // FIXME having this named data and a field inside block_ram named data breaks context resolve
 
   logic<32> gpio_dir;
   logic<32> gpio_in;

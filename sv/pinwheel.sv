@@ -60,19 +60,16 @@ module pinwheel (
 
 
   always_comb begin : tock
-    logic[31:0] code_to_core;
     logic[31:0] bus_to_core;
     logic[3:0] bus_tag_b;
 
-    code_to_core = code_ram_rdata_ret;
-    bus_to_core  = data_ram_rdata_ret;
-
+    bus_to_core  = data_ram.bus_tld.d_data;
     if (debug_reg_cs) bus_to_core = debug_reg;
     if (serial_cs)    bus_to_core = serial_reg;
 
     //----------
     core_tock_reset_in = tock_reset_in;
-    core_tock_code_rdata = code_to_core;
+    core_tock_code_rdata = code_ram.bus_tld.d_data;
     core_tock_bus_rdata = bus_to_core;
     core_tock_reg_rdata1 = regs_get_rs1_ret;
     core_tock_reg_rdata2 = regs_get_rs2_ret;
@@ -121,38 +118,30 @@ module pinwheel (
 
     begin
       tilelink_a code_tla;
-      code_tla.a_opcode = TL::Get;
-      code_tla.a_param = 3'bx;
-      code_tla.a_size = 0;
-      code_tla.a_source = 1'bx;
+      code_tla.a_opcode  = core_sig_code_wren ? TL::PutPartialData : TL::Get;
+      code_tla.a_param   = 3'bx;
+      code_tla.a_size    = 2;
+      code_tla.a_source  = 1'bx;
       code_tla.a_address = core_sig_code_addr;
-      code_tla.a_mask = core_sig_code_wmask;
-      code_tla.a_data = core_sig_code_wdata;
-      code_tla.a_valid = 1;
-      code_tla.a_ready = 1;
-
-      if (bus_tag_b == 4'h0) begin
-        code_tla.a_opcode = core_sig_code_wren ? TL::PutPartialData : TL::Get;
-      end
+      code_tla.a_mask    = core_sig_code_wmask;
+      code_tla.a_data    = core_sig_code_wdata;
+      code_tla.a_valid   = 1;
+      code_tla.a_ready   = 1;
       code_ram_tick_tla = code_tla;
 
     end
 
     begin
       tilelink_a bus_tla;
-      bus_tla.a_param = 3'bx;
-      bus_tla.a_size = 0; // fixme
-      bus_tla.a_source = 1'bx;
+      bus_tla.a_opcode  = core_sig_bus_wren ? TL::PutPartialData : TL::Get;
+      bus_tla.a_param   = 3'bx;
+      bus_tla.a_size    = 0; // fixme
+      bus_tla.a_source  = 1'bx;
       bus_tla.a_address = core_sig_bus_addr;
-      bus_tla.a_mask = core_sig_bus_wmask;
-      bus_tla.a_data = core_sig_bus_wdata;
-      bus_tla.a_valid = 0;
-      bus_tla.a_ready = 1;
-
-      if (bus_tag_b == 4'h8) begin
-        bus_tla.a_valid = 1;
-        bus_tla.a_opcode = core_sig_bus_wren ? TL::PutPartialData : TL::Get;
-      end
+      bus_tla.a_mask    = core_sig_bus_wmask;
+      bus_tla.a_data    = core_sig_bus_wdata;
+      bus_tla.a_valid   = 1;
+      bus_tla.a_ready   = 1;
       data_ram_tick_tla = bus_tla;
 
     end
@@ -278,38 +267,38 @@ module pinwheel (
   logic  debug_reg_cs;
 
   block_ram #(
+    // Template Parameters
+    .addr_mask(32'hF0000000),
+    .addr_tag(32'h00000000),
     // Constructor Parameters
     .filename(text_file)
   ) code_ram(
     // Global clock
     .clock(clock),
-    // rdata() ports
-    .rdata_ret(code_ram_rdata_ret),
-    // get_tld() ports
-    .get_tld_ret(code_ram_get_tld_ret),
+    // Output signals
+    .bus_tld(code_ram_bus_tld),
     // tick() ports
     .tick_tla(code_ram_tick_tla)
   );
   tilelink_a code_ram_tick_tla;
-  logic[31:0] code_ram_rdata_ret;
-  tilelink_d code_ram_get_tld_ret;
+  tilelink_d code_ram_bus_tld;
 
   block_ram #(
+    // Template Parameters
+    .addr_mask(32'hF0000000),
+    .addr_tag(32'h80000000),
     // Constructor Parameters
     .filename(data_file)
   ) data_ram(
     // Global clock
     .clock(clock),
-    // rdata() ports
-    .rdata_ret(data_ram_rdata_ret),
-    // get_tld() ports
-    .get_tld_ret(data_ram_get_tld_ret),
+    // Output signals
+    .bus_tld(data_ram_bus_tld),
     // tick() ports
     .tick_tla(data_ram_tick_tla)
   );
   tilelink_a data_ram_tick_tla;
-  logic[31:0] data_ram_rdata_ret;
-  tilelink_d data_ram_get_tld_ret;
+  tilelink_d data_ram_bus_tld;
  // FIXME having this named data and a field inside block_ram named data breaks context resolve
 
   /*logic<32> gpio_dir;*/
