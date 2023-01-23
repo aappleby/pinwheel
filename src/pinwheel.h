@@ -16,14 +16,15 @@
 // 0xExxxxxxx - Regfiles
 // 0xFxxxxxxx - Debug registers
 
-// verilator lint_off unusedsignal
-
 //------------------------------------------------------------------------------
+// verilator lint_off unusedsignal
+// verilator lint_off undriven
 
 class pinwheel {
 public:
 
-  pinwheel(const char* text_file = nullptr, const char* data_file = nullptr) : code_ram(text_file), data_ram(data_file) {
+  // FIXME debug_reg2(0x1234) is here because icarus doesn't like it if we don't assign module params
+  pinwheel(const char* text_file = nullptr, const char* data_file = nullptr) : code_ram(text_file), data_ram(data_file), debug_reg2(0x1234) {
   }
 
   // metron_noconvert
@@ -174,8 +175,10 @@ public:
   logic<1>  debug_reg_cs_next;
   logic<1>  debug_reg_cs;
 
-  block_ram<0xF0000000,0x00000000> code_ram;
-  block_ram<0xF0000000,0x80000000> data_ram; // FIXME having this named data and a field inside block_ram named data breaks context resolve
+  test_reg <0xF0000000, 0xF0000000> debug_reg2;
+
+  block_ram<0xF0000000, 0x00000000> code_ram;
+  block_ram<0xF0000000, 0x80000000> data_ram; // FIXME having this named data and a field inside block_ram named data breaks context resolve
 
   logic<32> gpio_dir;
   logic<32> gpio_in;
@@ -204,5 +207,5 @@ public:
 };
 
 // verilator lint_on unusedsignal
-
+// verilator lint_off undriven
 //------------------------------------------------------------------------------

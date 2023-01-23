@@ -15,9 +15,9 @@
 // 0xExxxxxxx - Regfiles
 // 0xFxxxxxxx - Debug registers
 
-// verilator lint_off unusedsignal
-
 //------------------------------------------------------------------------------
+// verilator lint_off unusedsignal
+// verilator lint_off undriven
 
 module pinwheel (
   // global clock
@@ -265,6 +265,26 @@ module pinwheel (
   logic  debug_reg_cs_next;
   logic  debug_reg_cs;
 
+  test_reg #(
+    // Template Parameters
+    .addr_mask(32'hF0000000),
+    .addr_tag(32'hF0000000),
+    // Constructor Parameters
+    .init(16'h1234)
+  ) debug_reg2(
+    // Global clock
+    .clock(clock),
+    // Output registers
+    .bus_tld(debug_reg2_bus_tld),
+    // tick() ports
+    .tick_tla(debug_reg2_tick_tla)
+  );
+  logic[3:0] debug_reg2_expand_bitmask_mask;
+  tilelink_a debug_reg2_tick_tla;
+  tilelink_d debug_reg2_bus_tld;
+  logic[31:0] debug_reg2_expand_bitmask_ret;
+
+
   block_ram #(
     // Template Parameters
     .addr_mask(32'hF0000000),
@@ -327,5 +347,5 @@ module pinwheel (
 endmodule
 
 // verilator lint_on unusedsignal
-
+// verilator lint_off undriven
 //------------------------------------------------------------------------------
