@@ -8,6 +8,7 @@
 #include "pinwheel_core.h"
 #include "serial.h"
 #include "tilelink.h"
+#include "test_reg.h"
 
 // Address Map
 // 0x0xxxxxxx - Code
@@ -112,32 +113,30 @@ public:
       code_ram.tick(code_tla);
     }
 
-    {
-      tilelink_a bus_tla;
-      bus_tla.a_opcode  = core.sig_bus_wren ? TL::PutPartialData : TL::Get;
-      bus_tla.a_param   = b3(DONTCARE);
-      bus_tla.a_size    = 0; // fixme
-      bus_tla.a_source  = b1(DONTCARE);
-      bus_tla.a_address = core.sig_bus_addr;
-      bus_tla.a_mask    = core.sig_bus_wmask;
-      bus_tla.a_data    = core.sig_bus_wdata;
-      bus_tla.a_valid   = 1;
-      bus_tla.a_ready   = 1;
+    tilelink_a bus_tla;
+    bus_tla.a_opcode  = core.sig_bus_wren ? TL::PutPartialData : TL::Get;
+    bus_tla.a_param   = b3(DONTCARE);
+    bus_tla.a_size    = 0; // fixme
+    bus_tla.a_source  = b1(DONTCARE);
+    bus_tla.a_address = core.sig_bus_addr;
+    bus_tla.a_mask    = core.sig_bus_wmask;
+    bus_tla.a_data    = core.sig_bus_wdata;
+    bus_tla.a_valid   = 1;
+    bus_tla.a_ready   = 1;
 
-      data_ram.tick(bus_tla);
-    }
+    data_ram.tick(bus_tla);
 
     core.tick(reset_in);
     regs.tick(core.sig_rf_raddr1, core.sig_rf_raddr2, core.sig_rf_waddr, core.sig_rf_wdata, core.sig_rf_wren);
 
     // metron_noconvert
-    console1.tick(reset_in, bus_tag_b == 0x4 && core.sig_bus_wren, core.sig_bus_wdata);
+    console1.tick(reset_in, bus_tla);
     // metron_noconvert
-    console2.tick(reset_in, bus_tag_b == 0x5 && core.sig_bus_wren, core.sig_bus_wdata);
+    console2.tick(reset_in, bus_tla);
     // metron_noconvert
-    console3.tick(reset_in, bus_tag_b == 0x6 && core.sig_bus_wren, core.sig_bus_wdata);
+    console3.tick(reset_in, bus_tla);
     // metron_noconvert
-    console4.tick(reset_in, bus_tag_b == 0x7 && core.sig_bus_wren, core.sig_bus_wdata);
+    console4.tick(reset_in, bus_tla);
   }
 
   //----------------------------------------
@@ -195,13 +194,13 @@ public:
   logic<1>  serial_out_valid;
 
   // metron_noconvert
-  Console console1;
+  Console<0xF0000000, 0x40000000> console1;
   // metron_noconvert
-  Console console2;
+  Console<0xF0000000, 0x50000000> console2;
   // metron_noconvert
-  Console console3;
+  Console<0xF0000000, 0x60000000> console3;
   // metron_noconvert
-  Console console4;
+  Console<0xF0000000, 0x70000000> console4;
 };
 
 // verilator lint_on unusedsignal

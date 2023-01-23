@@ -7,6 +7,7 @@
 `include "pinwheel_core.sv"
 `include "serial.sv"
 `include "tilelink.sv"
+`include "test_reg.sv"
 
 // Address Map
 // 0x0xxxxxxx - Code
@@ -62,6 +63,7 @@ module pinwheel (
   always_comb begin : tock
     logic[31:0] bus_to_core;
     logic[3:0] bus_tag_b;
+    tilelink_a bus_tla;
 
     bus_to_core  = data_ram.bus_tld.d_data;
     if (debug_reg_cs) bus_to_core = debug_reg;
@@ -131,20 +133,17 @@ module pinwheel (
 
     end
 
-    begin
-      tilelink_a bus_tla;
-      bus_tla.a_opcode  = core_sig_bus_wren ? TL::PutPartialData : TL::Get;
-      bus_tla.a_param   = 3'bx;
-      bus_tla.a_size    = 0; // fixme
-      bus_tla.a_source  = 1'bx;
-      bus_tla.a_address = core_sig_bus_addr;
-      bus_tla.a_mask    = core_sig_bus_wmask;
-      bus_tla.a_data    = core_sig_bus_wdata;
-      bus_tla.a_valid   = 1;
-      bus_tla.a_ready   = 1;
-      data_ram_tick_tla = bus_tla;
+    bus_tla.a_opcode  = core_sig_bus_wren ? TL::PutPartialData : TL::Get;
+    bus_tla.a_param   = 3'bx;
+    bus_tla.a_size    = 0; // fixme
+    bus_tla.a_source  = 1'bx;
+    bus_tla.a_address = core_sig_bus_addr;
+    bus_tla.a_mask    = core_sig_bus_wmask;
+    bus_tla.a_data    = core_sig_bus_wdata;
+    bus_tla.a_valid   = 1;
+    bus_tla.a_ready   = 1;
+    data_ram_tick_tla = bus_tla;
 
-    end
     core_tick_reset_in = tock_reset_in;
 
     regs_tick_raddr1 = core_sig_rf_raddr1;
@@ -154,13 +153,13 @@ module pinwheel (
     regs_tick_wren = core_sig_rf_wren;
 
     // metron_noconvert
-    /*console1.tick(reset_in, bus_tag_b == 0x4 && core.sig_bus_wren, core.sig_bus_wdata);*/
+    /*console1.tick(reset_in, bus_tla);*/
     // metron_noconvert
-    /*console2.tick(reset_in, bus_tag_b == 0x5 && core.sig_bus_wren, core.sig_bus_wdata);*/
+    /*console2.tick(reset_in, bus_tla);*/
     // metron_noconvert
-    /*console3.tick(reset_in, bus_tag_b == 0x6 && core.sig_bus_wren, core.sig_bus_wdata);*/
+    /*console3.tick(reset_in, bus_tla);*/
     // metron_noconvert
-    /*console4.tick(reset_in, bus_tag_b == 0x7 && core.sig_bus_wren, core.sig_bus_wdata);*/
+    /*console4.tick(reset_in, bus_tla);*/
   end
 
   //----------------------------------------
@@ -318,13 +317,13 @@ module pinwheel (
   logic  serial_out_valid;
 
   // metron_noconvert
-  /*Console console1;*/
+  /*Console<0xF0000000, 0x40000000> console1;*/
   // metron_noconvert
-  /*Console console2;*/
+  /*Console<0xF0000000, 0x50000000> console2;*/
   // metron_noconvert
-  /*Console console3;*/
+  /*Console<0xF0000000, 0x60000000> console3;*/
   // metron_noconvert
-  /*Console console4;*/
+  /*Console<0xF0000000, 0x70000000> console4;*/
 endmodule
 
 // verilator lint_on unusedsignal

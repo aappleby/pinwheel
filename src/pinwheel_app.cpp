@@ -269,10 +269,10 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
 
   data_painter.dump2(view, screen_size, 1024, 32, 1, 1, 64, 64, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.data_ram.get_data());
 
-  console_painter.dump2(view, screen_size, 32*19,  32, 1, 1, Console::width, Console::height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console1.buf);
-  console_painter.dump2(view, screen_size, 32*19, 256, 1, 1, Console::width, Console::height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console2.buf);
-  console_painter.dump2(view, screen_size, 32*19, 480, 1, 1, Console::width, Console::height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console3.buf);
-  console_painter.dump2(view, screen_size, 32*19, 704, 1, 1, Console::width, Console::height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console4.buf);
+  console_painter.dump2(view, screen_size, 32*19,  32, 1, 1, pinwheel.console1.width, pinwheel.console1.height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console1.buf);
+  console_painter.dump2(view, screen_size, 32*19, 256, 1, 1, pinwheel.console2.width, pinwheel.console2.height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console2.buf);
+  console_painter.dump2(view, screen_size, 32*19, 480, 1, 1, pinwheel.console3.width, pinwheel.console3.height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console3.buf);
+  console_painter.dump2(view, screen_size, 32*19, 704, 1, 1, pinwheel.console4.width, pinwheel.console4.height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console4.buf);
 
   //box_painter.push_corner_size(1024 + (harts[0]->pc % 64) * 14 - 1, 512 + (harts[0]->pc / 64) * 12, 12*4+2*3+2, 12, 0x8000FFFF);
   //box_painter.push_corner_size(1024 + (harts[1]->pc % 64) * 14 - 1, 512 + (harts[1]->pc / 64) * 12, 12*4+2*3+2, 12, 0x80FFFF00);
