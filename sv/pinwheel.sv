@@ -33,6 +33,7 @@ module pinwheel (
 );
 /*public:*/
 
+  // FIXME debug_reg2(0x1234) is here because icarus doesn't like it if we don't assign module params
   parameter text_file = "";
   parameter data_file = "";
   initial begin
