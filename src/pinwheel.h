@@ -64,21 +64,10 @@ public:
     core.tock(reset_in, code_ram.bus_tld.d_data, bus_to_core, regs.get_rs1(), regs.get_rs2());
     logic<4> bus_tag_b = b4(core.sig_bus_addr, 28);
 
-    tilelink_a bus_tla;
-    bus_tla.a_opcode  = core.sig_bus_wren ? TL::PutPartialData : TL::Get;
-    bus_tla.a_param   = b3(DONTCARE);
-    bus_tla.a_size    = 0; // fixme
-    bus_tla.a_source  = b1(DONTCARE);
-    bus_tla.a_address = core.sig_bus_addr;
-    bus_tla.a_mask    = core.sig_bus_wmask;
-    bus_tla.a_data    = core.sig_bus_wdata;
-    bus_tla.a_valid   = 1;
-    bus_tla.a_ready   = 1;
-
     //----------
 
 
-    debug_reg2.tick(bus_tla);
+    debug_reg2.tick(core.bus_tla);
 
     {
       serial_cs_next = 0;
@@ -103,19 +92,19 @@ public:
       code_ram.tick(code_tla);
     }
 
-    data_ram.tick(bus_tla);
+    data_ram.tick(core.bus_tla);
 
     core.tick(reset_in);
     regs.tick(core.sig_rf_raddr1, core.sig_rf_raddr2, core.sig_rf_waddr, core.sig_rf_wdata, core.sig_rf_wren);
 
     // metron_noconvert
-    console1.tick(reset_in, bus_tla);
+    console1.tick(reset_in, core.bus_tla);
     // metron_noconvert
-    console2.tick(reset_in, bus_tla);
+    console2.tick(reset_in, core.bus_tla);
     // metron_noconvert
-    console3.tick(reset_in, bus_tla);
+    console3.tick(reset_in, core.bus_tla);
     // metron_noconvert
-    console4.tick(reset_in, bus_tla);
+    console4.tick(reset_in, core.bus_tla);
   }
 
   //----------------------------------------

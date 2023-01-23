@@ -66,7 +66,6 @@ module pinwheel (
   always_comb begin : tock
     logic[31:0] bus_to_core;
     logic[3:0] bus_tag_b;
-    tilelink_a bus_tla;
 
     bus_to_core  = data_ram.bus_tld.d_data;
     if (serial_cs)    bus_to_core = serial_reg;
@@ -82,18 +81,8 @@ module pinwheel (
 
     bus_tag_b = core_sig_bus_addr[31:28];
 
-    bus_tla.a_opcode  = core_sig_bus_wren ? TL::PutPartialData : TL::Get;
-    bus_tla.a_param   = 3'bx;
-    bus_tla.a_size    = 0; // fixme
-    bus_tla.a_source  = 1'bx;
-    bus_tla.a_address = core_sig_bus_addr;
-    bus_tla.a_mask    = core_sig_bus_wmask;
-    bus_tla.a_data    = core_sig_bus_wdata;
-    bus_tla.a_valid   = 1;
-    bus_tla.a_ready   = 1;
-
     //----------
-    debug_reg2_tick_tla = bus_tla;
+    debug_reg2_tick_tla = core_bus_tla;
 
 
 
@@ -119,7 +108,7 @@ module pinwheel (
       code_ram_tick_tla = code_tla;
 
     end
-    data_ram_tick_tla = bus_tla;
+    data_ram_tick_tla = core_bus_tla;
 
     core_tick_reset_in = tock_reset_in;
 
@@ -130,13 +119,13 @@ module pinwheel (
     regs_tick_wren = core_sig_rf_wren;
 
     // metron_noconvert
-    /*console1.tick(reset_in, bus_tla);*/
+    /*console1.tick(reset_in, core.bus_tla);*/
     // metron_noconvert
-    /*console2.tick(reset_in, bus_tla);*/
+    /*console2.tick(reset_in, core.bus_tla);*/
     // metron_noconvert
-    /*console3.tick(reset_in, bus_tla);*/
+    /*console3.tick(reset_in, core.bus_tla);*/
     // metron_noconvert
-    /*console4.tick(reset_in, bus_tla);*/
+    /*console4.tick(reset_in, core.bus_tla);*/
   end
 
   //----------------------------------------
