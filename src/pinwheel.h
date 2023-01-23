@@ -2,13 +2,14 @@
 #include "metron_tools.h"
 
 #include "block_ram.h"
+#include "pinwheel_core.h"
+#include "regfile.h"
+#include "serial.h"
+#include "test_reg.h"
+#include "tilelink.h"
+
 // metron_noconvert
 #include "console.h"
-#include "constants.h"
-#include "pinwheel_core.h"
-#include "serial.h"
-#include "tilelink.h"
-#include "test_reg.h"
 
 // Address Map
 // 0x0xxxxxxx - Code

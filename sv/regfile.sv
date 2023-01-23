@@ -1,7 +1,5 @@
 `include "metron_tools.sv"
 
-`include "constants.sv"
-
 //------------------------------------------------------------------------------
 // verilator lint_off unusedsignal
 

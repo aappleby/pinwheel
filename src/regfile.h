@@ -1,8 +1,6 @@
 #pragma once
 #include "metron_tools.h"
 
-#include "constants.h"
-
 //------------------------------------------------------------------------------
 // verilator lint_off unusedsignal
 

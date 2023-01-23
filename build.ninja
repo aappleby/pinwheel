@@ -82,14 +82,16 @@ build obj/pinwheel_test_pass: run_test bin/pinwheel_test
 ################################################################################
 # Metron conversion tests
 
-build sv/block_ram.sv     : metron src/block_ram.h | src/tilelink.h
-build sv/constants.sv     : metron src/constants.h
-build sv/pinwheel_core.sv : metron src/pinwheel_core.h | src/tilelink.h
-build sv/pinwheel.sv      : metron src/pinwheel.h | src/block_ram.h src/pinwheel_core.h
-build sv/regfile.sv       : metron src/regfile.h
-build sv/serial.sv        : metron src/serial.h | src/tilelink.h
-build sv/test_reg.sv      : metron src/test_reg.h | src/tilelink.h
 build sv/tilelink.sv      : metron src/tilelink.h
+build sv/constants.sv     : metron src/constants.h
+build sv/regfile.sv       : metron src/regfile.h
+
+build sv/serial.sv        : metron src/serial.h        | src/tilelink.h
+build sv/test_reg.sv      : metron src/test_reg.h      | src/tilelink.h
+build sv/block_ram.sv     : metron src/block_ram.h     | src/tilelink.h
+build sv/pinwheel_core.sv : metron src/pinwheel_core.h | src/constants.h src/tilelink.h
+
+build sv/pinwheel.sv      : metron src/pinwheel.h | src/block_ram.h src/pinwheel_core.h src/test_reg.h src/regfile.h
 
 build all_pinwheel_sv : phony $
   sv/block_ram.sv $

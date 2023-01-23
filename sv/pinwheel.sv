@@ -1,14 +1,15 @@
 `include "metron_tools.sv"
 
 `include "block_ram.sv"
-// metron_noconvert
-/*#include "console.h"*/
-`include "constants.sv"
 `include "pinwheel_core.sv"
+`include "regfile.sv"
 `include "serial.sv"
-`include "tilelink.sv"
 `include "test_reg.sv"
+`include "tilelink.sv"
 
+// metron_noconvert
+/*#include "console.h"
+*/
 // Address Map
 // 0x0xxxxxxx - Code
 // 0x8xxxxxxx - Data

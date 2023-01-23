@@ -1,6 +1,6 @@
 `include "metron_tools.sv"
 
-`include "regfile.sv"
+`include "constants.sv"
 `include "tilelink.sv"
 
 // Address Map
