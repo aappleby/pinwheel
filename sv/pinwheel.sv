@@ -127,21 +127,14 @@ module pinwheel (
       code_tla.a_source = 1'bx;
       code_tla.a_address = core_sig_code_addr;
       code_tla.a_mask = core_sig_code_wmask;
-      code_tla.a_data = 32'bx;
-      code_tla.a_valid = 0;
+      code_tla.a_data = core_sig_code_wdata;
+      code_tla.a_valid = 1;
       code_tla.a_ready = 1;
 
-      if (core_sig_code_wren && bus_tag_b == 4'h0) begin
-        code_tla.a_opcode = TL::PutPartialData;
-        code_tla.a_data = core_sig_code_wdata;
-        code_tla.a_valid = 1;
-      end
-      else begin
-        code_tla.a_opcode = TL::Get;
+      if (bus_tag_b == 4'h0) begin
+        code_tla.a_opcode = core_sig_code_wren ? TL::PutPartialData : TL::Get;
       end
       code_ram_tick_tla = code_tla;
-      code_ram_tick_cs = 1;
-      code_ram_tick_wren = core_sig_code_wren && bus_tag_b == 4'h0;
 
     end
 
@@ -152,21 +145,15 @@ module pinwheel (
       bus_tla.a_source = 1'bx;
       bus_tla.a_address = core_sig_bus_addr;
       bus_tla.a_mask = core_sig_bus_wmask;
-      bus_tla.a_data = 32'bx;
+      bus_tla.a_data = core_sig_bus_wdata;
       bus_tla.a_valid = 0;
       bus_tla.a_ready = 1;
 
-      if (core_sig_bus_wren && bus_tag_b == 4'h8) begin
-        bus_tla.a_opcode = TL::PutPartialData;
-        bus_tla.a_data = core_sig_bus_wdata;
+      if (bus_tag_b == 4'h8) begin
         bus_tla.a_valid = 1;
-      end
-      else begin
-        bus_tla.a_opcode = TL::Get;
+        bus_tla.a_opcode = core_sig_bus_wren ? TL::PutPartialData : TL::Get;
       end
       data_ram_tick_tla = bus_tla;
-      data_ram_tick_cs = bus_tag_b == 4'h8;
-      data_ram_tick_wren = core_sig_bus_wren  && bus_tag_b == 4'h8;
 
     end
     core_tick_reset_in = tock_reset_in;
@@ -301,13 +288,9 @@ module pinwheel (
     // get_tld() ports
     .get_tld_ret(code_ram_get_tld_ret),
     // tick() ports
-    .tick_tla(code_ram_tick_tla),
-    .tick_cs(code_ram_tick_cs),
-    .tick_wren(code_ram_tick_wren)
+    .tick_tla(code_ram_tick_tla)
   );
   tilelink_a code_ram_tick_tla;
-  logic code_ram_tick_cs;
-  logic code_ram_tick_wren;
   logic[31:0] code_ram_rdata_ret;
   tilelink_d code_ram_get_tld_ret;
 
@@ -322,13 +305,9 @@ module pinwheel (
     // get_tld() ports
     .get_tld_ret(data_ram_get_tld_ret),
     // tick() ports
-    .tick_tla(data_ram_tick_tla),
-    .tick_cs(data_ram_tick_cs),
-    .tick_wren(data_ram_tick_wren)
+    .tick_tla(data_ram_tick_tla)
   );
   tilelink_a data_ram_tick_tla;
-  logic data_ram_tick_cs;
-  logic data_ram_tick_wren;
   logic[31:0] data_ram_rdata_ret;
   tilelink_d data_ram_get_tld_ret;
  // FIXME having this named data and a field inside block_ram named data breaks context resolve

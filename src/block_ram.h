@@ -10,6 +10,7 @@ public:
 
   block_ram(const char* filename = nullptr) {
     if (filename) readmemh(filename, data);
+    oe = 0;
   }
 
   logic<32> rdata() const {
@@ -30,22 +31,30 @@ public:
     return bus_tld;
   }
 
-  void tick(tilelink_a tla, logic<1> cs, logic<1> wren) {
-    if (cs && wren) {
-      logic<32> old_data = data[b10(tla.a_address, 2)];
-      logic<32> new_data = tla.a_data;
-      if (tla.a_address[0]) new_data = new_data << 8;
-      if (tla.a_address[1]) new_data = new_data << 16;
-      new_data = ((tla.a_mask[0] ? new_data : old_data) & 0x000000FF) |
-                 ((tla.a_mask[1] ? new_data : old_data) & 0x0000FF00) |
-                 ((tla.a_mask[2] ? new_data : old_data) & 0x00FF0000) |
-                 ((tla.a_mask[3] ? new_data : old_data) & 0xFF000000);
+  void tick(tilelink_a tla) {
+    if (tla.a_valid) {
+      if (tla.a_opcode == TL::PutPartialData) {
+        logic<32> old_data = data[b10(tla.a_address, 2)];
+        logic<32> new_data = tla.a_data;
+        if (tla.a_address[0]) new_data = new_data << 8;
+        if (tla.a_address[1]) new_data = new_data << 16;
+        new_data = ((tla.a_mask[0] ? new_data : old_data) & 0x000000FF) |
+                  ((tla.a_mask[1] ? new_data : old_data) & 0x0000FF00) |
+                  ((tla.a_mask[2] ? new_data : old_data) & 0x00FF0000) |
+                  ((tla.a_mask[3] ? new_data : old_data) & 0xFF000000);
 
-      data[b10(tla.a_address, 2)] = new_data;
-      data_out = cs ? new_data : b32(0);
+        data[b10(tla.a_address, 2)] = new_data;
+        data_out = new_data;
+        oe = 1;
+      }
+      else {
+        data_out = data[b10(tla.a_address, 2)];
+        oe = 1;
+      }
     }
     else {
-      data_out = cs ? data[b10(tla.a_address, 2)] : b32(0);
+      data_out = b32(DONTCARE);
+      oe = 0;
     }
   }
 
@@ -57,6 +66,7 @@ public:
   // metron_internal
   logic<32> data[16384];
   logic<32> data_out;
+  logic<1>  oe;
 };
 
 // verilator lint_on unusedsignal

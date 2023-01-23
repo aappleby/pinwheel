@@ -107,20 +107,15 @@ public:
       code_tla.a_source = b1(DONTCARE);
       code_tla.a_address = core.sig_code_addr;
       code_tla.a_mask = core.sig_code_wmask;
-      code_tla.a_data = b32(DONTCARE);
-      code_tla.a_valid = 0;
+      code_tla.a_data = core.sig_code_wdata;
+      code_tla.a_valid = 1;
       code_tla.a_ready = 1;
 
-      if (core.sig_code_wren && bus_tag_b == 0x0) {
-        code_tla.a_opcode = TL::PutPartialData;
-        code_tla.a_data = core.sig_code_wdata;
-        code_tla.a_valid = 1;
-      }
-      else {
-        code_tla.a_opcode = TL::Get;
+      if (bus_tag_b == 0x0) {
+        code_tla.a_opcode = core.sig_code_wren ? TL::PutPartialData : TL::Get;
       }
 
-      code_ram.tick(code_tla, 1, core.sig_code_wren && bus_tag_b == 0x0);
+      code_ram.tick(code_tla);
     }
 
     {
@@ -130,20 +125,16 @@ public:
       bus_tla.a_source = b1(DONTCARE);
       bus_tla.a_address = core.sig_bus_addr;
       bus_tla.a_mask = core.sig_bus_wmask;
-      bus_tla.a_data = b32(DONTCARE);
+      bus_tla.a_data = core.sig_bus_wdata;
       bus_tla.a_valid = 0;
       bus_tla.a_ready = 1;
 
-      if (core.sig_bus_wren && bus_tag_b == 0x8) {
-        bus_tla.a_opcode = TL::PutPartialData;
-        bus_tla.a_data = core.sig_bus_wdata;
+      if (bus_tag_b == 0x8) {
         bus_tla.a_valid = 1;
-      }
-      else {
-        bus_tla.a_opcode = TL::Get;
+        bus_tla.a_opcode = core.sig_bus_wren ? TL::PutPartialData : TL::Get;
       }
 
-      data_ram.tick(bus_tla, bus_tag_b == 0x8, core.sig_bus_wren  && bus_tag_b == 0x8);
+      data_ram.tick(bus_tla);
     }
 
     core.tick(reset_in);
