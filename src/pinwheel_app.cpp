@@ -217,7 +217,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   d("wb wren d     0x%08x\n", pinwheel.core.sig_rf_wren);
   d("\n");
 
-  d("debug_reg     0x%08x\n", pinwheel.debug_reg);
+  d("debug_reg     0x%08x\n", pinwheel.debug_reg2.get());
   d("ticks         %lld\n",   pinwheel.core.reg_ticks);
   d("speed         %f\n",     double(sim_thread->sim_steps) / sim_thread->sim_time);
   d("states        %d\n",     pinwheel_sim->states.state_count());

@@ -14,10 +14,13 @@ module test_reg (
   input tilelink_a tick_tla
 );
   parameter addr_mask = 32'hF0000000;
-  parameter addr_tag = 32'h00000000;
+  parameter addr_tag = 32'hF0000000;
 
 /*public:*/
 
+
+  // metron_noconvert
+  /*logic<32> get() const { return bus_tld.d_data; }*/
 
   parameter init = 0;
   initial begin

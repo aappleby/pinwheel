@@ -6,11 +6,14 @@
 // verilator lint_off unusedsignal
 // verilator lint_off unusedparam
 
-template <uint32_t addr_mask = 0xF0000000, uint32_t addr_tag = 0x00000000>
+template <uint32_t addr_mask = 0xF0000000, uint32_t addr_tag = 0xF0000000>
 class test_reg {
 public:
 
   tilelink_d bus_tld;
+
+  // metron_noconvert
+  logic<32> get() const { return bus_tld.d_data; }
 
   test_reg(logic<32> init = 0) {
     bus_tld.d_opcode = TL::AccessAckData;

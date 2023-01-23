@@ -36,7 +36,8 @@ module pinwheel (
   // FIXME debug_reg2(0x1234) is here because icarus doesn't like it if we don't assign module params
   parameter text_file = "";
   parameter data_file = "";
-  initial begin
+  initial
+  begin
   end
 
   // metron_noconvert
@@ -55,7 +56,7 @@ module pinwheel (
   // metron_noconvert
   /*uint32_t* get_data() { return data_ram.get_data(); }*/
   // metron_noconvert
-  /*logic<32> get_debug() const { return debug_reg; }*/
+  /*logic<32> get_debug() const { return debug_reg2.get(); }*/
 
   //----------------------------------------
   // FIXME const local variable should not become parameter
@@ -67,8 +68,9 @@ module pinwheel (
     tilelink_a bus_tla;
 
     bus_to_core  = data_ram.bus_tld.d_data;
-    if (debug_reg_cs) bus_to_core = debug_reg;
     if (serial_cs)    bus_to_core = serial_reg;
+
+    if (debug_reg2.bus_tld.d_valid == 1) bus_to_core = serial_reg;
 
     //----------
     core_tock_reset_in = tock_reset_in;
@@ -79,16 +81,20 @@ module pinwheel (
 
     bus_tag_b = core_sig_bus_addr[31:28];
 
+    bus_tla.a_opcode  = core_sig_bus_wren ? TL::PutPartialData : TL::Get;
+    bus_tla.a_param   = 3'bx;
+    bus_tla.a_size    = 0; // fixme
+    bus_tla.a_source  = 1'bx;
+    bus_tla.a_address = core_sig_bus_addr;
+    bus_tla.a_mask    = core_sig_bus_wmask;
+    bus_tla.a_data    = core_sig_bus_wdata;
+    bus_tla.a_valid   = 1;
+    bus_tla.a_ready   = 1;
+
     //----------
+    debug_reg2_tick_tla = bus_tla;
 
 
-    begin
-      logic debug_cs_b;
-      debug_cs_b = bus_tag_b == 4'hF;
-      debug_reg_next = debug_reg;
-      debug_reg_cs_next = debug_cs_b;
-      if (core_sig_bus_wren && debug_cs_b) debug_reg_next = core_sig_bus_wdata;
-    end
 
     begin
       serial_cs_next = 0;
@@ -97,27 +103,6 @@ module pinwheel (
       serial_out_next = 0;
       serial_out_valid_next = 0;
     end
-
-    /*
-    {
-      logic<1> serial_cs_b = bus_tag_b == 0xC;
-
-      if (core.sig_bus_wren && serial_cs_b) {
-        serial_out_next = core.sig_bus_wdata;
-        serial_out_valid_next = 1;
-      } else {
-        serial_out_next = 0;
-        serial_out_valid_next = 0;
-      }
-
-      if (core.sig_bus_rden && serial_cs_b) {
-        serial_cs_next = serial_cs_b;
-      }
-      else {
-        serial_cs_next = 0;
-      }
-    }
-    */
 
     begin
       tilelink_a code_tla;
@@ -133,16 +118,6 @@ module pinwheel (
       code_ram_tick_tla = code_tla;
 
     end
-
-    bus_tla.a_opcode  = core_sig_bus_wren ? TL::PutPartialData : TL::Get;
-    bus_tla.a_param   = 3'bx;
-    bus_tla.a_size    = 0; // fixme
-    bus_tla.a_source  = 1'bx;
-    bus_tla.a_address = core_sig_bus_addr;
-    bus_tla.a_mask    = core_sig_bus_wmask;
-    bus_tla.a_data    = core_sig_bus_wdata;
-    bus_tla.a_valid   = 1;
-    bus_tla.a_ready   = 1;
     data_ram_tick_tla = bus_tla;
 
     core_tick_reset_in = tock_reset_in;
@@ -168,17 +143,12 @@ module pinwheel (
 
   always_ff @(posedge clock) begin : tick
     if (tick_reset_in) begin
-      debug_reg <= 0;
-      debug_reg_cs <= 0;
       serial_cs <= 0;
       serial_out <= 0;
       serial_out_valid <= 0;
       serial_reg <= 0;
     end
     else begin
-      debug_reg <= debug_reg_next;
-      debug_reg_cs <= debug_reg_cs_next;
-
       serial_cs        <= serial_cs_next;
       serial_valid     <= serial_valid_next;
       serial_reg       <= serial_reg_next;
@@ -261,17 +231,11 @@ module pinwheel (
   logic[31:0] regs_get_rs2_ret;
 
 
-  logic[31:0] debug_reg_next;
-  logic[31:0] debug_reg;
-  logic  debug_reg_cs_next;
-  logic  debug_reg_cs;
-
   test_reg #(
     // Template Parameters
     .addr_mask(32'hF0000000),
-    .addr_tag(32'hF0000000),
+    .addr_tag(32'hF0000000)
     // Constructor Parameters
-    .init(16'h1234)
   ) debug_reg2(
     // Global clock
     .clock(clock),
