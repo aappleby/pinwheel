@@ -67,10 +67,10 @@ module pinwheel (
     logic[31:0] bus_to_core;
     logic[3:0] bus_tag_b;
 
-    bus_to_core  = data_ram.bus_tld.d_data;
-    if (serial_cs)    bus_to_core = serial_reg;
+    bus_to_core = 0;
 
-    if (debug_reg2.bus_tld.d_valid == 1) bus_to_core = serial_reg;
+    if (data_ram.bus_tld.d_valid == 1)   bus_to_core = bus_to_core | data_ram.bus_tld.d_data;
+    if (debug_reg2.bus_tld.d_valid == 1) bus_to_core = bus_to_core | debug_reg2.bus_tld.d_data;
 
     //----------
     core_tock_reset_in = tock_reset_in;
@@ -85,31 +85,8 @@ module pinwheel (
     debug_reg2_tick_tla = core_bus_tla;
 
 
-
-    begin
-      serial_cs_next = 0;
-      serial_valid_next = 0;
-      serial_reg_next = 0;
-      serial_out_next = 0;
-      serial_out_valid_next = 0;
-    end
-
-    begin
-      tilelink_a code_tla;
-      code_tla.a_opcode  = core_sig_code_wren ? TL::PutPartialData : TL::Get;
-      code_tla.a_param   = 3'bx;
-      code_tla.a_size    = 2;
-      code_tla.a_source  = 1'bx;
-      code_tla.a_address = core_sig_code_addr;
-      code_tla.a_mask    = core_sig_code_wmask;
-      code_tla.a_data    = core_sig_code_wdata;
-      code_tla.a_valid   = 1;
-      code_tla.a_ready   = 1;
-      code_ram_tick_tla = code_tla;
-
-    end
+    code_ram_tick_tla = core_code_tla;
     data_ram_tick_tla = core_bus_tla;
-
     core_tick_reset_in = tock_reset_in;
 
     regs_tick_raddr1 = core_sig_rf_raddr1;
@@ -133,17 +110,8 @@ module pinwheel (
 
   always_ff @(posedge clock) begin : tick
     if (tick_reset_in) begin
-      serial_cs <= 0;
-      serial_out <= 0;
-      serial_out_valid <= 0;
-      serial_reg <= 0;
     end
     else begin
-      serial_cs        <= serial_cs_next;
-      serial_valid     <= serial_valid_next;
-      serial_reg       <= serial_reg_next;
-      serial_out       <= serial_out_next;
-      serial_out_valid <= serial_out_valid_next;
     end
   end
 
@@ -155,6 +123,7 @@ module pinwheel (
     .clock(clock),
     // Output signals
     .bus_tla(core_bus_tla),
+    .code_tla(core_code_tla),
     .sig_code_addr(core_sig_code_addr),
     .sig_code_wdata(core_sig_code_wdata),
     .sig_code_wmask(core_sig_code_wmask),
@@ -185,6 +154,7 @@ module pinwheel (
   logic[31:0] core_tock_reg_rdata2;
   logic core_tick_reset_in;
   tilelink_a core_bus_tla;
+  tilelink_a core_code_tla;
   logic[31:0] core_sig_code_addr;
   logic[31:0] core_sig_code_wdata;
   logic[3:0]  core_sig_code_wmask;
@@ -277,21 +247,11 @@ module pinwheel (
   tilelink_d data_ram_bus_tld;
  // FIXME having this named data and a field inside block_ram named data breaks context resolve
 
-  /*logic<32> gpio_dir;*/
-  /*logic<32> gpio_in;*/
-  /*logic<32> gpio_out;*/
-
-  logic  serial_cs_next;
-  logic  serial_valid_next;
-  logic[31:0] serial_reg_next;
-  logic[31:0] serial_out_next;
-  logic  serial_out_valid_next;
-
-  logic  serial_cs;
-  logic  serial_valid;
-  logic[31:0] serial_reg;
-  logic[31:0] serial_out;
-  logic  serial_out_valid;
+  /*
+  logic<32> gpio_dir;
+  logic<32> gpio_in;
+  logic<32> gpio_out;
+  */
 
   // metron_noconvert
   /*Console<0xF0000000, 0x40000000> console1;*/

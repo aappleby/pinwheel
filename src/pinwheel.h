@@ -54,10 +54,10 @@ public:
 
   void tock(logic<1> reset_in, logic<1> _serial_valid, logic<8> _serial_data) {
 
-    logic<32> bus_to_core  = data_ram.bus_tld.d_data;
-    if (serial_cs)    bus_to_core = serial_reg;
+    logic<32> bus_to_core = 0;
 
-    if (debug_reg2.bus_tld.d_valid == 1) bus_to_core = serial_reg;
+    if (data_ram.bus_tld.d_valid == 1)   bus_to_core |= data_ram.bus_tld.d_data;
+    if (debug_reg2.bus_tld.d_valid == 1) bus_to_core |= debug_reg2.bus_tld.d_data;
 
     //----------
 
@@ -68,30 +68,7 @@ public:
 
 
     debug_reg2.tick(core.bus_tla);
-
-    {
-      serial_cs_next = 0;
-      serial_valid_next = 0;
-      serial_reg_next = 0;
-      serial_out_next = 0;
-      serial_out_valid_next = 0;
-    }
-
-    {
-      tilelink_a code_tla;
-      code_tla.a_opcode  = core.sig_code_wren ? TL::PutPartialData : TL::Get;
-      code_tla.a_param   = b3(DONTCARE);
-      code_tla.a_size    = 2;
-      code_tla.a_source  = b1(DONTCARE);
-      code_tla.a_address = core.sig_code_addr;
-      code_tla.a_mask    = core.sig_code_wmask;
-      code_tla.a_data    = core.sig_code_wdata;
-      code_tla.a_valid   = 1;
-      code_tla.a_ready   = 1;
-
-      code_ram.tick(code_tla);
-    }
-
+    code_ram.tick(core.code_tla);
     data_ram.tick(core.bus_tla);
 
     core.tick(reset_in);
@@ -112,17 +89,8 @@ public:
 
   void tick(logic<1> reset_in, logic<1> _serial_valid, logic<8> _serial_data) {
     if (reset_in) {
-      serial_cs = 0;
-      serial_out = 0;
-      serial_out_valid = 0;
-      serial_reg = 0;
     }
     else {
-      serial_cs        = serial_cs_next;
-      serial_valid     = serial_valid_next;
-      serial_reg       = serial_reg_next;
-      serial_out       = serial_out_next;
-      serial_out_valid = serial_out_valid_next;
     }
   }
 
@@ -137,21 +105,11 @@ public:
   block_ram<0xF0000000, 0x00000000> code_ram;
   block_ram<0xF0000000, 0x80000000> data_ram; // FIXME having this named data and a field inside block_ram named data breaks context resolve
 
+  /*
   logic<32> gpio_dir;
   logic<32> gpio_in;
   logic<32> gpio_out;
-
-  logic<1>  serial_cs_next;
-  logic<1>  serial_valid_next;
-  logic<32> serial_reg_next;
-  logic<32> serial_out_next;
-  logic<1>  serial_out_valid_next;
-
-  logic<1>  serial_cs;
-  logic<1>  serial_valid;
-  logic<32> serial_reg;
-  logic<32> serial_out;
-  logic<1>  serial_out_valid;
+  */
 
   // metron_noconvert
   Console<0xF0000000, 0x40000000> console1;
