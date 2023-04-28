@@ -24,25 +24,25 @@ module Serial (
   logic[31:0] test_reg;
 
   always_ff @(posedge clock) begin : tick
-    tld.d_param  <= 0;
-    tld.d_size   <= tla.a_size;
-    tld.d_source <= tla.a_source;
-    tld.d_sink   <= 3'bx;
-    tld.d_data   <= 32'bx;
-    tld.d_error  <= 0;
-    tld.d_valid  <= 0;
-    tld.d_ready  <= 1;
+    tld.d_param  = 0;
+    tld.d_size   = tla.a_size;
+    tld.d_source = tla.a_source;
+    tld.d_sink   = 3'bx;
+    tld.d_data   = 32'bx;
+    tld.d_error  = 0;
+    tld.d_valid  = 0;
+    tld.d_ready  = 1;
 
     if (tla.a_opcode == TL::Get) begin
-      tld.d_opcode <= TL::AccessAckData;
+      tld.d_opcode = TL::AccessAckData;
       if (tla.a_address[31:28] == 4'h5) begin
-        tld.d_data   <= test_reg;
-        tld.d_valid  <= 1;
+        tld.d_data   = test_reg;
+        tld.d_valid  = 1;
       end
     end
     else if (tla.a_opcode == TL::PutFullData || tla.a_opcode == TL::PutPartialData) begin
       logic[31:0] bitmask;
-      tld.d_opcode <= TL::AccessAck;
+      tld.d_opcode = TL::AccessAck;
       bitmask = expand_bitmask(tla.a_mask);
       test_reg <= (test_reg & ~bitmask) | (tla.a_data & bitmask);
     end

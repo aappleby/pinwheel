@@ -31,15 +31,15 @@ module block_ram (
   /*logic<32> get() const { return bus_tld.d_data; }*/
 
   always_ff @(posedge clock) begin : tick
-    bus_tld.d_opcode <= 3'bx;
-    bus_tld.d_param  <= 2'bx;
-    bus_tld.d_size   <= 3'bx;
-    bus_tld.d_source <= 1'bx;
-    bus_tld.d_sink   <= 3'bx;
-    bus_tld.d_data   <= 32'bx;
-    bus_tld.d_error  <= 0;
-    bus_tld.d_valid  <= 0;
-    bus_tld.d_ready  <= 1;
+    bus_tld.d_opcode = 3'bx;
+    bus_tld.d_param  = 2'bx;
+    bus_tld.d_size   = 3'bx;
+    bus_tld.d_source = 1'bx;
+    bus_tld.d_sink   = 3'bx;
+    bus_tld.d_data   = 32'bx;
+    bus_tld.d_error  = 0;
+    bus_tld.d_valid  = 0;
+    bus_tld.d_ready  = 1;
 
     if (tick_tla.a_valid && ((tick_tla.a_address & addr_mask) == addr_tag)) begin
       if (tick_tla.a_opcode == TL::PutPartialData) begin
@@ -55,14 +55,14 @@ module block_ram (
                   ((tick_tla.a_mask[3] ? new_data : old_data) & 32'hFF000000);
 
         data[tick_tla.a_address[11:2]] <= new_data;
-        bus_tld.d_opcode <= TL::AccessAckData;
-        bus_tld.d_data <= new_data;
-        bus_tld.d_valid <= 1;
+        bus_tld.d_opcode = TL::AccessAckData;
+        bus_tld.d_data = new_data;
+        bus_tld.d_valid = 1;
       end
       else begin
-        bus_tld.d_opcode <= TL::AccessAckData;
-        bus_tld.d_data <= data[tick_tla.a_address[11:2]];
-        bus_tld.d_valid <= 1;
+        bus_tld.d_opcode = TL::AccessAckData;
+        bus_tld.d_data = data[tick_tla.a_address[11:2]];
+        bus_tld.d_valid = 1;
       end
     end
   end
