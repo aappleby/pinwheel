@@ -7,6 +7,3 @@
 [submodule "submodules/SDL"]
 	path = submodules/SDL
 	url = https://github.com/libsdl-org/SDL
-[submodule "submodules/Metron"]
-	path = submodules/Metron
-	url = https://github.com/aappleby/Metron
