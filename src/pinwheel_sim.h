@@ -1,8 +1,8 @@
 #include "pinwheel.h"
 #include "sim_thread.h"
 
-#include "CoreLib/StateStack.h"
-#include "CoreLib/Log.h"
+#include "MetroLib/src/CoreLib/StateStack.h"
+#include "MetroLib/src/CoreLib/Log.h"
 
 struct PinwheelSim : public Sim {
 

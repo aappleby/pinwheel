@@ -4,7 +4,7 @@
 default_gpp      = g++ -MMD -std=gnu++2a -rdynamic
 build_mode       = -DCONFIG_RELEASE -O3
 #build_mode       = -DCONFIG_DEBUG -O0 -g
-default_includes = -Isrc -Isubmodules -Isubmodules/MetroLib/src
+default_includes = -Isrc -Isymlinks
 libs             = -lSDL2
 
 rule compile

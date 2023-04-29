@@ -10,8 +10,8 @@
 #include <SDL2/SDL.h>
 #endif
 
-#include "CoreLib/Dumper.h"
-#include "CoreLib/Log.h"
+#include "MetroLib/src/CoreLib/Dumper.h"
+#include "MetroLib/src/CoreLib/Log.h"
 
 //#include <algorithm>
 

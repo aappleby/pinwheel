@@ -1,8 +1,8 @@
 #include "sim_thread.h"
 
-#include "CoreLib/Check.h"
-#include "CoreLib/Log.h"
-#include "CoreLib/Utils.h"
+#include "MetroLib/src/CoreLib/Check.h"
+#include "MetroLib/src/CoreLib/Log.h"
+#include "MetroLib/src/CoreLib/Utils.h"
 
 #include <iostream>
 #include <chrono>

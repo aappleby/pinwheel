@@ -43,12 +43,12 @@ module test_reg (
     logic cs;
     cs = tick_tla.a_valid && ((tick_tla.a_address & addr_mask) == addr_tag);
 
-    bus_tld.d_valid = cs;
+    bus_tld.d_valid <= cs;
 
     if (cs && ((tick_tla.a_opcode == TL::PutPartialData) || (tick_tla.a_opcode == TL::PutFullData))) begin
       logic[31:0] mask;
       mask = expand_bitmask(tick_tla.a_mask);
-      bus_tld.d_data = (bus_tld.d_data & ~mask) | (tick_tla.a_data & mask);
+      bus_tld.d_data <= (bus_tld.d_data & ~mask) | (tick_tla.a_data & mask);
     end
   end
 endmodule
