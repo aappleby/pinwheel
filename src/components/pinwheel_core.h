@@ -4,7 +4,6 @@
 #include "metron_tools.h"
 
 #include "constants.h"
-#include "regfile.h"
 #include "tilelink.h"
 
 /* verilator lint_off UNUSEDSIGNAL */

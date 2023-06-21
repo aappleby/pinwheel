@@ -23,7 +23,7 @@ module regfile (
   // get_rs2() ports
   output logic[31:0] get_rs2_ret
 );
-/*public:*/
+/*public*/
 
   initial begin
     int i;

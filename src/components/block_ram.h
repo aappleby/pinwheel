@@ -1,8 +1,9 @@
 #ifndef BLOCK_RAM_H
 #define BLOCK_RAM_H
 
-#include "metron_tools.h"
-#include "tilelink.h"
+#include "components/tilelink.h"
+
+#include "Metron/tools/metron_tools.h"
 
 //------------------------------------------------------------------------------
 // verilator lint_off unusedsignal

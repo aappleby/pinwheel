@@ -39,7 +39,7 @@ module pinwheel_core (
   // tick() ports
   input logic tick_reset_in
 );
-/*public:*/
+/*public*/
 
   //----------------------------------------
 

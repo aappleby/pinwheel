@@ -29,7 +29,7 @@ module pinwheel (
   input logic tick__serial_valid,
   input logic[7:0] tick__serial_data
 );
-/*public:*/
+/*public*/
 
   parameter text_file = "";
   parameter data_file = "";

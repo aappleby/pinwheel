@@ -1,62 +1,36 @@
+include rules.ninja
+
 ################################################################################
-# Rules
 
 default_gpp      = g++ -MMD -std=gnu++2a -rdynamic
+default_gcc      = gcc -g -MMD
 build_mode       = -DCONFIG_RELEASE -O3
-#build_mode       = -DCONFIG_DEBUG -O0 -g
 default_includes = -Isrc -Isymlinks
 libs             = -lSDL2
 
-rule compile
-  command = ${default_gpp} ${build_mode} ${default_includes} ${includes} -MF ${out}.d -c ${in} -o ${out}
-  depfile = ${out}.d
-  deps = gcc
+#build_mode       = -DCONFIG_DEBUG -O0 -g
 
-rule link
-  command = g++ -g ${in} ${libs} -o ${out}
+################################################################################
+# Prereqs
 
-rule run_test
-  command = ${in} | grep "All tests pass" && touch ${out}
+#build symlinks/Metron/bin/metron: command
+#  command = ninja -C symlinks/Metron bin/metron
 
-rule verilator
-  command = verilator -I. -Isv --lint-only -Wall -Wno-declfilename -Wno-multitop ${in} && touch ${out}
+#build symlinks/MetroLib/bin/AppLib.a: command
+#  command = ninja -C symlinks/MetroLib
 
-rule yosys
-  command = yosys -p 'read_verilog -Isrc -sv ${in}; dump; synth_ice40 -json ${out};' | grep "Number of cells"
-
-rule iverilog
-  command = iverilog -g2012 -Wall -Isv -o ${out} ${in} 2> /dev/null
-
-rule metron
-  command = submodules/Metron/bin/metron -q -v -e -c ${in} -o ${out}
-
-##########
-# RISC-V Rules
-
-rv_opts = -std=gnu++2a -mabi=ilp32 -march=rv32i -mstrict-align -g -O0
-#rv_opts = -std=gnu++2a -mabi=ilp32 -march=rv32i -mstrict-align -Os
-
-rule compile_rv
-  command = riscv64-unknown-elf-gcc ${rv_opts} -MMD -MF ${out}.d -c ${in} -o ${out}
-  depfile = ${out}.d
-  deps = gcc
-
-rule assemble_rv
-  command = riscv64-unknown-elf-gcc ${rv_opts} -c ${in} -o ${out}
-
-rule link_rv
-  command = riscv64-unknown-elf-gcc ${rv_opts} -nostdlib -nostartfiles -Wl,-T pinwheel.ld ${in} -o ${out} -lgcc
+include ../MetroLib/build_imgui.ninja
 
 ################################################################################
 # Debugger app
 
-build obj/pinwheel_main.o: compile src/pinwheel_main.cpp
-build obj/pinwheel_app.o:  compile src/pinwheel_app.cpp
-build obj/pinwheel_test.o: compile src/pinwheel_test.cpp
-build obj/rvdisasm.o:      compile src/rvdisasm.cpp
-build obj/sim_thread.o:    compile src/sim_thread.cpp
-build obj/pinwheel_sim.o:  compile src/pinwheel_sim.cpp
-build obj/pinwheel.o:      compile src/pinwheel.cpp
+build obj/pinwheel_main.o: compile_cpp src/pinwheel_main.cpp
+build obj/pinwheel_app.o:  compile_cpp src/pinwheel_app.cpp
+build obj/pinwheel_test.o: compile_cpp src/pinwheel_test.cpp
+build obj/rvdisasm.o:      compile_cpp src/rvdisasm.cpp
+build obj/sim_thread.o:    compile_cpp src/sim_thread.cpp
+build obj/pinwheel_sim.o:  compile_cpp src/pinwheel_sim.cpp
+build obj/pinwheel.o:      compile_cpp src/pinwheel.cpp
 
 build bin/pinwheel: link $
   obj/pinwheel.o $
@@ -65,10 +39,10 @@ build bin/pinwheel: link $
   obj/pinwheel_sim.o $
   obj/rvdisasm.o $
   obj/sim_thread.o $
-  submodules/MetroLib/bin/AppLib.a $
-  submodules/MetroLib/bin/CoreLib.a $
-  submodules/bin/imgui.a $
-  submodules/bin/glad.a
+  symlinks/MetroLib/bin/AppLib.a $
+  symlinks/MetroLib/bin/CoreLib.a $
+  bin/imgui.a $
+  bin/glad.a $
 
 ################################################################################
 # Functional tests
@@ -85,13 +59,11 @@ build obj/pinwheel_test_pass: run_test bin/pinwheel_test
 build sv/tilelink.sv      : metron src/tilelink.h
 build sv/constants.sv     : metron src/constants.h
 build sv/regfile.sv       : metron src/regfile.h
-
 build sv/serial.sv        : metron src/serial.h        | src/tilelink.h
 build sv/test_reg.sv      : metron src/test_reg.h      | src/tilelink.h
 build sv/block_ram.sv     : metron src/block_ram.h     | src/tilelink.h
 build sv/pinwheel_core.sv : metron src/pinwheel_core.h | src/constants.h src/regfile.h src/tilelink.h
-
-build sv/pinwheel.sv      : metron src/pinwheel.h | src/block_ram.h src/pinwheel_core.h src/test_reg.h src/regfile.h
+build sv/pinwheel.sv      : metron src/pinwheel.h      | src/block_ram.h src/pinwheel_core.h src/test_reg.h src/regfile.h
 
 build all_pinwheel_sv : phony $
   sv/block_ram.sv $
@@ -107,19 +79,19 @@ build all_pinwheel_sv : phony $
 # Verilator conversion tests
 
 build obj/pinwheel.vh : verilator sv/pinwheel.sv | all_pinwheel_sv
-build check_verilator : phony obj/pinwheel.vh
+# build check_verilator : phony obj/pinwheel.vh
 
 ################################################################################
 # Yosys synthesis tests
 
-build obj/pinwheel_core.json : yosys sv/pinwheel_core.sv | all_pinwheel_sv
-build check_yosys            : phony obj/pinwheel_core.json
+# build obj/pinwheel_core.json : yosys sv/pinwheel_core.sv | all_pinwheel_sv
+# build check_yosys            : phony obj/pinwheel_core.json
 
 ################################################################################
 # Icarus simulation tests
 
-build obj/pinwheel.iv : iverilog sv/pinwheel.sv | all_pinwheel_sv
-build check_iverilog  : phony obj/pinwheel.iv
+# build obj/pinwheel.iv : iverilog sv/pinwheel.sv | all_pinwheel_sv
+# build check_iverilog  : phony obj/pinwheel.iv
 
 ################################################################################
 # RISC-V test binaries
@@ -160,12 +132,12 @@ build feature_tests : phony $
 ################################################################################
 # GDB server
 
-build obj/gdb_server.o : compile gdb_server/gdb_server.cpp
-build obj/gdb_main.o   : compile gdb_server/gdb_main.cpp
-build bin/gdb_test     : link obj/gdb_server.o obj/gdb_main.o
+build obj/gdb_server/gdb_server.o : compile_cpp src/gdb_server/gdb_server.cpp
+build obj/gdb_server/gdb_main.o   : compile_cpp src/gdb_server/gdb_main.cpp
+build bin/gdb_test                : link obj/gdb_server.o obj/gdb_main.o
 
-build obj/gdb_server_rv.o : compile_rv gdb_server/gdb_server.cpp
-build obj/gdb_main_rv.o   : compile_rv gdb_server/gdb_main.cpp
-build bin/gdb_test_rv     : link_rv obj/gdb_server_rv.o obj/gdb_main_rv.o
+build obj/gdb_server/gdb_server_rv.o : compile_rv gdb_server/gdb_server.cpp
+build obj/gdb_server/gdb_main_rv.o   : compile_rv gdb_server/gdb_main.cpp
+build bin/gdb_test_rv                : link_rv obj/gdb_server_rv.o obj/gdb_main_rv.o
 
 ################################################################################

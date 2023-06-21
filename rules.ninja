@@ -1,0 +1,55 @@
+################################################################################
+# C/C++ native rules
+
+rule compile_cpp
+  command = ${default_gpp} ${build_mode} ${default_includes} ${includes} -MF ${out}.d -c ${in} -o ${out}
+  depfile = ${out}.d
+  deps = gcc
+
+rule compile_c
+  command = ${default_gcc} ${build_mode} ${default_includes} ${includes} -MF ${out}.d -c ${in} -o ${out}
+  depfile = ${out}.d
+  deps = gcc
+
+rule lib
+  command = ar rcs ${out} ${in}
+
+rule link
+  command = g++ -g ${in} ${libs} -o ${out}
+
+################################################################################
+# C/C++ RISC-V Rules
+
+rv_opts = -std=gnu++2a -mabi=ilp32 -march=rv32i -mstrict-align -g -O0
+#rv_opts = -std=gnu++2a -mabi=ilp32 -march=rv32i -mstrict-align -Os
+
+rule compile_rv
+  command = riscv64-unknown-elf-gcc ${rv_opts} -MMD -MF ${out}.d -c ${in} -o ${out}
+  depfile = ${out}.d
+  deps = gcc
+
+rule assemble_rv
+  command = riscv64-unknown-elf-gcc ${rv_opts} -c ${in} -o ${out}
+
+rule link_rv
+  command = riscv64-unknown-elf-gcc ${rv_opts} -nostdlib -nostartfiles -Wl,-T pinwheel.ld ${in} -o ${out} -lgcc
+
+################################################################################
+
+rule run_test
+  command = ${in} | grep "All tests pass" && touch ${out}
+
+rule verilator
+  command = verilator -I. -Isv --lint-only -Wall -Wno-declfilename -Wno-multitop ${in} && touch ${out}
+
+rule yosys
+  command = yosys -p 'read_verilog -Isrc -sv ${in}; dump; synth_ice40 -json ${out};' | grep "Number of cells"
+
+rule iverilog
+  command = iverilog -g2012 -Wall -Isv -o ${out} ${in} 2> /dev/null
+
+rule metron
+  command = symlinks/Metron/bin/metron -q -v -e -c ${in} -o ${out}
+
+rule command
+  command = ${command}
