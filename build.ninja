@@ -19,7 +19,7 @@ libs             = -lSDL2
 #build symlinks/MetroLib/bin/AppLib.a: command
 #  command = ninja -C symlinks/MetroLib
 
-include ../MetroLib/build_imgui.ninja
+include ../metrolib/build_imgui.ninja
 
 ################################################################################
 # Debugger app
