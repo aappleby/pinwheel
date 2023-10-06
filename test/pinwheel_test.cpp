@@ -1,4 +1,4 @@
-#include "MetroLib/src/CoreLib/Tests.h"
+#include "metrolib/src/CoreLib/Tests.h"
 #include "pinwheel.h"
 
 //------------------------------------------------------------------------------

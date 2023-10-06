@@ -1,11 +1,11 @@
-#include "MetroLib/src/AppLib/App.h"
+#include "metrolib/src/AppLib/App.h"
 
-#include "MetroLib/src/AppLib/GridPainter.h"
-#include "MetroLib/src/AppLib/BoxPainter.h"
-#include "MetroLib/src/AppLib/TextPainter.h"
-#include "MetroLib/src/AppLib/DumpPainter.h"
-#include "MetroLib/src/AppLib/Viewport.h"
-#include "MetroLib/src/CoreLib/StateStack.h"
+#include "metrolib/src/AppLib/GridPainter.h"
+#include "metrolib/src/AppLib/BoxPainter.h"
+#include "metrolib/src/AppLib/TextPainter.h"
+#include "metrolib/src/AppLib/DumpPainter.h"
+#include "metrolib/src/AppLib/Viewport.h"
+#include "metrolib/src/CoreLib/StateStack.h"
 
 #include "pinwheel.h"
 #include "pinwheel_sim.h"

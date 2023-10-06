@@ -2,8 +2,8 @@
 #include "metron_tools.h"
 #include "constants.h"
 
-#include "MetroLib/src/CoreLib/Dumper.h"
-#include "MetroLib/src/CoreLib/Check.h"
+#include "metrolib/src/CoreLib/Dumper.h"
+#include "metrolib/src/CoreLib/Check.h"
 
 void print_rv(Dumper& d, uint32_t op_u32) {
   logic<32> op = op_u32;
