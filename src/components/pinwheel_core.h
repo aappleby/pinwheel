@@ -1,7 +1,7 @@
 #ifndef PINWHEEL_CORE_H
 #define PINWHEEL_CORE_H
 
-#include "metron_tools.h"
+#include "metron/metron_tools.h"
 
 #include "constants.h"
 #include "tilelink.h"

@@ -1,6 +1,6 @@
 #ifndef PINHWEEL_COMPONENTS_REGFILE_H
 #define PINHWEEL_COMPONENTS_REGFILE_H
-#include "Metron/src/metron_tools.h"
+#include "metron/metron_tools.h"
 
 //------------------------------------------------------------------------------
 // verilator lint_off unusedsignal

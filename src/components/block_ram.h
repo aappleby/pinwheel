@@ -3,7 +3,7 @@
 
 #include "components/tilelink.h"
 
-#include "Metron/tools/metron_tools.h"
+#include "metron/metron_tools.h"
 
 //------------------------------------------------------------------------------
 // verilator lint_off unusedsignal
