@@ -49,7 +49,7 @@ rule iverilog
   command = iverilog -g2012 -Wall -Isv -o ${out} ${in} 2> /dev/null
 
 rule metron
-  command = symlinks/Metron/bin/metron -q -v -e -c ${in} -o ${out}
+  command = symlinks/metron/bin/metron -q -v -e -c ${in} -o ${out}
 
 rule command
   command = ${command}
