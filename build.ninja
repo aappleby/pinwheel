@@ -1,16 +1,6 @@
 include rules.ninja
 
 ################################################################################
-
-default_gpp      = g++ -MMD -std=gnu++2a -rdynamic
-default_gcc      = gcc -g -MMD
-build_mode       = -DCONFIG_RELEASE -O3
-default_includes = -Isrc -Isymlinks
-libs             = -lSDL2
-
-#build_mode       = -DCONFIG_DEBUG -O0 -g
-
-################################################################################
 # Prereqs
 
 #build symlinks/Metron/bin/metron: command
@@ -19,7 +9,7 @@ libs             = -lSDL2
 #build symlinks/MetroLib/bin/AppLib.a: command
 #  command = ninja -C symlinks/MetroLib
 
-include ../metrolib/build_imgui.ninja
+include ../metrolib/ninja/build_imgui.ninja
 
 ################################################################################
 # Debugger app
