@@ -10,6 +10,7 @@ include symlinks/metrolib/ninja/config_${target}.ninja
 include rules.ninja
 
 includes = ${includes} -Isymlinks/metrolib
+includes = ${includes} -Isymlinks/metron
 
 ################################################################################
 # Prereqs
