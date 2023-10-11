@@ -1,19 +1,21 @@
 ################################################################################
 # C/C++ RISC-V Rules
 
-rv_opts = -std=gnu++2a -mabi=ilp32 -march=rv32i -mstrict-align -g -O0
-#rv_opts = -std=gnu++2a -mabi=ilp32 -march=rv32i -mstrict-align -Os
+rv_toolchain=riscv64-unknown-elf
 
-rule compile_rv
-  command = riscv64-unknown-elf-gcc ${rv_opts} -MMD -c ${in} -o ${out}
+rv_opts_c = -std=gnu++2a -mabi=ilp32 -march=rv32i -mstrict-align -g -O0 -MMD
+#rv_opts_c = -std=gnu++2a -mabi=ilp32 -march=rv32i -mstrict-align -Os -MMD
+
+rule rv_compile_cpp
+  command = ${rv_toolchain}-g++ ${rv_opts_c} -c ${in} -o ${out}
   depfile = ${out}.d
   deps = gcc
 
-rule assemble_rv
-  command = riscv64-unknown-elf-gcc ${rv_opts} -c ${in} -o ${out}
+rule rv_assemble
+  command = ${rv_toolchain}-gcc ${rv_opts_c} -c ${in} -o ${out}
 
-rule link_rv
-  command = riscv64-unknown-elf-gcc ${rv_opts} -nostdlib -nostartfiles -Wl,-T pinwheel.ld ${in} -o ${out} -lgcc
+rule rv_c_binary
+  command = ${rv_toolchain}-gcc ${rv_opts_c} -nostdlib -nostartfiles -Wl,-T tests/firmware/pinwheel.ld ${in} -o ${out} -lgcc
 
 ################################################################################
 
