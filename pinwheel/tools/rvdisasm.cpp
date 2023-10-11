@@ -1,9 +1,8 @@
-#include "rvdisasm.h"
+#include "metrolib/core/Check.h"
+#include "metrolib/core/Dumper.h"
 #include "metron/metron_tools.h"
-#include "constants.h"
-
-#include "metrolib/src/CoreLib/Dumper.h"
-#include "metrolib/src/CoreLib/Check.h"
+#include "pinwheel/tools/riscv_constants.h"
+#include "pinwheel/tools/rvdisasm.h"
 
 void print_rv(Dumper& d, uint32_t op_u32) {
   logic<32> op = op_u32;

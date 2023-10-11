@@ -1,6 +1,6 @@
-#include "pinwheel_app.h"
+#include "pinwheel/simulator/pinwheel_app.h"
 
-#include "rvdisasm.h"
+#include "pinwheel/tools/rvdisasm.h"
 
 #define SDL_MAIN_HANDLED
 #ifdef _MSC_VER
@@ -10,15 +10,15 @@
 #include <SDL2/SDL.h>
 #endif
 
-#include "metrolib/src/CoreLib/Dumper.h"
-#include "metrolib/src/CoreLib/Log.h"
+#include "metrolib/core/Dumper.h"
+#include "metrolib/core/Log.h"
 
 //#include <algorithm>
 
 #include <elf.h>
 #include <sys/stat.h>
 
-#include "tilelink.h"
+#include "pinwheel/rtl/tilelink.h"
 
 //------------------------------------------------------------------------------
 
@@ -69,6 +69,10 @@ void PinwheelApp::app_init(int screen_w, int screen_h) {
     uint8_t* blob = new uint8_t[sb.st_size];
     FILE* f = fopen(firmware_filename, "rb");
     auto result = fread(blob, 1, sb.st_size, f);
+    if (result != sb.st_size) {
+      printf("fread failed\n");
+      exit(-1);
+    }
     fclose(f);
 
     Elf32_Ehdr& header = *(Elf32_Ehdr*)blob;

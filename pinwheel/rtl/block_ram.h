@@ -1,7 +1,7 @@
 #ifndef BLOCK_RAM_H
 #define BLOCK_RAM_H
 
-#include "components/tilelink.h"
+#include "tilelink.h"
 
 #include "metron/metron_tools.h"
 

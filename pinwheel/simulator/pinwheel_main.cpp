@@ -6,11 +6,10 @@
 #include <sys/stat.h>
 //#include <arch/riscv/include/asm/elf.h>
 
-#include "metrolib/src/CoreLib/Tests.h"
-#include "pinwheel.h"
-#include "pinwheel_app.h"
-
-#include "metrolib/src/AppLib/AppHost.h"
+#include "metrolib/core/Tests.h"
+#include "metrolib/appbase/AppHost.h"
+#include "pinwheel/rtl/pinwheel.h"
+#include "pinwheel/simulator/pinwheel_app.h"
 
 //------------------------------------------------------------------------------
 

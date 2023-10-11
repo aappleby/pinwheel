@@ -1,15 +1,13 @@
-#include "metrolib/src/AppLib/App.h"
-
-#include "metrolib/src/AppLib/GridPainter.h"
-#include "metrolib/src/AppLib/BoxPainter.h"
-#include "metrolib/src/AppLib/TextPainter.h"
-#include "metrolib/src/AppLib/DumpPainter.h"
-#include "metrolib/src/AppLib/Viewport.h"
-#include "metrolib/src/CoreLib/StateStack.h"
-
-#include "pinwheel.h"
-#include "pinwheel_sim.h"
-#include "sim_thread.h"
+#include "metrolib/appbase/App.h"
+#include "metrolib/appbase/BoxPainter.h"
+#include "metrolib/appbase/DumpPainter.h"
+#include "metrolib/appbase/GridPainter.h"
+#include "metrolib/appbase/TextPainter.h"
+#include "metrolib/appbase/Viewport.h"
+#include "metrolib/core/StateStack.h"
+#include "pinwheel/rtl/pinwheel.h"
+#include "pinwheel/simulator/pinwheel_sim.h"
+#include "pinwheel/simulator/sim_thread.h"
 
 struct PinwheelApp : public App {
 

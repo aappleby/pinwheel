@@ -29,27 +29,29 @@ build symlinks/metrolib/bin/metrolib/libcore.a: run_command
 ################################################################################
 # Debugger app
 
-build obj/simulator/pinwheel.o:      compile_cpp src/simulator/pinwheel.cpp
-build obj/simulator/pinwheel_app.o:  compile_cpp src/simulator/pinwheel_app.cpp
-build obj/simulator/pinwheel_main.o: compile_cpp src/simulator/pinwheel_main.cpp
-build obj/simulator/pinwheel_sim.o:  compile_cpp src/simulator/pinwheel_sim.cpp
-build obj/simulator/sim_thread.o:    compile_cpp src/simulator/sim_thread.cpp
+build obj/pinwheel/rtl/pinwheel.o:            compile_cpp pinwheel/rtl/pinwheel.cpp
 
-build obj/tools/rvdisasm.o:          compile_cpp src/tools/rvdisasm.cpp
+build obj/pinwheel/simulator/pinwheel_app.o:  compile_cpp pinwheel/simulator/pinwheel_app.cpp
+build obj/pinwheel/simulator/pinwheel_main.o: compile_cpp pinwheel/simulator/pinwheel_main.cpp
+build obj/pinwheel/simulator/pinwheel_sim.o:  compile_cpp pinwheel/simulator/pinwheel_sim.cpp
+build obj/pinwheel/simulator/sim_thread.o:    compile_cpp pinwheel/simulator/sim_thread.cpp
 
-build obj/symlinks/glad/glad.o : compile_cpp symlinks/glad/glad.c
+build obj/pinwheel/tools/rvdisasm.o:          compile_cpp pinwheel/tools/rvdisasm.cpp
+
+build obj/symlinks/glad/glad.o:               compile_cpp symlinks/glad/glad.c
 
 build bin/pinwheel: c_binary $
   obj/symlinks/glad/glad.o $
   bin/imgui/libimgui.a $
-  obj/simulator/pinwheel.o $
-  obj/simulator/pinwheel_app.o $
-  obj/simulator/pinwheel_main.o $
-  obj/simulator/pinwheel_sim.o $
-  obj/simulator/sim_thread.o $
-  obj/tools/rvdisasm.o $
+  obj/pinwheel/rtl/pinwheel.o $
+  obj/pinwheel/simulator/pinwheel_app.o $
+  obj/pinwheel/simulator/pinwheel_main.o $
+  obj/pinwheel/simulator/pinwheel_sim.o $
+  obj/pinwheel/simulator/sim_thread.o $
+  obj/pinwheel/tools/rvdisasm.o $
   symlinks/metrolib/bin/metrolib/libappbase.a $
   symlinks/metrolib/bin/metrolib/libcore.a
+  libraries=-lSDL2
 
 ################################################################################
 # Functional tests

@@ -1,4 +1,4 @@
-#include "pinwheel.h"
+#include "pinwheel/rtl/pinwheel.h"
 
 #include <elf.h>
 #include <sys/stat.h>
@@ -11,6 +11,10 @@ bool pinwheel::load_elf(const char* firmware_filename) {
   uint8_t* blob = new uint8_t[sb.st_size];
   FILE* f = fopen(firmware_filename, "rb");
   auto result = fread(blob, 1, sb.st_size, f);
+  if (result != sb.st_size) {
+    printf("fread failed\n");
+    exit(-1);
+  }
   fclose(f);
 
   Elf32_Ehdr& header = *(Elf32_Ehdr*)blob;
