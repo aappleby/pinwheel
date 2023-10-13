@@ -7,12 +7,14 @@ rv_opts_c = -std=gnu++2a -mabi=ilp32 -march=rv32i -mstrict-align -g -O0 -MMD
 #rv_opts_c = -std=gnu++2a -mabi=ilp32 -march=rv32i -mstrict-align -Os -MMD
 
 rule rv_compile_cpp
-  command = ${rv_toolchain}-g++ ${rv_opts_c} -c ${in} -o ${out}
+  command = ${rv_toolchain}-g++ ${rv_opts_c} -MD -MF ${out}.d -c ${in} -o ${out}
   depfile = ${out}.d
   deps = gcc
 
 rule rv_assemble
-  command = ${rv_toolchain}-gcc ${rv_opts_c} -c ${in} -o ${out}
+  command = ${rv_toolchain}-gcc ${rv_opts_c} -MD -MF ${out}.d -c ${in} -o ${out}
+  depfile = ${out}.d
+  deps = gcc
 
 rule rv_c_binary
   command = ${rv_toolchain}-gcc ${rv_opts_c} -nostdlib -nostartfiles -Wl,-T tests/firmware/pinwheel.ld ${in} -o ${out} -lgcc
