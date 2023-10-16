@@ -20,10 +20,7 @@ include symlinks/metrolib/ninja/build_imgui.ninja
 #build symlinks/Metron/bin/metron: command
 #  command = ninja -C symlinks/Metron bin/metron
 
-build symlinks/metrolib/bin/metrolib/libappbase.a: run_command
-  command = ninja -C symlinks/metrolib
-
-build symlinks/metrolib/bin/metrolib/libcore.a: run_command
+build symlinks/metrolib/bin/metrolib/libappbase.a symlinks/metrolib/bin/metrolib/libcore.a: run_command
   command = ninja -C symlinks/metrolib
 
 ################################################################################
@@ -50,16 +47,17 @@ build bin/pinwheel: c_binary $
   obj/pinwheel/simulator/sim_thread.o $
   obj/pinwheel/tools/rvdisasm.o $
   symlinks/metrolib/bin/metrolib/libappbase.a $
-  symlinks/metrolib/bin/metrolib/libcore.a
+  symlinks/metrolib/bin/metrolib/libcore.a $
+  bin/imgui/libimgui.a
   libraries=-lSDL2
 
 ################################################################################
 # Functional tests
 
-#build obj/tests/pinwheel_test.o:      compile_cpp tests/pinwheel_test.cpp
+build obj/tests/pinwheel_test.o:      compile_cpp tests/pinwheel_test.cpp
 
 #build bin/pinwheel_test: c_binary $
-#  obj/simulator/pinwheel.o $
+#  obj/pinwheel/rtl/pinwheel.o $
 #  obj/tests/pinwheel_test.o | feature_tests
 
 #build obj/pinwheel_test_pass: run_test bin/pinwheel_test
@@ -67,13 +65,24 @@ build bin/pinwheel: c_binary $
 ################################################################################
 # Metron conversion tests
 
-#build sv/tilelink.sv      : metron src/components/tilelink.h
-#build sv/regfile.sv       : metron src/components/regfile.h
-#build sv/serial.sv        : metron src/components/serial.h        | src/components/tilelink.h
-#build sv/test_reg.sv      : metron src/components/test_reg.h      | src/components/tilelink.h
-#build sv/block_ram.sv     : metron src/components/block_ram.h     | src/components/tilelink.h
-#build sv/pinwheel_core.sv : metron src/components/pinwheel_core.h | src/components/regfile.h src/components/tilelink.h
-#build sv/pinwheel.sv      : metron src/components/pinwheel.h      | src/components/block_ram.h src/components/pinwheel_core.h src/components/test_reg.h src/components/regfile.h
+build sv/tilelink.sv      : metron pinwheel/rtl/tilelink.h
+
+#broken
+#build sv/regfile.sv       : metron pinwheel/rtl/regfile.h
+
+build sv/serial.sv        : metron pinwheel/rtl/serial.h        | pinwheel/rtl/tilelink.h
+
+#broken
+#build sv/test_reg.sv      : metron pinwheel/rtl/test_reg.h      | pinwheel/rtl/tilelink.h
+
+#broken
+#build sv/block_ram.sv     : metron pinwheel/rtl/block_ram.h     | pinwheel/rtl/tilelink.h
+
+#broken
+#build sv/pinwheel_core.sv : metron pinwheel/rtl/pinwheel_core.h | pinwheel/rtl/regfile.h pinwheel/rtl/tilelink.h
+
+#broken
+#build sv/pinwheel.sv      : metron pinwheel/rtl/pinwheel.h      | pinwheel/rtl/block_ram.h pinwheel/rtl/pinwheel_core.h pinwheel/rtl/test_reg.h pinwheel/rtl/regfile.h
 
 #build all_pinwheel_sv : phony $
 #  sv/block_ram.sv $
@@ -84,8 +93,8 @@ build bin/pinwheel: c_binary $
 #  sv/test_reg.sv $
 #  sv/tilelink.sv
 
-#build sv/constants.sv     : metron src/constants.h
-#  sv/constants.sv $
+#broken
+#build sv/riscv_constants.sv : metron pinwheel/tools/riscv_constants.h
 
 ################################################################################
 # Verilator conversion tests
@@ -108,7 +117,7 @@ build bin/pinwheel: c_binary $
 ################################################################################
 # RISC-V test binaries
 
-#build obj/tests/firmware/start.o : rv_assemble tests/firmware/start.s
+build obj/tests/firmware/start.o : rv_assemble tests/firmware/start.s
 
 #build obj/tests/firmware/basic.o        : rv_compile_cpp tests/firmware/basic.cpp
 #build obj/tests/firmware/call_jalr.o    : rv_compile_cpp tests/firmware/call_jalr.cpp
@@ -140,16 +149,3 @@ build bin/pinwheel: c_binary $
 #  bin/tests/firmware/write_code $
 #  bin/tests/firmware/write_regs $
 #  bin/tests/firmware/yield
-
-################################################################################
-# GDB server
-
-#build obj/gdb_server/gdb_server.o : compile_cpp src/gdb_server/gdb_server.cpp
-#build obj/gdb_server/gdb_main.o   : compile_cpp src/gdb_server/gdb_main.cpp
-#build bin/gdb_server/gdb_test     : c_binary obj/gdb_server/gdb_server.o obj/gdb_server/gdb_main.o
-
-#build obj/gdb_server/gdb_server_rv.o : rv_compile_cpp src/gdb_server/gdb_server.cpp
-#build obj/gdb_server/gdb_main_rv.o   : rv_compile_cpp src/gdb_server/gdb_main.cpp
-#build bin/gdb_server/gdb_test_rv     : rv_c_binary obj/gdb_server/gdb_server_rv.o obj/gdb_server/gdb_main_rv.o
-
-################################################################################

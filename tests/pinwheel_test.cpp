@@ -75,7 +75,7 @@ TestResults run_rv32i_tests(int reps, int max_cycles) {
   for (int i = 0; i < instruction_count; i++) {
     char firmware_filename[256];
     sprintf(firmware_filename, "rv_tests/%s.elf", instructions[i]);
-    results += run_test_elf(firmware_filename, reps, max_cycles);
+    results << run_test_elf(firmware_filename, reps, max_cycles);
   }
   TEST_DONE();
 }
@@ -84,15 +84,15 @@ TestResults run_rv32i_tests(int reps, int max_cycles) {
 
 TestResults run_microtests() {
   TEST_INIT("Running microtests");
-  results += run_test_elf("bin/tests/basic");
-  results += run_test_elf("bin/tests/call_jalr");
-  results += run_test_elf("bin/tests/get_hart");
-  results += run_test_elf("bin/tests/start_thread");
-  results += run_test_elf("bin/tests/stepping");
-  results += run_test_elf("bin/tests/write_regs");
-  results += run_test_elf("bin/tests/yield");
-  results += run_test_elf("bin/tests/read_regs");
-  results += run_test_elf("bin/tests/write_code");
+  results << run_test_elf("bin/tests/basic");
+  results << run_test_elf("bin/tests/call_jalr");
+  results << run_test_elf("bin/tests/get_hart");
+  results << run_test_elf("bin/tests/start_thread");
+  results << run_test_elf("bin/tests/stepping");
+  results << run_test_elf("bin/tests/write_regs");
+  results << run_test_elf("bin/tests/yield");
+  results << run_test_elf("bin/tests/read_regs");
+  results << run_test_elf("bin/tests/write_code");
   TEST_DONE();
 }
 
@@ -114,9 +114,9 @@ int main(int argc, const char** argv) {
   total_time = 0;
 
   TestResults results;
-  results += run_rv32i_tests(reps, max_cycles);
-  results += run_microtests();
-  results.dump();
+  results << run_rv32i_tests(reps, max_cycles);
+  results << run_microtests();
+  results.show_result();
 
   LOG_B("Total tocks %f\n", double(total_tocks));
   LOG_B("Total time %f\n", double(total_time));
