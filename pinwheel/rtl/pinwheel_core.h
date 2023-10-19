@@ -3,13 +3,26 @@
 
 #include "metron/metron_tools.h"
 #include "pinwheel/rtl/regfile.h"
-#include "pinwheel/rtl/tilelink.h"
-#include "pinwheel/tools/riscv_constants.h"
+//#include "pinwheel/rtl/tilelink.h"
+//#include "pinwheel/tools/riscv_constants.h"
 
 /* verilator lint_off UNUSEDSIGNAL */
 
+/*
+struct regfile_in {
+  logic<8>  raddr1;
+  logic<8>  raddr2;
+  logic<8>  waddr;
+  logic<32> wdata;
+  logic<1>  wren;
+};
+*/
+
+
 class pinwheel_core {
 public:
+
+/*
 
   //----------------------------------------
 
@@ -228,7 +241,7 @@ public:
 
   //----------------------------------------
 
-  void tick(logic<1> reset_in /*, logic<32> code_rdata, logic<32> bus_rdata*/) {
+  void tick(logic<1> reset_in / *, logic<32> code_rdata, logic<32> bus_rdata* /) {
 
     if (reset_in) {
       reg_hpc_a     = 0x00400000;
@@ -270,6 +283,9 @@ public:
 
   tilelink_a bus_tla;
   tilelink_a code_tla;
+*/
+
+private:
 
   regfile_in core_to_reg;
 
@@ -402,7 +418,6 @@ public:
     }
     return result;
   }
-
 
 };
 

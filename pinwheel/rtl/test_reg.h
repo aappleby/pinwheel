@@ -27,10 +27,6 @@ public:
     bus_tld.d_ready  = 1;
   }
 
-  logic<32> expand_bitmask(logic<4> mask) {
-    return cat(dup<8>(mask[3]), dup<8>(mask[2]), dup<8>(mask[1]), dup<8>(mask[0]));
-  }
-
   void tick(tilelink_a tla) {
     logic<1> cs = tla.a_valid && ((tla.a_address & addr_mask) == addr_tag);
 
@@ -40,6 +36,12 @@ public:
       logic<32> mask = expand_bitmask(tla.a_mask);
       bus_tld.d_data = (bus_tld.d_data & ~mask) | (tla.a_data & mask);
     }
+  }
+
+private:
+
+  logic<32> expand_bitmask(logic<4> mask) {
+    return cat(dup<8>(mask[3]), dup<8>(mask[2]), dup<8>(mask[1]), dup<8>(mask[0]));
   }
 };
 

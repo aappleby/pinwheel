@@ -69,12 +69,8 @@ build sv/tilelink.sv      : metron pinwheel/rtl/tilelink.h
 build sv/regfile.sv       : metron pinwheel/rtl/regfile.h
 build sv/serial.sv        : metron pinwheel/rtl/serial.h        | pinwheel/rtl/tilelink.h
 build sv/test_reg.sv      : metron pinwheel/rtl/test_reg.h      | pinwheel/rtl/tilelink.h
-
-#broken
-#build sv/block_ram.sv     : metron pinwheel/rtl/block_ram.h     | pinwheel/rtl/tilelink.h
-
-#broken
-#build sv/pinwheel_core.sv : metron pinwheel/rtl/pinwheel_core.h | pinwheel/rtl/regfile.h pinwheel/rtl/tilelink.h
+build sv/block_ram.sv     : metron pinwheel/rtl/block_ram.h     | pinwheel/rtl/tilelink.h
+build sv/pinwheel_core.sv : metron pinwheel/rtl/pinwheel_core.h | pinwheel/rtl/regfile.h pinwheel/rtl/tilelink.h
 
 #broken
 #build sv/pinwheel.sv      : metron pinwheel/rtl/pinwheel.h      | pinwheel/rtl/block_ram.h pinwheel/rtl/pinwheel_core.h pinwheel/rtl/test_reg.h pinwheel/rtl/regfile.h
