@@ -66,14 +66,9 @@ build obj/tests/pinwheel_test.o:      compile_cpp tests/pinwheel_test.cpp
 # Metron conversion tests
 
 build sv/tilelink.sv      : metron pinwheel/rtl/tilelink.h
-
-#broken
-#build sv/regfile.sv       : metron pinwheel/rtl/regfile.h
-
+build sv/regfile.sv       : metron pinwheel/rtl/regfile.h
 build sv/serial.sv        : metron pinwheel/rtl/serial.h        | pinwheel/rtl/tilelink.h
-
-#broken
-#build sv/test_reg.sv      : metron pinwheel/rtl/test_reg.h      | pinwheel/rtl/tilelink.h
+build sv/test_reg.sv      : metron pinwheel/rtl/test_reg.h      | pinwheel/rtl/tilelink.h
 
 #broken
 #build sv/block_ram.sv     : metron pinwheel/rtl/block_ram.h     | pinwheel/rtl/tilelink.h
