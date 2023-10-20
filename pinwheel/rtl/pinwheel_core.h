@@ -3,26 +3,13 @@
 
 #include "metron/metron_tools.h"
 #include "pinwheel/rtl/regfile.h"
-//#include "pinwheel/rtl/tilelink.h"
-//#include "pinwheel/tools/riscv_constants.h"
+#include "pinwheel/rtl/tilelink.h"
+#include "pinwheel/tools/riscv_constants.h"
 
 /* verilator lint_off UNUSEDSIGNAL */
 
-/*
-struct regfile_in {
-  logic<8>  raddr1;
-  logic<8>  raddr2;
-  logic<8>  waddr;
-  logic<32> wdata;
-  logic<1>  wren;
-};
-*/
-
-
 class pinwheel_core {
 public:
-
-/*
 
   //----------------------------------------
 
@@ -101,17 +88,17 @@ public:
     logic<32> alu_result = 0;
     {
       switch(op_b) {
-        case RV32I::OP_BRANCH: alu_result = b32(DONTCARE); break;
+        case RV32I::OP_BRANCH: alu_result = b32(DONTCARE);     break;
         case RV32I::OP_JAL:    alu_result = reg_hpc_b + 4;     break;
         case RV32I::OP_JALR:   alu_result = reg_hpc_b + 4;     break;
-        case RV32I::OP_LUI:    alu_result = imm_b;         break;
+        case RV32I::OP_LUI:    alu_result = imm_b;             break;
         case RV32I::OP_AUIPC:  alu_result = reg_hpc_b + imm_b; break;
-        case RV32I::OP_LOAD:   alu_result = sig_addr_b;     break;
-        case RV32I::OP_STORE:  alu_result = rs2_b;         break;
+        case RV32I::OP_LOAD:   alu_result = sig_addr_b;        break;
+        case RV32I::OP_STORE:  alu_result = rs2_b;             break;
         case RV32I::OP_SYSTEM: alu_result = execute_system(reg_insn_b, rs1_b, rs2_b); break;
-        case RV32I::OP_OPIMM:  alu_result = execute_alu   (reg_insn_b, rs1_b, rs2_b); break;
-        case RV32I::OP_OP:     alu_result = execute_alu   (reg_insn_b, rs1_b, rs2_b); break;
-        default:               alu_result = b32(DONTCARE); break;
+        case RV32I::OP_OPIMM:  /*alu_result = execute_alu   (reg_insn_b, rs1_b, rs2_b); */break;
+        case RV32I::OP_OP:     /*alu_result = execute_alu   (reg_insn_b, rs1_b, rs2_b); */break;
+        default:               alu_result = b32(DONTCARE);     break;
       }
 
       if (op_b == RV32I::OP_SYSTEM && f3_b == RV32I::F3_CSRRW && csr_b == 0x801) {
@@ -125,7 +112,6 @@ public:
         temp_result_c = next_hpc;
         next_hpc = temp;
       }
-
     }
     sig_hpc_a = next_hpc;
     sig_result_b = alu_result;
@@ -241,8 +227,7 @@ public:
 
   //----------------------------------------
 
-  void tick(logic<1> reset_in / *, logic<32> code_rdata, logic<32> bus_rdata* /) {
-
+  void tick(logic<1> reset_in /*, logic<32> code_rdata, logic<32> bus_rdata*/) {
     if (reset_in) {
       reg_hpc_a     = 0x00400000;
 
@@ -283,7 +268,6 @@ public:
 
   tilelink_a bus_tla;
   tilelink_a code_tla;
-*/
 
 private:
 

@@ -26,12 +26,15 @@ public:
   }
 
   // metron_noconvert
+  /*
   pinwheel* clone() {
     pinwheel* p = new pinwheel();
     memcpy(p, this, sizeof(*this));
     return p;
   }
+  */
 
+  /*
   // metron_noconvert
   size_t size_bytes() { return sizeof(*this); }
   // metron_noconvert
@@ -42,6 +45,7 @@ public:
   uint32_t* get_data() { return data_ram.get_data(); }
   // metron_noconvert
   logic<32> get_debug() const { return debug_reg.get(); }
+  */
 
   //----------------------------------------
   // FIXME const local variable should not become parameter
@@ -73,6 +77,7 @@ public:
 
     regs.tick(core.core_to_reg);
 
+    /*
     // metron_noconvert
     console1.tick(reset_in, core.bus_tla);
     // metron_noconvert
@@ -81,6 +86,7 @@ public:
     console3.tick(reset_in, core.bus_tla);
     // metron_noconvert
     console4.tick(reset_in, core.bus_tla);
+    */
   }
 
   //----------------------------------------
@@ -95,9 +101,9 @@ public:
   pinwheel_core core;
   regfile       regs;
 
-
   block_ram<0xF0000000, 0x00000000> code_ram;
 
+  /*
   // metron_noconvert
   Console  <0xF0000000, 0x40000000> console1;
   // metron_noconvert
@@ -106,6 +112,7 @@ public:
   Console  <0xF0000000, 0x60000000> console3;
   // metron_noconvert
   Console  <0xF0000000, 0x70000000> console4;
+  */
   block_ram<0xF0000000, 0x80000000> data_ram; // FIXME having this named data and a field inside block_ram named data breaks context resolve
   test_reg <0xF0000000, 0xF0000000> debug_reg;
 };
