@@ -26,35 +26,35 @@ build symlinks/metrolib/bin/metrolib/libappbase.a symlinks/metrolib/bin/metrolib
 ################################################################################
 # Debugger app
 
-build obj/pinwheel/rtl/pinwheel.o:            compile_cpp pinwheel/rtl/pinwheel.cpp
+#build obj/pinwheel/rtl/pinwheel.o:            compile_cpp pinwheel/rtl/pinwheel.cpp
+#
+#build obj/pinwheel/simulator/pinwheel_app.o:  compile_cpp pinwheel/simulator/pinwheel_app.cpp
+#build obj/pinwheel/simulator/pinwheel_main.o: compile_cpp pinwheel/simulator/pinwheel_main.cpp
+#build obj/pinwheel/simulator/pinwheel_sim.o:  compile_cpp pinwheel/simulator/pinwheel_sim.cpp
+#build obj/pinwheel/simulator/sim_thread.o:    compile_cpp pinwheel/simulator/sim_thread.cpp
+#
+#build obj/pinwheel/tools/rvdisasm.o:          compile_cpp pinwheel/tools/rvdisasm.cpp
+#
+#build obj/symlinks/glad/glad.o:               compile_cpp symlinks/glad/glad.c
 
-build obj/pinwheel/simulator/pinwheel_app.o:  compile_cpp pinwheel/simulator/pinwheel_app.cpp
-build obj/pinwheel/simulator/pinwheel_main.o: compile_cpp pinwheel/simulator/pinwheel_main.cpp
-build obj/pinwheel/simulator/pinwheel_sim.o:  compile_cpp pinwheel/simulator/pinwheel_sim.cpp
-build obj/pinwheel/simulator/sim_thread.o:    compile_cpp pinwheel/simulator/sim_thread.cpp
-
-build obj/pinwheel/tools/rvdisasm.o:          compile_cpp pinwheel/tools/rvdisasm.cpp
-
-build obj/symlinks/glad/glad.o:               compile_cpp symlinks/glad/glad.c
-
-build bin/pinwheel: c_binary $
-  obj/symlinks/glad/glad.o $
-  bin/imgui/libimgui.a $
-  obj/pinwheel/rtl/pinwheel.o $
-  obj/pinwheel/simulator/pinwheel_app.o $
-  obj/pinwheel/simulator/pinwheel_main.o $
-  obj/pinwheel/simulator/pinwheel_sim.o $
-  obj/pinwheel/simulator/sim_thread.o $
-  obj/pinwheel/tools/rvdisasm.o $
-  symlinks/metrolib/bin/metrolib/libappbase.a $
-  symlinks/metrolib/bin/metrolib/libcore.a $
-  bin/imgui/libimgui.a
-  libraries=-lSDL2
+#build bin/pinwheel: c_binary $
+#  obj/symlinks/glad/glad.o $
+#  bin/imgui/libimgui.a $
+#  obj/pinwheel/rtl/pinwheel.o $
+#  obj/pinwheel/simulator/pinwheel_app.o $
+#  obj/pinwheel/simulator/pinwheel_main.o $
+#  obj/pinwheel/simulator/pinwheel_sim.o $
+#  obj/pinwheel/simulator/sim_thread.o $
+#  obj/pinwheel/tools/rvdisasm.o $
+#  symlinks/metrolib/bin/metrolib/libappbase.a $
+#  symlinks/metrolib/bin/metrolib/libcore.a $
+#  bin/imgui/libimgui.a
+#  libraries=-lSDL2
 
 ################################################################################
 # Functional tests
 
-build obj/tests/pinwheel_test.o:      compile_cpp tests/pinwheel_test.cpp
+#build obj/tests/pinwheel_test.o:      compile_cpp tests/pinwheel_test.cpp
 
 #build bin/pinwheel_test: c_binary $
 #  obj/pinwheel/rtl/pinwheel.o $
