@@ -10,7 +10,7 @@
 #include "pinwheel/rtl/test_reg.h"
 #include "pinwheel/rtl/tilelink.h"
 
-// metron_noconvert
+// metron_XXX_noconvert
 //#include "console.h"
 
 //------------------------------------------------------------------------------
@@ -25,7 +25,7 @@ public:
     data_ram(data_file) {
   }
 
-  // metron_noconvert
+  // metron_XXX_noconvert
   /*
   pinwheel* clone() {
     pinwheel* p = new pinwheel();
@@ -35,15 +35,15 @@ public:
   */
 
   /*
-  // metron_noconvert
+  // metron_XXX_noconvert
   size_t size_bytes() { return sizeof(*this); }
-  // metron_noconvert
+  // metron_XXX_noconvert
   bool load_elf(const char* firmware_filename);
-  // metron_noconvert
+  // metron_XXX_noconvert
   uint32_t* get_code() { return code_ram.get_data(); }
-  // metron_noconvert
+  // metron_XXX_noconvert
   uint32_t* get_data() { return data_ram.get_data(); }
-  // metron_noconvert
+  // metron_XXX_noconvert
   logic<32> get_debug() const { return debug_reg.get(); }
   */
 
@@ -78,13 +78,13 @@ public:
     regs.tick(core.core_to_reg);
 
     /*
-    // metron_noconvert
+    // metron_XXX_noconvert
     console1.tick(reset_in, core.bus_tla);
-    // metron_noconvert
+    // metron_XXX_noconvert
     console2.tick(reset_in, core.bus_tla);
-    // metron_noconvert
+    // metron_XXX_noconvert
     console3.tick(reset_in, core.bus_tla);
-    // metron_noconvert
+    // metron_XXX_noconvert
     console4.tick(reset_in, core.bus_tla);
     */
   }
@@ -106,13 +106,13 @@ public:
   test_reg <0xF0000000, 0xF0000000> debug_reg;
 
   /*
-  // metron_noconvert
+  // metron_XXX_noconvert
   Console  <0xF0000000, 0x40000000> console1;
-  // metron_noconvert
+  // metron_XXX_noconvert
   Console  <0xF0000000, 0x50000000> console2;
-  // metron_noconvert
+  // metron_XXX_noconvert
   Console  <0xF0000000, 0x60000000> console3;
-  // metron_noconvert
+  // metron_XXX_noconvert
   Console  <0xF0000000, 0x70000000> console4;
   */
 };
