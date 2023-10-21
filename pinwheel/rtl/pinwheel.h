@@ -1,3 +1,6 @@
+#ifndef PINWHEEL_RTL_PINWHEEL_H
+#define PINWHEEL_RTL_PINWHEEL_H
+
 #include "metron/metron_tools.h"
 
 #include "block_ram.h"
@@ -8,10 +11,7 @@
 #include "tilelink.h"
 
 // metron_noconvert
-#include "console.h"
-
-#ifndef PINWHEEL_H
-#define PINWHEEL_H
+//#include "console.h"
 
 //------------------------------------------------------------------------------
 // verilator lint_off unusedsignal
@@ -102,6 +102,8 @@ public:
   regfile       regs;
 
   block_ram<0xF0000000, 0x00000000> code_ram;
+  block_ram<0xF0000000, 0x80000000> data_ram; // FIXME having this named data and a field inside block_ram named data breaks context resolve
+  test_reg <0xF0000000, 0xF0000000> debug_reg;
 
   /*
   // metron_noconvert
@@ -113,12 +115,10 @@ public:
   // metron_noconvert
   Console  <0xF0000000, 0x70000000> console4;
   */
-  block_ram<0xF0000000, 0x80000000> data_ram; // FIXME having this named data and a field inside block_ram named data breaks context resolve
-  test_reg <0xF0000000, 0xF0000000> debug_reg;
 };
 
 // verilator lint_on unusedsignal
 // verilator lint_off undriven
 //------------------------------------------------------------------------------
 
-#endif
+#endif // PINWHEEL_RTL_PINWHEEL_H

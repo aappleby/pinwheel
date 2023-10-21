@@ -1,4 +1,6 @@
-#pragma once
+#ifndef PINWHEEL_RTL_CONSOLE_H
+#define PINWHEEL_RTL_CONSOLE_H
+
 #include "metron/metron_tools.h"
 #include "tilelink.h"
 
@@ -59,3 +61,5 @@ public:
 
 // verilator lint_on unusedparam
 //------------------------------------------------------------------------------
+
+#endif // PINWHEEL_RTL_CONSOLE_H

@@ -1,4 +1,6 @@
-#pragma once
+#ifndef PINWHEEL_RTL_TEST_REG_H
+#define PINWHEEL_RTL_TEST_REG_H
+
 #include "metron/metron_tools.h"
 #include "tilelink.h"
 
@@ -48,3 +50,5 @@ private:
 // verilator lint_on unusedsignal
 // verilator lint_off unusedparam
 //------------------------------------------------------------------------------
+
+#endif // PINWHEEL_RTL_TEST_REG_H

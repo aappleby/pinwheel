@@ -1,6 +1,10 @@
+#ifndef PINWHEEL_RTL_SERIAL_H
+#define PINWHEEL_RTL_SERIAL_H
+
 // Serial device with a TL-UL interface
 
-#pragma once
+//------------------------------------------------------------------------------
+
 #include "metron/metron_tools.h"
 #include "tilelink.h"
 
@@ -52,3 +56,7 @@ private:
 
 // verilator lint_on unusedsignal
 // verilator lint_on undriven
+
+//------------------------------------------------------------------------------
+
+#endif // PINWHEEL_RTL_SERIAL_H

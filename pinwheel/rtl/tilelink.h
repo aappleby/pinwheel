@@ -1,11 +1,11 @@
-#ifndef TILELINK_H
-#define TILELINK_H
+#ifndef PINWHEEL_RTL_TILELINK_H
+#define PINWHEEL_RTL_TILELINK_H
 
 #include "metron/metron_tools.h"
 
 //------------------------------------------------------------------------------
-
 // verilator lint_off unusedparam
+
 namespace TL {
   const int PutFullData = 0;
   const int PutPartialData = 1;
@@ -29,9 +29,8 @@ namespace TL {
   }
   */
 };
-// verilator lint_on unusedparam
 
-//------------------------------------------------------------------------------
+//----------------------------------------
 
 struct tilelink_a {
   // FIXME enums inside structs are broken in Metron
@@ -46,7 +45,7 @@ struct tilelink_a {
   logic<1>  a_ready;
 };
 
-//------------------------------------------------------------------------------
+//----------------------------------------
 
 struct tilelink_d {
   logic<3>  d_opcode;
@@ -60,6 +59,7 @@ struct tilelink_d {
   logic<1>  d_ready;
 };
 
+// verilator lint_on unusedparam
 //------------------------------------------------------------------------------
 
-#endif
+#endif // PINWHEEL_RTL_TILELINK_H

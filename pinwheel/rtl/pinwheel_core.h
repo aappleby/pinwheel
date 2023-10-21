@@ -1,11 +1,12 @@
-#ifndef PINWHEEL_CORE_H
-#define PINWHEEL_CORE_H
+#ifndef PINWHEEL_RTL_PINWHEEL_CORE_H
+#define PINWHEEL_RTL_PINWHEEL_CORE_H
 
 #include "metron/metron_tools.h"
 #include "pinwheel/rtl/regfile.h"
 #include "pinwheel/rtl/tilelink.h"
 #include "pinwheel/tools/riscv_constants.h"
 
+//------------------------------------------------------------------------------
 /* verilator lint_off UNUSEDSIGNAL */
 
 class pinwheel_core {
@@ -269,9 +270,9 @@ public:
   tilelink_a bus_tla;
   tilelink_a code_tla;
 
-private:
-
   regfile_in core_to_reg;
+
+private:
 
   //----------------------------------------
   // Signals to code ram
@@ -406,5 +407,6 @@ private:
 };
 
 /* verilator lint_on UNUSEDSIGNAL */
+//------------------------------------------------------------------------------
 
-#endif
+#endif // PINWHEEL_RTL_PINWHEEL_CORE_H

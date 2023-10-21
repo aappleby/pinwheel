@@ -24,6 +24,19 @@ build symlinks/metrolib/bin/metrolib/libappbase.a symlinks/metrolib/bin/metrolib
   command = ninja -C symlinks/metrolib
 
 ################################################################################
+# Syntax check for Pinwheel Metron RTL
+
+build obj/pinwheel/rtl/tilelink.h.ok      : check_cpp pinwheel/rtl/tilelink.h
+build obj/pinwheel/rtl/regfile.h.ok       : check_cpp pinwheel/rtl/regfile.h
+build obj/pinwheel/rtl/serial.h.ok        : check_cpp pinwheel/rtl/serial.h
+build obj/pinwheel/rtl/test_reg.h.ok      : check_cpp pinwheel/rtl/test_reg.h
+build obj/pinwheel/rtl/block_ram.h.ok     : check_cpp pinwheel/rtl/block_ram.h
+build obj/pinwheel/rtl/pinwheel_core.h.ok : check_cpp pinwheel/rtl/pinwheel_core.h
+build obj/pinwheel/rtl/pinwheel.h.ok      : check_cpp pinwheel/rtl/pinwheel.h
+
+#g++ -I. -Isymlinks/metron -fsyntax-only -c pinwheel/rtl/regfile.h
+
+################################################################################
 # Debugger app
 
 #build obj/pinwheel/rtl/pinwheel.o:            compile_cpp pinwheel/rtl/pinwheel.cpp
@@ -70,7 +83,8 @@ build sv/regfile.sv       : metron pinwheel/rtl/regfile.h
 build sv/serial.sv        : metron pinwheel/rtl/serial.h        | pinwheel/rtl/tilelink.h
 build sv/test_reg.sv      : metron pinwheel/rtl/test_reg.h      | pinwheel/rtl/tilelink.h
 build sv/block_ram.sv     : metron pinwheel/rtl/block_ram.h     | pinwheel/rtl/tilelink.h
-build sv/pinwheel_core.sv : metron pinwheel/rtl/pinwheel_core.h | pinwheel/rtl/regfile.h pinwheel/rtl/tilelink.h
+
+#build sv/pinwheel_core.sv : metron pinwheel/rtl/pinwheel_core.h | pinwheel/rtl/regfile.h pinwheel/rtl/tilelink.h
 
 #broken
 #build sv/pinwheel.sv      : metron pinwheel/rtl/pinwheel.h      | pinwheel/rtl/block_ram.h pinwheel/rtl/pinwheel_core.h pinwheel/rtl/test_reg.h pinwheel/rtl/regfile.h

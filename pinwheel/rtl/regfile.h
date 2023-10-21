@@ -1,5 +1,6 @@
-#ifndef PINHWEEL_COMPONENTS_REGFILE_H
-#define PINHWEEL_COMPONENTS_REGFILE_H
+#ifndef PINHWEEL_RTL_REGFILE_H
+#define PINHWEEL_RTL_REGFILE_H
+
 #include "metron/metron_tools.h"
 
 //------------------------------------------------------------------------------
@@ -60,4 +61,4 @@ public:
 //------------------------------------------------------------------------------
 // verilator lint_on unusedsignal
 
-#endif // PINHWEEL_COMPONENTS_REGFILE_H
+#endif // PINHWEEL_RTL_REGFILE_H

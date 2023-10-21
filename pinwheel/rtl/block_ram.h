@@ -1,9 +1,8 @@
-#ifndef BLOCK_RAM_H
-#define BLOCK_RAM_H
-
-#include "tilelink.h"
+#ifndef PINWHEEL_RTL_BLOCK_RAM_H
+#define PINWHEEL_RTL_BLOCK_RAM_H
 
 #include "metron/metron_tools.h"
+#include "tilelink.h"
 
 //------------------------------------------------------------------------------
 // verilator lint_off unusedsignal
@@ -13,14 +12,14 @@ template <uint32_t addr_mask = 0xF0000000, uint32_t addr_tag = 0x00000000>
 class block_ram {
 public:
 
-  tilelink_d bus_tld;
-
   block_ram(const char* filename = nullptr) {
     if (filename) readmemh(filename, data);
   }
 
+  /*
   // metron_noconvert
   logic<32> get() const { return bus_tld.d_data; }
+  */
 
   void tick(tilelink_a tla) {
     bus_tld.d_opcode = b3(DONTCARE);
@@ -57,10 +56,17 @@ public:
     }
   }
 
+  /*
   // metron_noconvert
   uint32_t* get_data() { return (uint32_t*)data; }
   // metron_noconvert
   const uint32_t* get_data() const { return (uint32_t*)data; }
+  */
+
+  tilelink_d bus_tld;
+
+private:
+
 
   // metron_internal
   logic<32> data[16384];
@@ -70,4 +76,4 @@ public:
 // verilator lint_off unusedparam
 //------------------------------------------------------------------------------
 
-#endif
+#endif // PINWHEEL_RTL_BLOCK_RAM_H
