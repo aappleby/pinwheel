@@ -179,7 +179,16 @@ public:
       // as the target for the write so that the link register will be written
       // in the _destination_ regfile.
 
-      sig_rf_waddr = cat(b3(op_c == RV32I::OP_JALR ? reg_hpc_a : reg_hpc_c, 24), rd_c);
+      // FIXME why didn't this ternary work?
+      //sig_rf_waddr = cat(b3(op_c == RV32I::OP_JALR ? reg_hpc_a : reg_hpc_c, 24), rd_c);
+
+      if (op_c == RV32I::OP_JALR) {
+        sig_rf_waddr = cat(b3(reg_hpc_a, 24), rd_c);
+      }
+      else {
+        sig_rf_waddr = cat(b3(reg_hpc_c, 24), rd_c);
+      }
+
       sig_rf_wdata = op_c == RV32I::OP_LOAD ? unpacked_c : temp_result_c;
       sig_rf_wren  = b24(reg_hpc_c) && op_c != RV32I::OP_STORE && op_c != RV32I::OP_BRANCH;
 
@@ -374,7 +383,7 @@ private:
       case 5:  result = f7 == 32 ? signed(alu_a) >> b5(alu_b) : alu_a >> b5(alu_b); break;
       case 6:  result = alu_a | alu_b; break;
       case 7:  result = alu_a & alu_b; break;
-      default: result = 0;
+      default: result = 0; break;
     }
     return result;
   }
