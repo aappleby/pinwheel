@@ -6,7 +6,7 @@
 //------------------------------------------------------------------------------
 
 #include "metron/metron_tools.h"
-#include "tilelink.h"
+#include "pinwheel/rtl/tilelink.h"
 
 // verilator lint_off unusedsignal
 // verilator lint_off undriven

@@ -2,7 +2,7 @@
 #define PINWHEEL_RTL_TEST_REG_H
 
 #include "metron/metron_tools.h"
-#include "tilelink.h"
+#include "pinwheel/rtl/tilelink.h"
 
 //------------------------------------------------------------------------------
 // verilator lint_off unusedsignal

@@ -2,7 +2,7 @@
 #define PINWHEEL_RTL_BLOCK_RAM_H
 
 #include "metron/metron_tools.h"
-#include "tilelink.h"
+#include "pinwheel/rtl/tilelink.h"
 
 //------------------------------------------------------------------------------
 // verilator lint_off unusedsignal

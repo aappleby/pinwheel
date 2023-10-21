@@ -1,7 +1,6 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-#pragma once
 #include "metron/metron_tools.h"
 
 // verilator lint_off unusedparam

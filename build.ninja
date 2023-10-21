@@ -76,30 +76,38 @@ build obj/pinwheel/rtl/pinwheel.h.ok      : check_cpp pinwheel/rtl/pinwheel.h
 ################################################################################
 # Metron conversion tests
 
-build sv/tilelink.sv        : metron pinwheel/rtl/tilelink.h
-build sv/regfile.sv         : metron pinwheel/rtl/regfile.h
-build sv/serial.sv          : metron pinwheel/rtl/serial.h        | pinwheel/rtl/tilelink.h
-build sv/test_reg.sv        : metron pinwheel/rtl/test_reg.h      | pinwheel/rtl/tilelink.h
-build sv/block_ram.sv       : metron pinwheel/rtl/block_ram.h     | pinwheel/rtl/tilelink.h
-build sv/riscv_constants.sv : metron pinwheel/tools/riscv_constants.h
-build sv/pinwheel_core.sv   : metron pinwheel/rtl/pinwheel_core.h | pinwheel/rtl/regfile.h pinwheel/rtl/tilelink.h
-build sv/pinwheel.sv        : metron pinwheel/rtl/pinwheel.h      | pinwheel/rtl/block_ram.h pinwheel/rtl/pinwheel_core.h pinwheel/rtl/test_reg.h pinwheel/rtl/regfile.h
+build gen/pinwheel/tools/riscv_constants.sv : metron pinwheel/tools/riscv_constants.h
+
+build gen/pinwheel/rtl/tilelink.sv          : metron pinwheel/rtl/tilelink.h
+build gen/pinwheel/rtl/regfile.sv           : metron pinwheel/rtl/regfile.h
+build gen/pinwheel/rtl/serial.sv            : metron pinwheel/rtl/serial.h        | pinwheel/rtl/tilelink.h
+build gen/pinwheel/rtl/test_reg.sv          : metron pinwheel/rtl/test_reg.h      | pinwheel/rtl/tilelink.h
+build gen/pinwheel/rtl/block_ram.sv         : metron pinwheel/rtl/block_ram.h     | pinwheel/rtl/tilelink.h
+build gen/pinwheel/rtl/pinwheel_core.sv     : metron pinwheel/rtl/pinwheel_core.h | pinwheel/rtl/regfile.h pinwheel/rtl/tilelink.h
+build gen/pinwheel/rtl/pinwheel.sv          : metron pinwheel/rtl/pinwheel.h      | pinwheel/rtl/block_ram.h pinwheel/rtl/pinwheel_core.h pinwheel/rtl/test_reg.h pinwheel/rtl/regfile.h
 
 build all_pinwheel_sv : phony $
-  sv/block_ram.sv $
-  sv/pinwheel_core.sv $
-  sv/pinwheel.sv $
-  sv/regfile.sv $
-  sv/serial.sv $
-  sv/test_reg.sv $
-  sv/tilelink.sv
-
+  gen/pinwheel/rtl/tilelink.sv $
+  gen/pinwheel/rtl/regfile.sv $
+  gen/pinwheel/rtl/serial.sv $
+  gen/pinwheel/rtl/test_reg.sv $
+  gen/pinwheel/rtl/block_ram.sv $
+  gen/pinwheel/rtl/pinwheel_core.sv $
+  gen/pinwheel/rtl/pinwheel.sv
 
 ################################################################################
 # Verilator conversion tests
 
-build obj/verilator/pinwheel.vh : verilator sv/pinwheel.sv | all_pinwheel_sv
-  dst_dir = obj/verilator
+#            ├── Vlfsr.cpp
+#            ├── Vlfsr.h
+#            ├── Vlfsr.mk
+
+
+build gen/pinwheel/verilated/Vpinwheel.mk gen/pinwheel/verilated/Vpinwheel.h : verilator gen/pinwheel/rtl/pinwheel.sv | all_pinwheel_sv
+  includes = -I. -Igen -Isymlinks/metron
+
+#build obj/verilator/pinwheel.vh : verilator sv/pinwheel.sv | all_pinwheel_sv
+#  dst_dir = obj/verilator
 # build check_verilator : phony obj/pinwheel.vh
 
 ################################################################################

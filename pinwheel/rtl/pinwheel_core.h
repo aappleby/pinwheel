@@ -97,8 +97,8 @@ public:
         case RV32I::OP_LOAD:   alu_result = sig_addr_b;        break;
         case RV32I::OP_STORE:  alu_result = rs2_b;             break;
         case RV32I::OP_SYSTEM: alu_result = execute_system(reg_insn_b, rs1_b, rs2_b); break;
-        case RV32I::OP_OPIMM:  /*alu_result = execute_alu   (reg_insn_b, rs1_b, rs2_b); */break;
-        case RV32I::OP_OP:     /*alu_result = execute_alu   (reg_insn_b, rs1_b, rs2_b); */break;
+        case RV32I::OP_OPIMM:  alu_result = execute_alu   (reg_insn_b, rs1_b, rs2_b); break;
+        case RV32I::OP_OP:     alu_result = execute_alu   (reg_insn_b, rs1_b, rs2_b); break;
         default:               alu_result = b32(DONTCARE);     break;
       }
 

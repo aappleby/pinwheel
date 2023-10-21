@@ -3,12 +3,12 @@
 
 #include "metron/metron_tools.h"
 
-#include "block_ram.h"
-#include "pinwheel_core.h"
-#include "regfile.h"
-#include "serial.h"
-#include "test_reg.h"
-#include "tilelink.h"
+#include "pinwheel/rtl/block_ram.h"
+#include "pinwheel/rtl/pinwheel_core.h"
+#include "pinwheel/rtl/regfile.h"
+#include "pinwheel/rtl/serial.h"
+#include "pinwheel/rtl/test_reg.h"
+#include "pinwheel/rtl/tilelink.h"
 
 // metron_noconvert
 //#include "console.h"
