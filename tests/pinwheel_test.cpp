@@ -1,5 +1,5 @@
 #include "metrolib/core/Tests.h"
-#include "pinwheel/rtl/pinwheel.h"
+#include "pinwheel/metron/pinwheel.h"
 
 //------------------------------------------------------------------------------
 

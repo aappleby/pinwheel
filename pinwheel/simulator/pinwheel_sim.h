@@ -1,4 +1,4 @@
-#include "pinwheel/rtl/pinwheel.h"
+#include "pinwheel/metron/pinwheel.h"
 #include "pinwheel/simulator/sim_thread.h"
 
 #include "metrolib/core/StateStack.h"

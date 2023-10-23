@@ -7,20 +7,20 @@
 // verilator lint_off unusedparam
 
 namespace TL {
-  const int PutFullData = 0;
-  const int PutPartialData = 1;
-  const int ArithmeticData = 2;
-  const int LogicalData = 3;
-  const int Get = 4;
-  const int Intent = 5;
-  const int Acquire = 6;
+  static const int PutFullData = 0;
+  static const int PutPartialData = 1;
+  static const int ArithmeticData = 2;
+  static const int LogicalData = 3;
+  static const int Get = 4;
+  static const int Intent = 5;
+  static const int Acquire = 6;
 
-  const int AccessAck = 0;
-  const int AccessAckData = 1;
-  const int HintAck = 2;
-  const int Grant = 4;
-  const int GrantData = 5;
-  const int ReleaseAck = 6;
+  static const int AccessAck = 0;
+  static const int AccessAckData = 1;
+  static const int HintAck = 2;
+  static const int Grant = 4;
+  static const int GrantData = 5;
+  static const int ReleaseAck = 6;
 
   /*
   // FIXME metron doesn't like functions in namespaces

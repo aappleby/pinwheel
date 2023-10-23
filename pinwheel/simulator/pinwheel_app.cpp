@@ -18,7 +18,7 @@
 #include <elf.h>
 #include <sys/stat.h>
 
-#include "pinwheel/rtl/tilelink.h"
+#include "pinwheel/metron/tilelink.h"
 
 //------------------------------------------------------------------------------
 
@@ -81,14 +81,14 @@ void PinwheelApp::app_init(int screen_w, int screen_h) {
       if (phdr.p_type & PT_LOAD) {
         if (phdr.p_flags & PF_X) {
           LOG_G("Code @ 0x%08x = %d bytes\n", phdr.p_vaddr, phdr.p_filesz);
-          int len = sizeof(p.code_ram.data) < phdr.p_filesz ? sizeof(p.code_ram.data) : phdr.p_filesz;
+          int len = p.code_ram.data_size() < phdr.p_filesz ? p.code_ram.data_size() : phdr.p_filesz;
           memcpy(p.code_ram.data, blob + phdr.p_offset, len);
           //put_cache("rv_tests/firmware.text.vh", blob + phdr.p_offset, phdr.p_filesz);
         }
         else if (phdr.p_flags & PF_W) {
           LOG_G("Data @ 0x%08x = %d bytes\n", phdr.p_vaddr, phdr.p_filesz);
-          int len = sizeof(p.data_ram.data) < phdr.p_filesz ? sizeof(p.data_ram.data) : phdr.p_filesz;
-          memcpy(p.data_ram.data, blob + phdr.p_offset, len);
+          int len = p.data_ram.data_size() < phdr.p_filesz ? p.data_ram.data_size() : phdr.p_filesz;
+          memcpy(p.data_ram.get_data(), blob + phdr.p_offset, len);
           //put_cache("rv_tests/firmware.data.vh", blob + phdr.p_offset, phdr.p_filesz);
         }
       }
@@ -273,10 +273,10 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
 
   data_painter.dump(view, screen_size, 1024, 32, 1, 1, 64, 64, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.data_ram.get_data());
 
-  console_painter.dump(view, screen_size, 32*19,  32, 1, 1, pinwheel.console1.width, pinwheel.console1.height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console1.buf);
-  console_painter.dump(view, screen_size, 32*19, 256, 1, 1, pinwheel.console2.width, pinwheel.console2.height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console2.buf);
-  console_painter.dump(view, screen_size, 32*19, 480, 1, 1, pinwheel.console3.width, pinwheel.console3.height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console3.buf);
-  console_painter.dump(view, screen_size, 32*19, 704, 1, 1, pinwheel.console4.width, pinwheel.console4.height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console4.buf);
+  //console_painter.dump(view, screen_size, 32*19,  32, 1, 1, pinwheel.console1.width, pinwheel.console1.height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console1.buf);
+  //console_painter.dump(view, screen_size, 32*19, 256, 1, 1, pinwheel.console2.width, pinwheel.console2.height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console2.buf);
+  //console_painter.dump(view, screen_size, 32*19, 480, 1, 1, pinwheel.console3.width, pinwheel.console3.height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console3.buf);
+  //console_painter.dump(view, screen_size, 32*19, 704, 1, 1, pinwheel.console4.width, pinwheel.console4.height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.console4.buf);
 
   //box_painter.push_corner_size(1024 + (harts[0]->pc % 64) * 14 - 1, 512 + (harts[0]->pc / 64) * 12, 12*4+2*3+2, 12, 0x8000FFFF);
   //box_painter.push_corner_size(1024 + (harts[1]->pc % 64) * 14 - 1, 512 + (harts[1]->pc / 64) * 12, 12*4+2*3+2, 12, 0x80FFFF00);

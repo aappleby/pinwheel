@@ -2,9 +2,9 @@
 #define PINWHEEL_RTL_PINWHEEL_CORE_H
 
 #include "metron/metron_tools.h"
-#include "pinwheel/rtl/regfile.h"
-#include "pinwheel/rtl/tilelink.h"
-#include "pinwheel/tools/riscv_constants.h"
+#include "pinwheel/metron/regfile.h"
+#include "pinwheel/metron/tilelink.h"
+#include "pinwheel/metron/riscv_constants.h"
 
 //------------------------------------------------------------------------------
 /* verilator lint_off UNUSEDSIGNAL */
@@ -237,7 +237,7 @@ public:
 
   //----------------------------------------
 
-  void tick(logic<1> reset_in /*, logic<32> code_rdata, logic<32> bus_rdata*/) {
+  void tick(logic<1> reset_in) {
     if (reset_in) {
       reg_hpc_a     = 0x00400000;
 
@@ -281,63 +281,63 @@ public:
 
   regfile_in core_to_reg;
 
-private:
+//private:
 
   //----------------------------------------
   // Signals to code ram
 
-  logic<32> sig_code_addr;
-  logic<32> sig_code_wdata;
-  logic<4>  sig_code_wmask;
-  logic<1>  sig_code_wren;
+  /* metron_internal */ logic<32> sig_code_wdata;
+  /* metron_internal */ logic<32> sig_code_addr;
+  /* metron_internal */ logic<4>  sig_code_wmask;
+  /* metron_internal */ logic<1>  sig_code_wren;
 
   //----------------------------------------
   // Signals to data bus
 
-  logic<32> sig_bus_addr;
-  logic<1>  sig_bus_rden;
-  logic<32> sig_bus_wdata;
-  logic<4>  sig_bus_wmask;
-  logic<1>  sig_bus_wren;
+  /* metron_internal */ logic<32> sig_bus_addr;
+  /* metron_internal */ logic<1>  sig_bus_rden;
+  /* metron_internal */ logic<32> sig_bus_wdata;
+  /* metron_internal */ logic<4>  sig_bus_wmask;
+  /* metron_internal */ logic<1>  sig_bus_wren;
 
   //----------------------------------------
   // Signals to regfile
 
-  logic<8>  sig_rf_raddr1;
-  logic<8>  sig_rf_raddr2;
-  logic<8>  sig_rf_waddr;
-  logic<32> sig_rf_wdata;
-  logic<1>  sig_rf_wren;
+  /* metron_internal */ logic<8>  sig_rf_raddr1;
+  /* metron_internal */ logic<8>  sig_rf_raddr2;
+  /* metron_internal */ logic<8>  sig_rf_waddr;
+  /* metron_internal */ logic<32> sig_rf_wdata;
+  /* metron_internal */ logic<1>  sig_rf_wren;
 
   //----------------------------------------
   // Internal signals and registers
   // metron_internal
 
-  logic<32> sig_hpc_a;
-  logic<32> reg_hpc_a;
-  logic<32> sig_insn_a;
+  /* metron_internal */ logic<32> sig_hpc_a;
+  /* metron_internal */ logic<32> reg_hpc_a;
+  /* metron_internal */ logic<32> sig_insn_a;
 
-  logic<32> reg_hpc_b;
-  logic<32> reg_insn_b;
-  logic<32> sig_addr_b;
-  logic<32> sig_result_b;
+  /* metron_internal */ logic<32> reg_hpc_b;
+  /* metron_internal */ logic<32> reg_insn_b;
+  /* metron_internal */ logic<32> sig_addr_b;
+  /* metron_internal */ logic<32> sig_result_b;
 
-  logic<32> reg_hpc_c;
-  logic<32> reg_insn_c;
-  logic<32> reg_addr_c;
-  logic<32> sig_result_c;
-  logic<32> reg_result_c;
+  /* metron_internal */ logic<32> reg_hpc_c;
+  /* metron_internal */ logic<32> reg_insn_c;
+  /* metron_internal */ logic<32> reg_addr_c;
+  /* metron_internal */ logic<32> sig_result_c;
+  /* metron_internal */ logic<32> reg_result_c;
 
-  logic<32> reg_hpc_d;
-  logic<32> reg_insn_d;
-  logic<32> reg_result_d;
+  /* metron_internal */ logic<32> reg_hpc_d;
+  /* metron_internal */ logic<32> reg_insn_d;
+  /* metron_internal */ logic<32> reg_result_d;
 
-  logic<32> reg_ticks;
+  /* metron_internal */ logic<32> reg_ticks;
 
   //----------------------------------------
   // FIXME support static
 
-  logic<32> decode_imm(logic<32> insn) const {
+  /* metron_internal */ logic<32> decode_imm(logic<32> insn) const {
     logic<5>  op    = b5(insn, 2);
     logic<32> imm_i = sign_extend<32>(b12(insn, 20));
     logic<32> imm_s = cat(dup<21>(insn[31]), b6(insn, 25), b5(insn, 7));
@@ -363,7 +363,7 @@ private:
 
   //----------------------------------------
 
-  logic<32> execute_alu(logic<32> insn, logic<32> reg_a, logic<32> reg_b) const {
+  /* metron_internal */ logic<32> execute_alu(logic<32> insn, logic<32> reg_a, logic<32> reg_b) const {
     logic<5>  op  = b5(insn, 2);
     logic<3>  f3  = b3(insn, 12);
     logic<7>  f7  = b7(insn, 25);
@@ -390,7 +390,7 @@ private:
 
   //----------------------------------------
 
-  logic<32> execute_system(logic<32> insn, logic<32> reg_a, logic<32> reg_b) const {
+  /* metron_internal */ logic<32> execute_system(logic<32> insn, logic<32> reg_a, logic<32> reg_b) const {
     logic<3>  f3  = b3(insn, 12);
     logic<12> csr = b12(insn, 20);
 

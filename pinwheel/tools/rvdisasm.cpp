@@ -1,7 +1,7 @@
 #include "metrolib/core/Check.h"
 #include "metrolib/core/Dumper.h"
 #include "metron/metron_tools.h"
-#include "pinwheel/tools/riscv_constants.h"
+#include "pinwheel/metron/riscv_constants.h"
 #include "pinwheel/tools/rvdisasm.h"
 
 void print_rv(Dumper& d, uint32_t op_u32) {

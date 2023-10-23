@@ -8,7 +8,7 @@
 
 #include "metrolib/core/Tests.h"
 #include "metrolib/appbase/AppHost.h"
-#include "pinwheel/rtl/pinwheel.h"
+#include "pinwheel/metron/pinwheel.h"
 #include "pinwheel/simulator/pinwheel_app.h"
 
 //------------------------------------------------------------------------------

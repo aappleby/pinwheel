@@ -2,7 +2,7 @@
 #define PINWHEEL_RTL_TEST_REG_H
 
 #include "metron/metron_tools.h"
-#include "pinwheel/rtl/tilelink.h"
+#include "pinwheel/metron/tilelink.h"
 
 //------------------------------------------------------------------------------
 // verilator lint_off unusedsignal
@@ -14,8 +14,7 @@ public:
 
   tilelink_d bus_tld;
 
-  // metron_noconvert
-  logic<32> get() const { return bus_tld.d_data; }
+  /* metron_noconvert */ logic<32> get() const { return bus_tld.d_data; }
 
   test_reg(logic<32> init = 0) {
     bus_tld.d_opcode = TL::AccessAckData;

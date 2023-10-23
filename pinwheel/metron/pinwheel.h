@@ -3,15 +3,12 @@
 
 #include "metron/metron_tools.h"
 
-#include "pinwheel/rtl/block_ram.h"
-#include "pinwheel/rtl/pinwheel_core.h"
-#include "pinwheel/rtl/regfile.h"
-#include "pinwheel/rtl/serial.h"
-#include "pinwheel/rtl/test_reg.h"
-#include "pinwheel/rtl/tilelink.h"
-
-// metron_XXX_noconvert
-//#include "console.h"
+#include "pinwheel/metron/block_ram.h"
+//#include "pinwheel/metron/console.h"
+#include "pinwheel/metron/pinwheel_core.h"
+#include "pinwheel/metron/regfile.h"
+#include "pinwheel/metron/test_reg.h"
+#include "pinwheel/metron/tilelink.h"
 
 //------------------------------------------------------------------------------
 // verilator lint_off unusedsignal
@@ -25,27 +22,12 @@ public:
     data_ram(data_file) {
   }
 
-  // metron_XXX_noconvert
-  /*
-  pinwheel* clone() {
-    pinwheel* p = new pinwheel();
-    memcpy(p, this, sizeof(*this));
-    return p;
-  }
-  */
-
-  /*
-  // metron_XXX_noconvert
-  size_t size_bytes() { return sizeof(*this); }
-  // metron_XXX_noconvert
-  bool load_elf(const char* firmware_filename);
-  // metron_XXX_noconvert
-  uint32_t* get_code() { return code_ram.get_data(); }
-  // metron_XXX_noconvert
-  uint32_t* get_data() { return data_ram.get_data(); }
-  // metron_XXX_noconvert
-  logic<32> get_debug() const { return debug_reg.get(); }
-  */
+  /*metron_noconvert*/ pinwheel* clone();
+  /*metron_noconvert*/ size_t size_bytes();
+  /*metron_noconvert*/ bool load_elf(const char* firmware_filename);
+  /*metron_noconvert*/ uint32_t* get_code();
+  /*metron_noconvert*/ uint32_t* get_data();
+  /*metron_noconvert*/ logic<32> get_debug() const;
 
   //----------------------------------------
   // FIXME const local variable should not become parameter
@@ -77,16 +59,10 @@ public:
 
     regs.tick(core.core_to_reg);
 
-    /*
-    // metron_XXX_noconvert
-    console1.tick(reset_in, core.bus_tla);
-    // metron_XXX_noconvert
-    console2.tick(reset_in, core.bus_tla);
-    // metron_XXX_noconvert
-    console3.tick(reset_in, core.bus_tla);
-    // metron_XXX_noconvert
-    console4.tick(reset_in, core.bus_tla);
-    */
+    //console1.tick(reset_in, core.bus_tla);
+    //console2.tick(reset_in, core.bus_tla);
+    //console3.tick(reset_in, core.bus_tla);
+    //console4.tick(reset_in, core.bus_tla);
   }
 
   //----------------------------------------
@@ -96,25 +72,17 @@ public:
   }
 
   //----------------------------------------
-  // metron_internal
 
-  pinwheel_core core;
-  regfile       regs;
+  /* metron_internal */ pinwheel_core core;
+  /* metron_internal */ regfile       regs;
+  /* metron_internal */ block_ram<0xF0000000, 0x00000000> code_ram;
+  /* metron_internal */ block_ram<0xF0000000, 0x80000000> data_ram; // FIXME having this named data and a field inside block_ram named data breaks context resolve
+  /* metron_internal */ test_reg <0xF0000000, 0xF0000000> debug_reg;
 
-  block_ram<0xF0000000, 0x00000000> code_ram;
-  block_ram<0xF0000000, 0x80000000> data_ram; // FIXME having this named data and a field inside block_ram named data breaks context resolve
-  test_reg <0xF0000000, 0xF0000000> debug_reg;
-
-  /*
-  // metron_XXX_noconvert
-  Console  <0xF0000000, 0x40000000> console1;
-  // metron_XXX_noconvert
-  Console  <0xF0000000, 0x50000000> console2;
-  // metron_XXX_noconvert
-  Console  <0xF0000000, 0x60000000> console3;
-  // metron_XXX_noconvert
-  Console  <0xF0000000, 0x70000000> console4;
-  */
+  ///* metron_internal */ console  <0xF0000000, 0x40000000> console1;
+  ///* metron_internal */ console  <0xF0000000, 0x50000000> console2;
+  ///* metron_internal */ console  <0xF0000000, 0x60000000> console3;
+  ///* metron_internal */ console  <0xF0000000, 0x70000000> console4;
 };
 
 // verilator lint_on unusedsignal

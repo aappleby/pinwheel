@@ -2,7 +2,7 @@
 #define PINWHEEL_RTL_BLOCK_RAM_H
 
 #include "metron/metron_tools.h"
-#include "pinwheel/rtl/tilelink.h"
+#include "pinwheel/metron/tilelink.h"
 
 //------------------------------------------------------------------------------
 // verilator lint_off unusedsignal
@@ -16,10 +16,7 @@ public:
     if (filename) readmemh(filename, data);
   }
 
-  /*
-  // metron_noconvert
-  logic<32> get() const { return bus_tld.d_data; }
-  */
+  /* metron_noconvert */ logic<32> get() const { return bus_tld.d_data; }
 
   void tick(tilelink_a tla) {
     bus_tld.d_opcode = b3(DONTCARE);
@@ -56,20 +53,13 @@ public:
     }
   }
 
-  /*
-  // metron_noconvert
-  uint32_t* get_data() { return (uint32_t*)data; }
-  // metron_noconvert
-  const uint32_t* get_data() const { return (uint32_t*)data; }
-  */
+  /* metron_noconvert */ uint32_t* get_data() { return (uint32_t*)data; }
+  /* metron_noconvert */ size_t data_size() const { return sizeof(data); }
+  /* metron_noconvert */ const uint32_t* get_data() const { return (uint32_t*)data; }
 
   tilelink_d bus_tld;
 
-private:
-
-
-  // metron_internal
-  logic<32> data[16384];
+  /* metron_internal*/ logic<32> data[16384];
 };
 
 // verilator lint_on unusedsignal
