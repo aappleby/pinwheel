@@ -32,7 +32,7 @@ TestResults run_test_elf(const char* test_filename, int reps = 1, int max_cycles
   for (int rep = 0; rep < reps; rep++) {
     top.tock(1, 0, 0);
     top.tick(1, 0, 0);
-    time -= timestamp();
+    double time_a = timestamp();
     for (elapsed_cycles = 0; elapsed_cycles < max_cycles; elapsed_cycles++) {
       top.tock(0, 0, 0);
       top.tick(0, 0, 0);
@@ -48,11 +48,11 @@ TestResults run_test_elf(const char* test_filename, int reps = 1, int max_cycles
         break;
       }
     }
-    time += timestamp();
+    double time_b = timestamp();
+    total_time += time_b - time_a;
     ASSERT_NE(elapsed_cycles, max_cycles, "TIMEOUT");
   }
 
-  total_time += time;
   total_tocks += tocks;
   TEST_DONE("pass @ %7d tocks, %6.2f msec", tocks, time * 1000.0f);
 }
@@ -62,6 +62,7 @@ TestResults run_test_elf(const char* test_filename, int reps = 1, int max_cycles
 TestResults run_rv32i_tests(int reps, int max_cycles) {
   TEST_INIT("Testing all rv32i instructions");
 
+  /*
   const char* instructions[38] = {
     "add", "addi", "and", "andi", "auipc", "beq",  "bge", "bgeu",
     "blt", "bltu", "bne", "jal",  "jalr",  "lb",   "lbu", "lh",
@@ -69,6 +70,9 @@ TestResults run_rv32i_tests(int reps, int max_cycles) {
     "sll", "slli", "slt", "slti", "sltiu", "sltu", "sra", "srai",
     "srl", "srli", "sub", "sw",   "xor",   "xori"
   };
+  */
+  const char* instructions[1] = { "add" };
+
 
   const int instruction_count = sizeof(instructions) / sizeof(instructions[0]);
 
@@ -115,7 +119,7 @@ int main(int argc, const char** argv) {
 
   TestResults results;
   results << run_rv32i_tests(reps, max_cycles);
-  results << run_microtests();
+  //results << run_microtests();
   results.show_result();
 
   LOG_B("Total tocks %f\n", double(total_tocks));

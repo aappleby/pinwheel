@@ -12,7 +12,7 @@ void busy_wait() {
 
 
 int main(int argc, char** argv) {
-  volatile int* regs = (volatile int*)0xE0000000;
+  volatile uint32_t* regs = (volatile uint32_t*)0xE0000000;
 
   for (int i  = 32; i < 64; i++) {
     pinwheel_stop();

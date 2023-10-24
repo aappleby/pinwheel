@@ -4,18 +4,21 @@
 #include "metron/metron_tools.h"
 #include "pinwheel/metron/tilelink.h"
 
+// Pseudo-hardware, not actually synthesizable
+
 //------------------------------------------------------------------------------
 // verilator lint_off unusedparam
 
-template <uint32_t addr_mask = 0xF0000000, uint32_t addr_tag = 0x00000000>
-class console {
+class Console {
 public:
+  Console(uint32_t addr_mask, uint32_t addr_tag) : addr_mask(addr_mask), addr_tag(addr_tag) {
+    memset(buf, 0, sizeof(buf));
+  }
 
   void tick(logic<1> reset, tilelink_a tla) {
-    /*
     if (reset) {
       memset(buf, 0, sizeof(buf));
-      x = 0;pinwheel
+      x = 0;
       y = 0;
     }
     else {
@@ -50,15 +53,16 @@ public:
         buf[y * width + x] = 30;
       }
     }
-    */
   }
 
-  //static const int width =64;
-  //static const int height=16;
+  static const int width =64;
+  static const int height=16;
 
-  //char buf[width*height];
-  //int  x = 0;
-  //int  y = 0;
+  const uint32_t addr_mask;
+  const uint32_t addr_tag;
+  char buf[width*height];
+  int  x = 0;
+  int  y = 0;
 };
 
 // verilator lint_on unusedparam

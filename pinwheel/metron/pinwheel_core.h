@@ -83,6 +83,8 @@ public:
       }
     }
 
+    next_hpc = (next_hpc & 0x00FFFFFF) | (reg_hpc_b & 0xFF000000);
+
     //----------
     // Execute
 
@@ -337,7 +339,8 @@ public:
   //----------------------------------------
   // FIXME support static
 
-  /* metron_internal */ logic<32> decode_imm(logic<32> insn) const {
+  /* metron_internal */
+  logic<32> decode_imm(logic<32> insn) const {
     logic<5>  op    = b5(insn, 2);
     logic<32> imm_i = sign_extend<32>(b12(insn, 20));
     logic<32> imm_s = cat(dup<21>(insn[31]), b6(insn, 25), b5(insn, 7));
@@ -363,7 +366,8 @@ public:
 
   //----------------------------------------
 
-  /* metron_internal */ logic<32> execute_alu(logic<32> insn, logic<32> reg_a, logic<32> reg_b) const {
+  /* metron_internal */
+  logic<32> execute_alu(logic<32> insn, logic<32> reg_a, logic<32> reg_b) const {
     logic<5>  op  = b5(insn, 2);
     logic<3>  f3  = b3(insn, 12);
     logic<7>  f7  = b7(insn, 25);
@@ -390,7 +394,8 @@ public:
 
   //----------------------------------------
 
-  /* metron_internal */ logic<32> execute_system(logic<32> insn, logic<32> reg_a, logic<32> reg_b) const {
+  /* metron_internal */
+  logic<32> execute_system(logic<32> insn, logic<32> reg_a, logic<32> reg_b) const {
     logic<3>  f3  = b3(insn, 12);
     logic<12> csr = b12(insn, 20);
 

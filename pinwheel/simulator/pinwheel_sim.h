@@ -3,6 +3,7 @@
 
 #include "metrolib/core/StateStack.h"
 #include "metrolib/core/Log.h"
+#include "pinwheel/metron/console.h"
 
 struct PinwheelSim : public Sim {
 
@@ -13,4 +14,9 @@ struct PinwheelSim : public Sim {
 
   StatePointerStack<pinwheel> states;
   int steps = 0;
+
+  Console console1;
+  Console console2;
+  Console console3;
+  Console console4;
 };

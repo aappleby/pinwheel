@@ -14,7 +14,7 @@ void hart1_start() {
 }
 
 int main(int argc, char** argv) {
-  int hart1_hpc = 0x01000000 | int(&hart1_start);
+  uint32_t hart1_hpc = 0x01000000 | uint32_t(&hart1_start);
 
   if (get_debug() != 0) test_fail();
   hart1_hpc = csr_step_secondary_thread(hart1_hpc);

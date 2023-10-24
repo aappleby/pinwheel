@@ -1,47 +1,50 @@
 #pragma once
 
+typedef unsigned long uint32_t;
+typedef unsigned char uint8_t;
+
 struct RV32Regfile {
-  int zero; // x0
-  int ra;   // x1
-  int sp;   // x2
-  int gp;   // x3
-  int tp;   // x4
-  int t0;   // x5
-  int t1;   // x6
-  int t2;   // x7
+  uint32_t zero; // x0
+  uint32_t ra;   // x1
+  uint32_t sp;   // x2
+  uint32_t gp;   // x3
+  uint32_t tp;   // x4
+  uint32_t t0;   // x5
+  uint32_t t1;   // x6
+  uint32_t t2;   // x7
 
-  int s0;   // x8
-  int s1;   // x9
-  int a0;   // x10
-  int a1;   // x11
-  int a2;   // x12
-  int a3;   // x13
-  int a4;   // x14
-  int a5;   // x15
+  uint32_t s0;   // x8
+  uint32_t s1;   // x9
+  uint32_t a0;   // x10
+  uint32_t a1;   // x11
+  uint32_t a2;   // x12
+  uint32_t a3;   // x13
+  uint32_t a4;   // x14
+  uint32_t a5;   // x15
 
-  int a6;   // x16
-  int a7;   // x17
-  int s2;   // x18
-  int s3;   // x19
-  int s4;   // x20
-  int s5;   // x21
-  int s6;   // x22
-  int s7;   // x23
+  uint32_t a6;   // x16
+  uint32_t a7;   // x17
+  uint32_t s2;   // x18
+  uint32_t s3;   // x19
+  uint32_t s4;   // x20
+  uint32_t s5;   // x21
+  uint32_t s6;   // x22
+  uint32_t s7;   // x23
 
-  int s8;   // x24
-  int s9;   // x25
-  int s10;  // x26
-  int s11;  // x27
-  int t3;   // x28
-  int t4;   // x29
-  int t5;   // x30
-  int t6;   // x31
+  uint32_t s8;   // x24
+  uint32_t s9;   // x25
+  uint32_t s10;  // x26
+  uint32_t s11;  // x27
+  uint32_t t3;   // x28
+  uint32_t t4;   // x29
+  uint32_t t5;   // x30
+  uint32_t t6;   // x31
 };
 
 RV32Regfile* const regfiles = (RV32Regfile*)0x40000000;
 
-inline int get_hart() {
-  int dst;
+inline uint32_t get_hart() {
+  uint32_t dst;
   __asm__ volatile (
     "csrr %[dst], mhartid"
     : [dst] "=r" (dst)
@@ -49,7 +52,7 @@ inline int get_hart() {
   return dst;
 }
 
-inline int csr_swap_secondary_thread(int dst) {
+inline uint32_t csr_swap_secondary_thread(uint32_t dst) {
   __asm__ volatile (
     "csrrw %[dst], 0x800, %[dst]"
     : [dst] "+r" (dst)
@@ -57,16 +60,16 @@ inline int csr_swap_secondary_thread(int dst) {
   return dst;
 }
 
-inline int pinwheel_start(int hart, void (*pc)()) {
-  int dst = ((hart & 0xFF) << 24) | (int(pc) & 0xFFFFFF);
+inline uint32_t pinwheel_start(int hart, void (*pc)()) {
+  uint32_t dst = ((hart & 0xFF) << 24) | (int(pc) & 0xFFFFFF);
   return csr_swap_secondary_thread(dst);
 }
 
-inline int pinwheel_stop() {
+inline uint32_t pinwheel_stop() {
   return csr_swap_secondary_thread(0);
 }
 
-inline int csr_yield_thread(int dst) {
+inline uint32_t csr_yield_thread(uint32_t dst) {
   __asm__ volatile (
     "csrrw %[dst], 0x801, %[dst]"
     : [dst] "+r" (dst)
@@ -74,7 +77,7 @@ inline int csr_yield_thread(int dst) {
   return dst;
 }
 
-inline int csr_step_secondary_thread(int dst) {
+inline uint32_t csr_step_secondary_thread(uint32_t dst) {
   __asm__ volatile (
     R"(
       csrrw %[dst], 0x800, %[dst]
@@ -85,12 +88,12 @@ inline int csr_step_secondary_thread(int dst) {
   return dst;
 }
 
-inline int get_debug() {
-  return *(volatile int*)(0xFFFFFFF0);
+inline uint32_t get_debug() {
+  return *(volatile uint32_t*)(0xFFFFFFF0);
 }
 
-inline void set_debug(int x) {
-  *(volatile int*)(0xFFFFFFF0) = x;
+inline void set_debug(uint32_t x) {
+  *(volatile uint32_t*)(0xFFFFFFF0) = x;
 }
 
 inline void test_fail() {
@@ -104,14 +107,17 @@ inline void test_pass() {
 }
 
 __attribute__((naked))
-inline void start_thread(int hpc) {
-  __asm__ volatile (R"(
-    la gp, __global_pointer$
-    la sp, _stack_top
-    csrr t0, mhartid
-    /* 1024 bytes stack per hart*/
-    sll t0, t0, 10
-    sub sp, sp, t0
-    j a0
+void* get_sp() {
+  __asm__(R"(
+    mv a0, sp
+    ret
+  )");
+}
+
+__attribute__((naked))
+void* get_gp() {
+  __asm__(R"(
+    mv a0, gp
+    ret
   )");
 }

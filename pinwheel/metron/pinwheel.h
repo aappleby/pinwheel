@@ -4,7 +4,6 @@
 #include "metron/metron_tools.h"
 
 #include "pinwheel/metron/block_ram.h"
-//#include "pinwheel/metron/console.h"
 #include "pinwheel/metron/pinwheel_core.h"
 #include "pinwheel/metron/regfile.h"
 #include "pinwheel/metron/test_reg.h"
@@ -58,11 +57,6 @@ public:
     core.tick(reset_in);
 
     regs.tick(core.core_to_reg);
-
-    //console1.tick(reset_in, core.bus_tla);
-    //console2.tick(reset_in, core.bus_tla);
-    //console3.tick(reset_in, core.bus_tla);
-    //console4.tick(reset_in, core.bus_tla);
   }
 
   //----------------------------------------
@@ -78,11 +72,6 @@ public:
   /* metron_internal */ block_ram<0xF0000000, 0x00000000> code_ram;
   /* metron_internal */ block_ram<0xF0000000, 0x80000000> data_ram; // FIXME having this named data and a field inside block_ram named data breaks context resolve
   /* metron_internal */ test_reg <0xF0000000, 0xF0000000> debug_reg;
-
-  ///* metron_internal */ console  <0xF0000000, 0x40000000> console1;
-  ///* metron_internal */ console  <0xF0000000, 0x50000000> console2;
-  ///* metron_internal */ console  <0xF0000000, 0x60000000> console3;
-  ///* metron_internal */ console  <0xF0000000, 0x70000000> console4;
 };
 
 // verilator lint_on unusedsignal

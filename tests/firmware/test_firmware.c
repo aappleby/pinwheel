@@ -1,5 +1,7 @@
 #include <stdint.h>
 
+// FIXME Thread schedule isn't actually implemented yet
+
 #define THREAD_SCHEDULE *(volatile uint32_t*)0x30000000
 #define GPIO_OUT0 *(volatile uint32_t*)0x10000000
 #define GPIO_OUT1 *(volatile uint32_t*)0x10000004

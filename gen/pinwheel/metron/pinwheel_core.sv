@@ -123,6 +123,8 @@ module pinwheel_core (
       end
     end
 
+    next_hpc = (next_hpc & 32'h00FFFFFF) | (reg_hpc_b & 32'hFF000000);
+
     //----------
     // Execute
 
@@ -380,7 +382,8 @@ module pinwheel_core (
   //----------------------------------------
   // FIXME support static
 
-  /* metron_internal */ function logic[31:0] decode_imm(logic[31:0] insn) /*const*/;
+  /* metron_internal */
+  function logic[31:0] decode_imm(logic[31:0] insn) /*const*/;
     logic[4:0]  op;
     logic[31:0] imm_i;
     logic[31:0] imm_s;
@@ -412,7 +415,8 @@ module pinwheel_core (
 
   //----------------------------------------
 
-  /* metron_internal */ function logic[31:0] execute_alu(logic[31:0] insn, logic[31:0] reg_a, logic[31:0] reg_b) /*const*/;
+  /* metron_internal */
+  function logic[31:0] execute_alu(logic[31:0] insn, logic[31:0] reg_a, logic[31:0] reg_b) /*const*/;
     logic[4:0]  op;
     logic[2:0]  f3;
     logic[6:0]  f7;
@@ -445,7 +449,8 @@ module pinwheel_core (
 
   //----------------------------------------
 
-  /* metron_internal */ function logic[31:0] execute_system(logic[31:0] insn, logic[31:0] reg_a, logic[31:0] reg_b) /*const*/;
+  /* metron_internal */
+  function logic[31:0] execute_system(logic[31:0] insn, logic[31:0] reg_a, logic[31:0] reg_b) /*const*/;
     logic[2:0]  f3;
     logic[11:0] csr;
     logic[31:0] result;

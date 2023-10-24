@@ -1,5 +1,5 @@
-target=DEBUG
-#target=RELEASE
+#target=DEBUG
+target=RELEASE
 #target=SIZE
 
 toolchain=x86_64-linux-gnu
@@ -49,7 +49,7 @@ build obj/pinwheel/tools/rvdisasm.o:          compile_cpp pinwheel/tools/rvdisas
 
 build obj/symlinks/glad/glad.o:               compile_cpp symlinks/glad/glad.c
 
-build bin/pinwheel: c_binary $
+build bin/pinwheel_app: c_binary $
   obj/symlinks/glad/glad.o $
   bin/imgui/libimgui.a $
   obj/pinwheel/metron/pinwheel.o $
@@ -80,7 +80,6 @@ build bin/pinwheel_test: c_binary $
 build gen/pinwheel/metron/riscv_constants.sv   : metron pinwheel/metron/riscv_constants.h
 build gen/pinwheel/metron/tilelink.sv          : metron pinwheel/metron/tilelink.h
 build gen/pinwheel/metron/regfile.sv           : metron pinwheel/metron/regfile.h
-build gen/pinwheel/metron/console.sv           : metron pinwheel/metron/console.h       | pinwheel/metron/tilelink.h
 build gen/pinwheel/metron/serial.sv            : metron pinwheel/metron/serial.h        | pinwheel/metron/tilelink.h
 build gen/pinwheel/metron/test_reg.sv          : metron pinwheel/metron/test_reg.h      | pinwheel/metron/tilelink.h
 build gen/pinwheel/metron/block_ram.sv         : metron pinwheel/metron/block_ram.h     | pinwheel/metron/tilelink.h
@@ -100,7 +99,7 @@ build all_pinwheel_sv : phony $
 ################################################################################
 # Verilator tests
 
-build gen/pinwheel/verilator/Vpinwheel.mk gen/pinwheel/verilated/Vpinwheel.h : verilator gen/pinwheel/metron/pinwheel.sv | all_pinwheel_sv
+build gen/pinwheel/verilator/Vpinwheel.mk gen/pinwheel/verilator/Vpinwheel.h : verilator gen/pinwheel/metron/pinwheel.sv | all_pinwheel_sv
   includes = -I. -Igen -Isymlinks/metron
 
 ################################################################################
@@ -112,8 +111,10 @@ build gen/pinwheel/yosys/pinwheel_core.json : yosys gen/pinwheel/metron/pinwheel
 ################################################################################
 # Icarus tests
 
-build gen/pinwheel/icarus/pinwheel.iv : iverilog gen/pinwheel/metron/pinwheel.sv | all_pinwheel_sv
-  includes = -Igen -Isymlinks/metron
+# This is really noisy and so disabled for the moment. It does pass, though
+
+#build gen/pinwheel/icarus/pinwheel.iv : iverilog gen/pinwheel/metron/pinwheel.sv | all_pinwheel_sv
+#  includes = -Igen -Isymlinks/metron
 
 ################################################################################
 # RISC-V test binaries
@@ -126,6 +127,7 @@ build obj/tests/firmware/start.o : rv_assemble tests/firmware/start.s
 build obj/tests/firmware/basic.o        : rv_compile_cpp tests/firmware/basic.cpp
 build obj/tests/firmware/call_jalr.o    : rv_compile_cpp tests/firmware/call_jalr.cpp
 build obj/tests/firmware/get_hart.o     : rv_compile_cpp tests/firmware/get_hart.cpp
+build obj/tests/firmware/hello.o        : rv_compile_cpp tests/firmware/hello.cpp
 build obj/tests/firmware/read_regs.o    : rv_compile_cpp tests/firmware/read_regs.cpp
 build obj/tests/firmware/start_thread.o : rv_compile_cpp tests/firmware/start_thread.cpp
 build obj/tests/firmware/stepping.o     : rv_compile_cpp tests/firmware/stepping.cpp
@@ -136,6 +138,7 @@ build obj/tests/firmware/yield.o        : rv_compile_cpp tests/firmware/yield.cp
 build bin/tests/firmware/basic          : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/basic.o        | tests/firmware/pinwheel.ld
 build bin/tests/firmware/call_jalr      : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/call_jalr.o    | tests/firmware/pinwheel.ld
 build bin/tests/firmware/get_hart       : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/get_hart.o     | tests/firmware/pinwheel.ld
+build bin/tests/firmware/hello          : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/hello.o        | tests/firmware/pinwheel.ld
 build bin/tests/firmware/read_regs      : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/read_regs.o    | tests/firmware/pinwheel.ld
 build bin/tests/firmware/start_thread   : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/start_thread.o | tests/firmware/pinwheel.ld
 build bin/tests/firmware/stepping       : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/stepping.o     | tests/firmware/pinwheel.ld
@@ -147,6 +150,7 @@ build feature_tests : phony $
   bin/tests/firmware/basic $
   bin/tests/firmware/call_jalr $
   bin/tests/firmware/get_hart $
+  bin/tests/firmware/hello $
   bin/tests/firmware/read_regs $
   bin/tests/firmware/start_thread $
   bin/tests/firmware/stepping $

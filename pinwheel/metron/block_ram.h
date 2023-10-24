@@ -31,7 +31,7 @@ public:
 
     if (tla.a_valid && ((tla.a_address & addr_mask) == addr_tag)) {
       if (tla.a_opcode == TL::PutPartialData) {
-        logic<32> old_data = data[b10(tla.a_address, 2)];
+        logic<32> old_data = data[b14(tla.a_address, 2)];
         logic<32> new_data = tla.a_data;
         if (tla.a_address[0]) new_data = new_data << 8;
         if (tla.a_address[1]) new_data = new_data << 16;
@@ -40,14 +40,14 @@ public:
                   ((tla.a_mask[2] ? new_data : old_data) & 0x00FF0000) |
                   ((tla.a_mask[3] ? new_data : old_data) & 0xFF000000);
 
-        data[b10(tla.a_address, 2)] = new_data;
+        data[b14(tla.a_address, 2)] = new_data;
         bus_tld.d_opcode = TL::AccessAckData;
         bus_tld.d_data = new_data;
         bus_tld.d_valid = 1;
       }
       else {
         bus_tld.d_opcode = TL::AccessAckData;
-        bus_tld.d_data = data[b10(tla.a_address, 2)];
+        bus_tld.d_data = data[b14(tla.a_address, 2)];
         bus_tld.d_valid = 1;
       }
     }

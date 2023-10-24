@@ -33,4 +33,6 @@ struct PinwheelApp : public App {
 
   PinwheelSim*   pinwheel_sim = nullptr;
   SimThread*     sim_thread = nullptr;
+  bool running = false;
+  bool fastmode = false;
 };

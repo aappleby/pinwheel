@@ -4,7 +4,6 @@
 `include "metron/metron_tools.sv"
 
 `include "pinwheel/metron/block_ram.sv"
-//#include "pinwheel/metron/console.h"
 `include "pinwheel/metron/pinwheel_core.sv"
 `include "pinwheel/metron/regfile.sv"
 `include "pinwheel/metron/test_reg.sv"
@@ -79,11 +78,6 @@ module pinwheel (
 
     regs_tick_in = core_core_to_reg;
     /*regs.tick(core.core_to_reg);*/
-
-    //console1.tick(reset_in, core.bus_tla);
-    //console2.tick(reset_in, core.bus_tla);
-    //console3.tick(reset_in, core.bus_tla);
-    //console4.tick(reset_in, core.bus_tla);
   end
 
   //----------------------------------------
@@ -178,11 +172,6 @@ module pinwheel (
   );
   tilelink_a debug_reg_tick_tla;
   tilelink_d debug_reg_bus_tld;
-
-  ///* metron_internal */ console  <0xF0000000, 0x40000000> console1;
-  ///* metron_internal */ console  <0xF0000000, 0x50000000> console2;
-  ///* metron_internal */ console  <0xF0000000, 0x60000000> console3;
-  ///* metron_internal */ console  <0xF0000000, 0x70000000> console4;
 endmodule
 
 // verilator lint_on unusedsignal

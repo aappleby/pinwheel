@@ -1,3 +1,7 @@
+OUTPUT_ARCH("riscv")
+
+ENTRY(_start)
+
 MEMORY {
   ROM (xai!rw) : ORIGIN = 0x00400000, LENGTH = 64K
   RAM (wai!rx) : ORIGIN = 0x80000000, LENGTH = 64K

@@ -1,5 +1,7 @@
 #include "utils.h"
 
+// Test calling across threads using jalr
+
 extern void* _start;
 
 extern "C" __attribute__((naked))

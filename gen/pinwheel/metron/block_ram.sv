@@ -42,7 +42,7 @@ module block_ram (
       if (tick_tla.a_opcode == TL::PutPartialData) begin
         logic[31:0] old_data;
         logic[31:0] new_data;
-        old_data = data[tick_tla.a_address[11:2]];
+        old_data = data[tick_tla.a_address[15:2]];
         new_data = tick_tla.a_data;
         if (tick_tla.a_address[0]) new_data = new_data << 8;
         if (tick_tla.a_address[1]) new_data = new_data << 16;
@@ -51,14 +51,14 @@ module block_ram (
                   ((tick_tla.a_mask[2] ? new_data : old_data) & 32'h00FF0000) |
                   ((tick_tla.a_mask[3] ? new_data : old_data) & 32'hFF000000);
 
-        data[tick_tla.a_address[11:2]] <= new_data;
+        data[tick_tla.a_address[15:2]] <= new_data;
         bus_tld.d_opcode <= TL::AccessAckData;
         bus_tld.d_data <= new_data;
         bus_tld.d_valid <= 1;
       end
       else begin
         bus_tld.d_opcode <= TL::AccessAckData;
-        bus_tld.d_data <= data[tick_tla.a_address[11:2]];
+        bus_tld.d_data <= data[tick_tla.a_address[15:2]];
         bus_tld.d_valid <= 1;
       end
     end
