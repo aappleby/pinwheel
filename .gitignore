@@ -33,7 +33,7 @@
 
 .ninja_deps
 .ninja_log
-.vscode
+#.vscode
 bin
 obj
 icarus
