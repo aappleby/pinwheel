@@ -29,6 +29,7 @@ void PinwheelSim::step() {
     console3.tick(0, pinwheel.core.bus_tla);
     console4.tick(0, pinwheel.core.bus_tla);
     steps--;
+    ticks++;
   }
 }
 

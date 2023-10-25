@@ -83,39 +83,45 @@ void PinwheelApp::app_update(dvec2 screen_size, double delta)  {
   SDL_Event event;
   sim_thread->pause();
 
+  auto time_now = timestamp();
+  auto keyboard_state = SDL_GetKeyboardState(nullptr);
+
+  int manual_steps = 0;
+
   while (SDL_PollEvent(&event)) {
 
     if (event.type == SDL_KEYDOWN)
     switch (event.key.keysym.sym) {
+
       case SDLK_ESCAPE:
         view_control.view_target      = Viewport::screenspace(screen_size);
         view_control.view_target_snap = Viewport::screenspace(screen_size);
         break;
+
       case SDLK_RIGHT:  {
         if (!running) {
           pinwheel_sim->states.push();
-          int steps = 1;
-          auto keyboard_state = SDL_GetKeyboardState(nullptr);
-          if (keyboard_state[SDL_SCANCODE_LSHIFT])  steps *= 100;
-          if (keyboard_state[SDL_SCANCODE_LALT])    steps *= 10;
-          if (keyboard_state[SDL_SCANCODE_LCTRL])   steps *= 3;
-          pinwheel_sim->steps += steps;
+          manual_steps = 1;
+          if (keyboard_state[SDL_SCANCODE_LSHIFT])  manual_steps *= 100;
+          if (keyboard_state[SDL_SCANCODE_LALT])    manual_steps *= 10;
+          if (keyboard_state[SDL_SCANCODE_LCTRL])   manual_steps *= 3;
         }
         break;
       }
+
       case SDLK_r: {
-        //pinwheel_sim->states.push();
-        //pinwheel_sim->steps += 1024*1024;
         running = !running;
         if (!running) {
           pinwheel_sim->steps = 0;
         }
         break;
       }
+
       case SDLK_f: {
         fastmode = !fastmode;
         break;
       }
+
       case SDLK_LEFT: {
         if (!running) {
           pinwheel_sim->states.pop();
@@ -139,12 +145,17 @@ void PinwheelApp::app_update(dvec2 screen_size, double delta)  {
   view_control.update(delta);
 
   if (running) {
-    if (fastmode) {
-      pinwheel_sim->steps = 0x10000000;
-    }
-    else {
-      pinwheel_sim->steps = 400;
-    }
+    pinwheel_sim->steps = fastmode ? 0x10000000 : 100;
+  }
+  else {
+    pinwheel_sim->steps = manual_steps;
+  }
+
+  if (running) {
+    ticks_old = ticks_new;
+    ticks_new = pinwheel_sim->ticks;
+    time_old = time_new;
+    time_new = time_now;
   }
 
   sim_thread->resume();
@@ -191,55 +202,57 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
     d("states        %d\n",     pinwheel_sim->states.state_count());
     d("state bytes   %d\n",     pinwheel_sim->states.state_size_bytes());
     d("debug reg     0x%llx\n", pinwheel.get_debug());
+    d("tick rate     %f\n",     double(ticks_new - ticks_old) / (time_new - time_old));
     d("\n");
   }
 
   {
     d.s.push_back(1);
-    d("vane 0\n");
+    d("vane A\n");
     d.s.push_back(hart_a_col);
-    d("hpc_a         0x%08x\n", pinwheel.core.reg_hpc_a);
-    d("insn_a        0x%08x ",  insn_a); print_rv(d, insn_a); d("\n");
-    d("rs1 a         0x%08x\n", b5(insn_a, 15));
-    d("rs2 a         0x%08x\n", b5(insn_a, 20));
+    d("pc   0x%08x\n", pinwheel.core.reg_hpc_a);
+    d("op   0x%08x ",  insn_a); print_rv(d, insn_a); d("\n");
     d("\n");
   }
 
   {
     d.s.push_back(1);
-    d("vane 1\n");
+    d("vane B\n");
     d.s.push_back(hart_b_col);
-    d("hpc_b         0x%08x\n", pinwheel.core.reg_hpc_b);
-    d("insn_b        0x%08x ",  pinwheel.core.reg_insn_b); print_rv(d, pinwheel.core.reg_insn_b); d("\n");
-    d("rs1 b         0x%08x\n", pinwheel.regs.get_rs1());
-    d("rs2 b         0x%08x\n", pinwheel.regs.get_rs2());
+    d("pc   0x%08x\n", pinwheel.core.reg_hpc_b);
+    d("op   0x%08x ",  pinwheel.core.reg_insn_b); print_rv(d, pinwheel.core.reg_insn_b); d("\n");
+    d("r1   0x%08x\n", pinwheel.regs.get_rs1());
+    d("r2   0x%08x\n", pinwheel.regs.get_rs2());
     const auto imm_b  = pinwheel.core.decode_imm(pinwheel.core.reg_insn_b);
     const auto addr_b = b32(pinwheel.regs.get_rs1() + imm_b);
-    d("addr b        0x%08x\n", addr_b);
+    d("addr 0x%08x\n", addr_b);
     d("\n");
   }
 
   {
     d.s.push_back(1);
-    d("vane 2\n");
+    d("vane C\n");
     d.s.push_back(hart_c_col);
-    d("hpc c         0x%08x\n", pinwheel.core.reg_hpc_c);
-    d("insn c        0x%08x ",  pinwheel.core.reg_insn_c); print_rv(d, pinwheel.core.reg_insn_c); d("\n");
-    d("addr c        0x%08x\n", pinwheel.core.reg_addr_c);
-    d("result c      0x%08x\n", pinwheel.core.reg_result_c);
-    d("data c        0x%08x\n", pinwheel.data_ram.get());
+    d("pc   0x%08x\n", pinwheel.core.reg_hpc_c);
+    d("op   0x%08x ",  pinwheel.core.reg_insn_c); print_rv(d, pinwheel.core.reg_insn_c); d("\n");
+    d("addr 0x%08x\n", pinwheel.core.reg_addr_c);
+    d("res  0x%08x\n", pinwheel.core.reg_result_c);
+    d("data 0x%08x\n", pinwheel.data_ram.get());
     d("\n");
   }
 
   {
     d.s.push_back(1);
-    d("vane 3\n");
+    d("vane D\n");
     d.s.push_back(hart_d_col);
-    d("hpc d         0x%08x\n", pinwheel.core.reg_hpc_d);
-    d("insn d        0x%08x ",  pinwheel.core.reg_insn_d); print_rv(d, pinwheel.core.reg_insn_d); d("\n");
-    d("wb addr d     0x%08x\n", pinwheel.core.sig_rf_waddr);
-    d("wb data d     0x%08x\n", pinwheel.core.sig_rf_wdata);
-    d("wb wren d     0x%08x\n", pinwheel.core.sig_rf_wren);
+    d("pc   0x%08x\n", pinwheel.core.reg_hpc_d);
+    d("op   0x%08x ",  pinwheel.core.reg_insn_d); print_rv(d, pinwheel.core.reg_insn_d); d("\n");
+    if (pinwheel.core.sig_rf_wren) {
+      d("r%02d  0x%08x\n", pinwheel.core.sig_rf_waddr, pinwheel.core.sig_rf_wdata);
+    }
+    else {
+      d("rXX  0xXXXXXXXX\n");
+    }
     d("\n");
   }
 

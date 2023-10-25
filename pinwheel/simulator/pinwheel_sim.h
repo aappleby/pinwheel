@@ -13,7 +13,8 @@ struct PinwheelSim : public Sim {
   virtual void step() override;
 
   StatePointerStack<pinwheel> states;
-  int steps = 0;
+  int64_t steps = 0;
+  int64_t ticks = 0;
 
   Console console1;
   Console console2;

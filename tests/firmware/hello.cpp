@@ -103,23 +103,13 @@ Console c2 = { (uint32_t*)0x50000000 };
 Console c3 = { (uint32_t*)0x60000000 };
 Console c4 = { (uint32_t*)0x70000000 };
 
-//------------------------------------------------------------------------------
-
 typedef int (*start_func)(void);
 extern void* _start;
 
-int main(int argc, char** argv) {
-  uint32_t start_pc = uint32_t(&_start);
-  int hart = get_hart();
+//------------------------------------------------------------------------------
 
-  Console* c = nullptr;
-  if (hart == 0) c = &c1;
-  if (hart == 1) c = &c2;
-  if (hart == 2) c = &c3;
-  if (hart == 3) c = &c4;
-
-  c->printf("hart    %d\n",   hart);
-  c->printf("main    0x%p\n", main);
+void print_test(Console* c) {
+  c->printf("hart    %d\n",   get_hart());
   c->printf("stack   0x%p\n", get_sp());
   c->printf("global  0x%p\n", get_gp());
 
@@ -130,25 +120,79 @@ int main(int argc, char** argv) {
   c->printf("pointer 0x12345678 0x%p\n", 0x12345678);
   c->printf("pointer 0x00001234 0x%p\n", 0x00001234);
   c->printf("char    !@#$\\%^&*() %c%c%c%c%c%c%c%c%c%c\n", '!', '@', '#', '$', '%', '^', '&', '*', '(', ')');
+}
 
-  //if (hart < 3) {
-    uint32_t new_start = ((((hart + 1) % 4) << 24) | start_pc);
-    csr_swap_secondary_thread(new_start);
-    c->printf("Hart %d started at %p\n", hart + 1, new_start);
+//------------------------------------------------------------------------------
 
-    int x = 0;
-    while(1) {
-      c->printf("%d ", x++);
-    }
-  /*
-    //reinterpret_cast<start_func>(new_start)();
+void main0() {
+  Console* c = &c1;
+  c->printf("Hart %d started\n", get_hart());
+
+  uint32_t pc1 = (1 << 24) | uint32_t(&_start);
+  uint32_t pc2 = (2 << 24) | uint32_t(&_start);
+  uint32_t pc3 = (3 << 24) | uint32_t(&_start);
+
+  c->printf("Starting thread-swapping loop\n", get_hart());
+
+  csr_swap_secondary_thread(pc1);
+  while(1) {
+    pc1 = csr_swap_secondary_thread(pc2);
+    pc2 = csr_swap_secondary_thread(pc3);
+    pc3 = csr_swap_secondary_thread(pc1);
   }
-  else {
-    *(volatile uint32_t*)0xFFFFFFF0 = 1;
-    c->printf("Test pass\n\n\n");
-    return 0;
+}
+
+//----------------------------------------
+
+void main1() {
+  Console* c = &c2;
+  c->printf("Hart %d started\n", get_hart());
+
+  while(1) {
+    static int rep = 0;
+    c->printf("\n");
+    c->printf("Rep %d\n", rep++);
+    print_test(c);
   }
-  */
+}
+
+//----------------------------------------
+
+void main2() {
+  Console* c = &c3;
+  c->printf("Hart %d started\n", get_hart());
+
+  while(1) {
+    static int rep = 0;
+    c->printf("\n");
+    c->printf("Rep %d\n", rep++);
+    print_test(c);
+  }
+}
+
+//----------------------------------------
+
+void main3() {
+  Console* c = &c4;
+  c->printf("Hart %d started\n", get_hart());
+
+  while(1) {
+    static int rep = 0;
+    c->printf("\n");
+    c->printf("Rep %d\n", rep++);
+    print_test(c);
+  }
+}
+
+//------------------------------------------------------------------------------
+
+int main(int argc, char** argv) {
+  switch(get_hart()) {
+    case 0: main0(); break;
+    case 1: main1(); break;
+    case 2: main2(); break;
+    case 3: main3(); break;
+  }
   return 0;
 }
 

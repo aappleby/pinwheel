@@ -46,7 +46,9 @@ public:
           y++;
         }
         if (y == height) {
-          memcpy(buf, buf + width, width*(height-1));
+          for (int i = 0; i < width*(height-1); i++) {
+            buf[i] = buf[i + width];
+          }
           memset(buf + (width*(height-1)), 0, width);
           y = height-1;
         }
