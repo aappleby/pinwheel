@@ -108,6 +108,12 @@ build gen/pinwheel/verilator/Vpinwheel.mk gen/pinwheel/verilator/Vpinwheel.h : v
 build gen/pinwheel/yosys/pinwheel_core.json : yosys gen/pinwheel/metron/pinwheel_core.sv | all_pinwheel_sv
   includes = -Igen -Isymlinks/metron
 
+#build bin/pinwheel/yosys/pinwheel_core.asc: nextpnr-ice40 gen/pinwheel/yosys/pinwheel_core.json
+#  chip = hx8k
+#  package = ct256
+#  pcf = examples/uart/ice40-hx8k-b-evn.pcf
+#build bin/pinwheel/yosys/pinwheel_core.bin: icepack bin/pinwheel/yosys/pinwheel_core.asc
+
 ################################################################################
 # Icarus tests
 

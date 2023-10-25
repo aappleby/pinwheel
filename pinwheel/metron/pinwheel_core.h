@@ -276,69 +276,6 @@ public:
     }
   }
 
-  //----------------------------------------
-
-  tilelink_a bus_tla;
-  tilelink_a code_tla;
-
-  regfile_in core_to_reg;
-
-//private:
-
-  //----------------------------------------
-  // Signals to code ram
-
-  /* metron_internal */ logic<32> sig_code_wdata;
-  /* metron_internal */ logic<32> sig_code_addr;
-  /* metron_internal */ logic<4>  sig_code_wmask;
-  /* metron_internal */ logic<1>  sig_code_wren;
-
-  //----------------------------------------
-  // Signals to data bus
-
-  /* metron_internal */ logic<32> sig_bus_addr;
-  /* metron_internal */ logic<1>  sig_bus_rden;
-  /* metron_internal */ logic<32> sig_bus_wdata;
-  /* metron_internal */ logic<4>  sig_bus_wmask;
-  /* metron_internal */ logic<1>  sig_bus_wren;
-
-  //----------------------------------------
-  // Signals to regfile
-
-  /* metron_internal */ logic<8>  sig_rf_raddr1;
-  /* metron_internal */ logic<8>  sig_rf_raddr2;
-  /* metron_internal */ logic<8>  sig_rf_waddr;
-  /* metron_internal */ logic<32> sig_rf_wdata;
-  /* metron_internal */ logic<1>  sig_rf_wren;
-
-  //----------------------------------------
-  // Internal signals and registers
-  // metron_internal
-
-  /* metron_internal */ logic<32> sig_hpc_a;
-  /* metron_internal */ logic<32> reg_hpc_a;
-  /* metron_internal */ logic<32> sig_insn_a;
-
-  /* metron_internal */ logic<32> reg_hpc_b;
-  /* metron_internal */ logic<32> reg_insn_b;
-  /* metron_internal */ logic<32> sig_addr_b;
-  /* metron_internal */ logic<32> sig_result_b;
-
-  /* metron_internal */ logic<32> reg_hpc_c;
-  /* metron_internal */ logic<32> reg_insn_c;
-  /* metron_internal */ logic<32> reg_addr_c;
-  /* metron_internal */ logic<32> sig_result_c;
-  /* metron_internal */ logic<32> reg_result_c;
-
-  /* metron_internal */ logic<32> reg_hpc_d;
-  /* metron_internal */ logic<32> reg_insn_d;
-  /* metron_internal */ logic<32> reg_result_d;
-
-  /* metron_internal */ logic<32> reg_ticks;
-
-  //----------------------------------------
-  // FIXME support static
-
   /* metron_internal */
   logic<32> decode_imm(logic<32> insn) const {
     logic<5>  op    = b5(insn, 2);
@@ -418,6 +355,68 @@ public:
     return result;
   }
 
+  //----------------------------------------
+
+  tilelink_a bus_tla;
+  tilelink_a code_tla;
+
+  regfile_in core_to_reg;
+
+//private:
+
+  //----------------------------------------
+  // Signals to code ram
+
+  /* metron_internal */ logic<32> sig_code_wdata;
+  /* metron_internal */ logic<32> sig_code_addr;
+  /* metron_internal */ logic<4>  sig_code_wmask;
+  /* metron_internal */ logic<1>  sig_code_wren;
+
+  //----------------------------------------
+  // Signals to data bus
+
+  /* metron_internal */ logic<32> sig_bus_addr;
+  /* metron_internal */ logic<1>  sig_bus_rden;
+  /* metron_internal */ logic<32> sig_bus_wdata;
+  /* metron_internal */ logic<4>  sig_bus_wmask;
+  /* metron_internal */ logic<1>  sig_bus_wren;
+
+  //----------------------------------------
+  // Signals to regfile
+
+  /* metron_internal */ logic<8>  sig_rf_raddr1;
+  /* metron_internal */ logic<8>  sig_rf_raddr2;
+  /* metron_internal */ logic<8>  sig_rf_waddr;
+  /* metron_internal */ logic<32> sig_rf_wdata;
+  /* metron_internal */ logic<1>  sig_rf_wren;
+
+  //----------------------------------------
+  // Internal signals and registers
+  // metron_internal
+
+  /* metron_internal */ logic<32> sig_hpc_a;
+  /* metron_internal */ logic<32> reg_hpc_a;
+  /* metron_internal */ logic<32> sig_insn_a;
+
+  /* metron_internal */ logic<32> reg_hpc_b;
+  /* metron_internal */ logic<32> reg_insn_b;
+  /* metron_internal */ logic<32> sig_addr_b;
+  /* metron_internal */ logic<32> sig_result_b;
+
+  /* metron_internal */ logic<32> reg_hpc_c;
+  /* metron_internal */ logic<32> reg_insn_c;
+  /* metron_internal */ logic<32> reg_addr_c;
+  /* metron_internal */ logic<32> sig_result_c;
+  /* metron_internal */ logic<32> reg_result_c;
+
+  /* metron_internal */ logic<32> reg_hpc_d;
+  /* metron_internal */ logic<32> reg_insn_d;
+  /* metron_internal */ logic<32> reg_result_d;
+
+  /* metron_internal */ logic<32> reg_ticks;
+
+  //----------------------------------------
+  // FIXME support static
 };
 
 /* verilator lint_on UNUSEDSIGNAL */

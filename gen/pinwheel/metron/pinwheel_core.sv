@@ -322,66 +322,6 @@ module pinwheel_core (
     end
   end
 
-  //----------------------------------------
-
-
-
-//private:
-
-  //----------------------------------------
-  // Signals to code ram
-
-  /* metron_internal */ logic[31:0] sig_code_wdata;
-  /* metron_internal */ logic[31:0] sig_code_addr;
-  /* metron_internal */ logic[3:0]  sig_code_wmask;
-  /* metron_internal */ logic  sig_code_wren;
-
-  //----------------------------------------
-  // Signals to data bus
-
-  /* metron_internal */ logic[31:0] sig_bus_addr;
-  /* metron_internal */ logic  sig_bus_rden;
-  /* metron_internal */ logic[31:0] sig_bus_wdata;
-  /* metron_internal */ logic[3:0]  sig_bus_wmask;
-  /* metron_internal */ logic  sig_bus_wren;
-
-  //----------------------------------------
-  // Signals to regfile
-
-  /* metron_internal */ logic[7:0]  sig_rf_raddr1;
-  /* metron_internal */ logic[7:0]  sig_rf_raddr2;
-  /* metron_internal */ logic[7:0]  sig_rf_waddr;
-  /* metron_internal */ logic[31:0] sig_rf_wdata;
-  /* metron_internal */ logic  sig_rf_wren;
-
-  //----------------------------------------
-  // Internal signals and registers
-  // metron_internal
-
-  /* metron_internal */ logic[31:0] sig_hpc_a;
-  /* metron_internal */ logic[31:0] reg_hpc_a;
-  /* metron_internal */ logic[31:0] sig_insn_a;
-
-  /* metron_internal */ logic[31:0] reg_hpc_b;
-  /* metron_internal */ logic[31:0] reg_insn_b;
-  /* metron_internal */ logic[31:0] sig_addr_b;
-  /* metron_internal */ logic[31:0] sig_result_b;
-
-  /* metron_internal */ logic[31:0] reg_hpc_c;
-  /* metron_internal */ logic[31:0] reg_insn_c;
-  /* metron_internal */ logic[31:0] reg_addr_c;
-  /* metron_internal */ logic[31:0] sig_result_c;
-  /* metron_internal */ logic[31:0] reg_result_c;
-
-  /* metron_internal */ logic[31:0] reg_hpc_d;
-  /* metron_internal */ logic[31:0] reg_insn_d;
-  /* metron_internal */ logic[31:0] reg_result_d;
-
-  /* metron_internal */ logic[31:0] reg_ticks;
-
-  //----------------------------------------
-  // FIXME support static
-
   /* metron_internal */
   function logic[31:0] decode_imm(logic[31:0] insn) /*const*/;
     logic[4:0]  op;
@@ -476,6 +416,65 @@ module pinwheel_core (
     execute_system = result;
   endfunction
 
+  //----------------------------------------
+
+
+
+//private:
+
+  //----------------------------------------
+  // Signals to code ram
+
+  /* metron_internal */ logic[31:0] sig_code_wdata;
+  /* metron_internal */ logic[31:0] sig_code_addr;
+  /* metron_internal */ logic[3:0]  sig_code_wmask;
+  /* metron_internal */ logic  sig_code_wren;
+
+  //----------------------------------------
+  // Signals to data bus
+
+  /* metron_internal */ logic[31:0] sig_bus_addr;
+  /* metron_internal */ logic  sig_bus_rden;
+  /* metron_internal */ logic[31:0] sig_bus_wdata;
+  /* metron_internal */ logic[3:0]  sig_bus_wmask;
+  /* metron_internal */ logic  sig_bus_wren;
+
+  //----------------------------------------
+  // Signals to regfile
+
+  /* metron_internal */ logic[7:0]  sig_rf_raddr1;
+  /* metron_internal */ logic[7:0]  sig_rf_raddr2;
+  /* metron_internal */ logic[7:0]  sig_rf_waddr;
+  /* metron_internal */ logic[31:0] sig_rf_wdata;
+  /* metron_internal */ logic  sig_rf_wren;
+
+  //----------------------------------------
+  // Internal signals and registers
+  // metron_internal
+
+  /* metron_internal */ logic[31:0] sig_hpc_a;
+  /* metron_internal */ logic[31:0] reg_hpc_a;
+  /* metron_internal */ logic[31:0] sig_insn_a;
+
+  /* metron_internal */ logic[31:0] reg_hpc_b;
+  /* metron_internal */ logic[31:0] reg_insn_b;
+  /* metron_internal */ logic[31:0] sig_addr_b;
+  /* metron_internal */ logic[31:0] sig_result_b;
+
+  /* metron_internal */ logic[31:0] reg_hpc_c;
+  /* metron_internal */ logic[31:0] reg_insn_c;
+  /* metron_internal */ logic[31:0] reg_addr_c;
+  /* metron_internal */ logic[31:0] sig_result_c;
+  /* metron_internal */ logic[31:0] reg_result_c;
+
+  /* metron_internal */ logic[31:0] reg_hpc_d;
+  /* metron_internal */ logic[31:0] reg_insn_d;
+  /* metron_internal */ logic[31:0] reg_result_d;
+
+  /* metron_internal */ logic[31:0] reg_ticks;
+
+  //----------------------------------------
+  // FIXME support static
 endmodule
 
 /* verilator lint_on UNUSEDSIGNAL */
