@@ -20,6 +20,19 @@
 
 #include "pinwheel/metron/tilelink.h"
 
+inline static const char* tilelink_op_to_string(int op) {
+  switch(op) {
+    case TL::PutFullData: return "PutFullData";
+    case TL::PutPartialData: return "PutPartialData";
+    case TL::ArithmeticData: return "ArithmeticData";
+    case TL::LogicalData: return "LogicalData";
+    case TL::Get: return "Get";
+    case TL::Intent: return "Intent";
+    case TL::Acquire: return "Acquire";
+  }
+  return "<invalid>";
+}
+
 //------------------------------------------------------------------------------
 
 PinwheelApp::PinwheelApp() {
@@ -52,8 +65,8 @@ void PinwheelApp::app_init(int screen_w, int screen_h) {
 
   //const char* firmware_filename = "bin/tests/firmware/write_code";
   //const char* firmware_filename = "bin/tests/firmware/basic";
-  const char* firmware_filename = "bin/tests/firmware/hello";
-  //const char* firmware_filename = "tests/rv_tests/add.elf";
+  //const char* firmware_filename = "bin/tests/firmware/hello";
+  const char* firmware_filename = "tests/rv_tests/add.elf";
 
   p.load_elf(firmware_filename);
 
@@ -182,10 +195,10 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   auto hart_d = ((pinwheel.core.reg_hpc_d >> 24) & 0xF);
 
   uint32_t hart_pcs[16] = {0};
-  if (pinwheel.core.reg_hpc_a) hart_pcs[hart_a] = pinwheel.core.reg_hpc_a;
-  if (pinwheel.core.reg_hpc_b) hart_pcs[hart_b] = pinwheel.core.reg_hpc_b;
-  if (pinwheel.core.reg_hpc_c) hart_pcs[hart_c] = pinwheel.core.reg_hpc_c;
   if (pinwheel.core.reg_hpc_d) hart_pcs[hart_d] = pinwheel.core.reg_hpc_d;
+  if (pinwheel.core.reg_hpc_c) hart_pcs[hart_c] = pinwheel.core.reg_hpc_c;
+  if (pinwheel.core.reg_hpc_b) hart_pcs[hart_b] = pinwheel.core.reg_hpc_b;
+  if (pinwheel.core.reg_hpc_a) hart_pcs[hart_a] = pinwheel.core.reg_hpc_a;
 
   auto hart_a_col = pinwheel.core.reg_hpc_a ? hart_a + 2 : 0;
   auto hart_b_col = pinwheel.core.reg_hpc_b ? hart_b + 2 : 0;
@@ -207,8 +220,26 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   }
 
   {
+    //logic<3>  a_opcode;
+    //logic<3>  a_param;
+    //logic<3>  a_size;
+    //logic<1>  a_source;
+    //logic<32> a_address;
+    //logic<4>  a_mask;
+    //logic<32> a_data;
+    //logic<1>  a_valid;
+    //logic<1>  a_ready;
+
+    d("bus op   %s\n",     tilelink_op_to_string(pinwheel.core.bus_tla.a_opcode));
+    d("bus addr 0x%08x\n", pinwheel.core.bus_tla.a_address);
+    d("bus data 0x%08x\n", pinwheel.core.bus_tla.a_data);
+    d("bus mask 0x%08x\n", pinwheel.core.bus_tla.a_mask);
+    d("\n");
+  }
+
+  {
     d.s.push_back(1);
-    d("vane A\n");
+    d("decode\n");
     d.s.push_back(hart_a_col);
     d("pc   0x%08x\n", pinwheel.core.reg_hpc_a);
     d("op   0x%08x ",  insn_a); print_rv(d, insn_a); d("\n");
@@ -217,7 +248,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
 
   {
     d.s.push_back(1);
-    d("vane B\n");
+    d("fetch\n");
     d.s.push_back(hart_b_col);
     d("pc   0x%08x\n", pinwheel.core.reg_hpc_b);
     d("op   0x%08x ",  pinwheel.core.reg_insn_b); print_rv(d, pinwheel.core.reg_insn_b); d("\n");
@@ -231,7 +262,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
 
   {
     d.s.push_back(1);
-    d("vane C\n");
+    d("mem/execute\n");
     d.s.push_back(hart_c_col);
     d("pc   0x%08x\n", pinwheel.core.reg_hpc_c);
     d("op   0x%08x ",  pinwheel.core.reg_insn_c); print_rv(d, pinwheel.core.reg_insn_c); d("\n");
@@ -243,7 +274,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
 
   {
     d.s.push_back(1);
-    d("vane D\n");
+    d("writeback\n");
     d.s.push_back(hart_d_col);
     d("pc   0x%08x\n", pinwheel.core.reg_hpc_d);
     d("op   0x%08x ",  pinwheel.core.reg_insn_d); print_rv(d, pinwheel.core.reg_insn_d); d("\n");
@@ -257,7 +288,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   }
 
   text_painter.render_string(view, screen_size, d.s, 32, cursor_y);
-  cursor_y += 256 + 96 + 64;
+  cursor_y += 480;
   d.clear();
 
   for (int hart = 0; hart < 4; hart++) {

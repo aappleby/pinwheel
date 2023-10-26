@@ -23,7 +23,7 @@ public:
     }
     else {
 
-      if (((tla.a_address & addr_mask) == addr_tag) && (tla.a_opcode == TL::PutPartialData)) {
+      if (((tla.a_address & addr_mask) == addr_tag) && (tla.a_opcode == TL::PutPartialData || tla.a_opcode == TL::PutFullData)) {
         buf[y * width + x] = 0;
         auto c = char(tla.a_data);
 

@@ -123,10 +123,11 @@ public:
     // Memory: Data bus
 
     {
-      logic<4>          temp_mask_b = 0;
-      if (f3_b == 0)    temp_mask_b = 0b0001;
-      if (f3_b == 1)    temp_mask_b = 0b0011;
-      if (f3_b == 2)    temp_mask_b = 0b1111;
+      logic<4> temp_mask_b = 0;
+      logic<3> temp_bus_size = 0;
+      if (f3_b == 0)    { temp_mask_b = 0b0001; temp_bus_size = 0; }
+      if (f3_b == 1)    { temp_mask_b = 0b0011; temp_bus_size = 1; }
+      if (f3_b == 2)    { temp_mask_b = 0b1111; temp_bus_size = 2; }
       if (sig_addr_b[0]) temp_mask_b = temp_mask_b << 1;
       if (sig_addr_b[1]) temp_mask_b = temp_mask_b << 2;
 
@@ -135,6 +136,7 @@ public:
       sig_bus_wdata  = rs2_b;
       sig_bus_wmask  = temp_mask_b;
       sig_bus_wren   = (op_b == RV32I::OP_STORE);
+      sig_bus_size   = temp_bus_size;
     }
 
     //----------
@@ -210,9 +212,9 @@ public:
 
     sig_result_c = temp_result_c;
 
-    bus_tla.a_opcode  = sig_bus_wren ? TL::PutPartialData : TL::Get;
+    bus_tla.a_opcode  = sig_bus_wren ? (sig_bus_size == 2 ? TL::PutFullData : TL::PutPartialData) : TL::Get;
     bus_tla.a_param   = b3(DONTCARE);
-    bus_tla.a_size    = 0; // fixme
+    bus_tla.a_size    = sig_bus_size;
     bus_tla.a_source  = b1(DONTCARE);
     bus_tla.a_address = sig_bus_addr;
     bus_tla.a_mask    = sig_bus_wmask;
@@ -220,7 +222,7 @@ public:
     bus_tla.a_valid   = 1;
     bus_tla.a_ready   = 1;
 
-    code_tla.a_opcode  = sig_code_wren ? TL::PutPartialData : TL::Get;
+    code_tla.a_opcode  = sig_code_wren ? TL::PutFullData : TL::Get;
     code_tla.a_param   = b3(DONTCARE);
     code_tla.a_size    = 2;
     code_tla.a_source  = b1(DONTCARE);
@@ -376,6 +378,7 @@ public:
   // Signals to data bus
 
   /* metron_internal */ logic<32> sig_bus_addr;
+  /* metron_internal */ logic<3>  sig_bus_size;
   /* metron_internal */ logic<1>  sig_bus_rden;
   /* metron_internal */ logic<32> sig_bus_wdata;
   /* metron_internal */ logic<4>  sig_bus_wmask;

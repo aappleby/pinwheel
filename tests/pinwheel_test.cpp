@@ -27,7 +27,10 @@ TestResults run_test_elf(const char* test_filename, int reps = 1, int max_cycles
 
   pinwheel top;
 
-  top.load_elf(test_filename);
+  bool load_ok = top.load_elf(test_filename);
+  if (!load_ok) {
+    TEST_FAIL("Could not load %s\n", test_filename);
+  }
 
   for (int rep = 0; rep < reps; rep++) {
     top.tock(1, 0, 0);
@@ -38,7 +41,13 @@ TestResults run_test_elf(const char* test_filename, int reps = 1, int max_cycles
       top.tick(0, 0, 0);
       tocks++;
 
-      if (top.get_debug()) {
+      // logic<3>  a_opcode;
+      // logic<3>  a_param;
+      // logic<3>  a_size;
+      // logic<1>  a_source;
+      // logic<32> a_address;
+
+      if (top.core.bus_tla.a_address == 0xFFFFFFF0 && top.core.bus_tla.a_opcode == TL::PutFullData) {
         if (expect_fail) {
           EXPECT_NE(top.get_debug(), 1, "FAIL @ %d", elapsed_cycles);
         }
@@ -62,7 +71,6 @@ TestResults run_test_elf(const char* test_filename, int reps = 1, int max_cycles
 TestResults run_rv32i_tests(int reps, int max_cycles) {
   TEST_INIT("Testing all rv32i instructions");
 
-  /*
   const char* instructions[38] = {
     "add", "addi", "and", "andi", "auipc", "beq",  "bge", "bgeu",
     "blt", "bltu", "bne", "jal",  "jalr",  "lb",   "lbu", "lh",
@@ -70,15 +78,12 @@ TestResults run_rv32i_tests(int reps, int max_cycles) {
     "sll", "slli", "slt", "slti", "sltiu", "sltu", "sra", "srai",
     "srl", "srli", "sub", "sw",   "xor",   "xori"
   };
-  */
-  const char* instructions[1] = { "add" };
-
 
   const int instruction_count = sizeof(instructions) / sizeof(instructions[0]);
 
   for (int i = 0; i < instruction_count; i++) {
     char firmware_filename[256];
-    sprintf(firmware_filename, "rv_tests/%s.elf", instructions[i]);
+    sprintf(firmware_filename, "tests/rv_tests/%s.elf", instructions[i]);
     results << run_test_elf(firmware_filename, reps, max_cycles);
   }
   TEST_DONE();

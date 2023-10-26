@@ -45,6 +45,12 @@ public:
         bus_tld.d_data = new_data;
         bus_tld.d_valid = 1;
       }
+      else if (tla.a_opcode == TL::PutFullData) {
+        data[b14(tla.a_address, 2)] = tla.a_data;
+        bus_tld.d_opcode = TL::AccessAckData;
+        bus_tld.d_data = tla.a_data;
+        bus_tld.d_valid = 1;
+      }
       else {
         bus_tld.d_opcode = TL::AccessAckData;
         bus_tld.d_data = data[b14(tla.a_address, 2)];

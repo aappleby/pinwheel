@@ -56,6 +56,12 @@ module block_ram (
         bus_tld.d_data <= new_data;
         bus_tld.d_valid <= 1;
       end
+      else if (tick_tla.a_opcode == TL::PutFullData) begin
+        data[tick_tla.a_address[15:2]] <= tick_tla.a_data;
+        bus_tld.d_opcode <= TL::AccessAckData;
+        bus_tld.d_data <= tick_tla.a_data;
+        bus_tld.d_valid <= 1;
+      end
       else begin
         bus_tld.d_opcode <= TL::AccessAckData;
         bus_tld.d_data <= data[tick_tla.a_address[15:2]];
