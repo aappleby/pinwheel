@@ -4,25 +4,28 @@
 module block_ram
 #(
  parameter filename = "data/zero.hex",
- parameter addr_width = 8,
- parameter data_width = 16
+ parameter width = 8,
+ parameter depth = 4096
 )
 (
-  input logic rclk,
-  input logic[addr_width-1:0] raddr,
-  output logic[data_width-1:0] rdata,
+  input  logic rclk,
+  input  logic[addr_bits-1:0] raddr,
+  output logic[data_bits-1:0] rdata,
 
-  input logic wclk,
-  input logic[addr_width-1:0] waddr,
-  input logic[data_width-1:0] wdata,
-  input logic wren,
+  input  logic wclk,
+  input  logic[addr_bits-1:0] waddr,
+  input  logic[data_bits-1:0] wdata,
+  input  logic wren,
 );
+
+  localparam addr_bits = $clog2(depth);
+  localparam data_bits = width;
 
   initial begin
     $readmemh(filename, mem);
   end
 
-  reg [data_width-1:0] mem [(1<<addr_width)-1:0];
+  reg [width-1:0] mem [depth-1:0];
 
   always @(posedge wclk) begin
     if (wren) mem[waddr] <= wdata;

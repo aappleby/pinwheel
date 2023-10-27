@@ -12,8 +12,7 @@ module pinwheel_ram
   input  logic       wren,
 );
 
-  block_ram #(.addr_width(10), .data_width(32)) data
-  (
+  block_ram #(.width(32), .depth(1024)) data(
     .rclk(clk), .raddr(raddr), .rdata(rdata),
     .wclk(clk), .waddr(waddr), .wdata(wdata), .wren(wren),
   );

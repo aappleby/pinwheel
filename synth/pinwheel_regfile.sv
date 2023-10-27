@@ -14,29 +14,16 @@ module pinwheel_regfile
   input  logic       wren,
 );
 
-
-  block_ram regs_lo_0(
-    .rclk(clk), .raddr(raddr0), .rdata(rdata0[15:0]),
-    .wclk(clk), .waddr(waddr),  .wdata(wdata [15:0]), .wren(wren),
+  block_ram #(.width(32), .depth(32*4)) regs0(
+    .rclk(clk), .raddr(raddr0), .rdata(rdata0),
+    .wclk(clk), .waddr(waddr),  .wdata(wdata ), .wren(wren),
   );
 
-  block_ram regs_lo_1(
-    .rclk(clk), .raddr(raddr1), .rdata(rdata1[15:0]),
-    .wclk(clk), .waddr(waddr),  .wdata(wdata [15:0]), .wren(wren),
+  block_ram #(.width(32), .depth(32*4)) regs1(
+    .rclk(clk), .raddr(raddr1), .rdata(rdata1),
+    .wclk(clk), .waddr(waddr),  .wdata(wdata ), .wren(wren),
   );
-
-  block_ram regs_hi_0(
-    .rclk(clk), .raddr(raddr0), .rdata(rdata0[31:16]),
-    .wclk(clk), .waddr(waddr),  .wdata(wdata [31:16]), .wren(wren),
-  );
-
-  block_ram regs_hi_1(
-    .rclk(clk), .raddr(raddr1), .rdata(rdata1[31:16]),
-    .wclk(clk), .waddr(waddr),  .wdata(wdata [31:16]), .wren(wren),
-  );
-
 
 endmodule
-
 
 `endif // PINWHEEL_REGFILE_SV

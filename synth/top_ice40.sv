@@ -63,18 +63,24 @@ module uart_ice40(
 
   //----------------------------------------
 
-  logic[7:0]  raddr;
-  logic[15:0] rdata;
+  localparam ram_width = 8;
+  localparam ram_depth = 1024 + 128;
 
-  logic[15:0] wdata;
-  logic[7:0]  waddr;
-  logic       wren;
+  localparam addr_bits = $clog2(ram_depth);
+  localparam data_bits = ram_width;
+
+  logic[addr_bits-1:0] raddr;
+  logic[data_bits-1:0] rdata;
+
+  logic[addr_bits-1:0] waddr;
+  logic[data_bits-1:0] wdata;
+  logic wren;
 
   block_ram
   #(
     .filename("data/message.hex"),
-    .addr_width(8),
-    .data_width(16)
+    .width(ram_width),
+    .depth(ram_depth),
   )
   my_ram(
     .rclk(CLK),
@@ -88,6 +94,7 @@ module uart_ice40(
 
   //----------------------------------------
 
+  /*
   logic[7:0]  reg_raddr0;
   logic[31:0] reg_rdata0;
   logic[7:0]  reg_raddr1;
@@ -142,21 +149,34 @@ module uart_ice40(
     .wdata(data_wdata),
     .wren (data_wren),
   );
+  */
 
   //----------------------------------------
 
-  logic[31:0] counter;
+  logic[63:0] counter;
+  logic[addr_bits-1:0] index;
 
   always_comb begin
-    raddr = counter[31:24];
+    raddr = index;
   end
 
   always @(posedge CLK) begin
     if (reset) begin
       counter <= 0;
+      index <= 0;
     end
     else begin
-      counter <= counter + 1;
+      if (counter == 'h3FFFF) begin
+        counter <= 0;
+        if (index == ram_depth - 1) begin
+          index <= 0;
+        end else begin
+          index <= index + 1;
+        end
+      end
+      else begin
+        counter <= counter + 1;
+      end
     end
   end
 
