@@ -1,12 +1,11 @@
 Ball Function, Pin Type, Bank, Ball Number
 
-CDONE,          CONFIG, 2, M10
-CRESET_B,       CONFIG, 2, N11
-
-IOB_105_SDO,    SPI,   SPI, P12
-IOB_106_SDI,    SPI,   SPI, P11
-IOB_107_SCK,    SPI,   SPI, R11
-IOB_108_SS,     SPI,   SPI, R12
+CDONE,       CONFIG, 2,   M10
+CRESET_B,    CONFIG, 2,   N11
+IOB_105_SDO, SPI,    SPI, P12
+IOB_106_SDI, SPI,    SPI, P11
+IOB_107_SCK, SPI,    SPI, R11
+IOB_108_SS,  SPI,    SPI, R12
 
 IOT_168,        PIO,   0,  C14
 IOT_169,        PIO,   0,  B15
