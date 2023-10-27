@@ -3,16 +3,23 @@
 `include "block_ram.sv"
 
 module pinwheel_ram
+#(
+ parameter size_bytes = 512,
+)
 (
-  input  logic       clk,
-  input  logic[9:0]  raddr,
-  output logic[31:0] rdata,
-  input  logic[9:0]  waddr,
-  input  logic[31:0] wdata,
-  input  logic       wren,
+  input  logic clk,
+  input  logic[addr_bits-1:0] raddr,
+  output logic[word_bits-1:0] rdata,
+  input  logic[addr_bits-1:0] waddr,
+  input  logic[word_bits-1:0] wdata,
+  input  logic wren,
 );
 
-  block_ram #(.width(32), .depth(1024)) data(
+  localparam size_words = size_bytes / 4;
+  localparam addr_bits = $clog2(size_bytes / 4);
+  localparam word_bits = 32;
+
+  block_ram #(.width(word_bits), .depth(size_words)) data(
     .rclk(clk), .raddr(raddr), .rdata(rdata),
     .wclk(clk), .waddr(waddr), .wdata(wdata), .wren(wren),
   );

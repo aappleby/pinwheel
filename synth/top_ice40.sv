@@ -64,47 +64,50 @@ module uart_ice40(
   //----------------------------------------
 
   localparam ram_width = 8;
-  localparam ram_depth = 1024 + 128;
+  localparam ram_depth = 1024;
 
-  localparam addr_bits = $clog2(ram_depth);
-  localparam data_bits = ram_width;
+  localparam ram_addr_bits = $clog2(ram_depth);
+  localparam ram_word_bits = ram_width;
 
-  logic[addr_bits-1:0] raddr;
-  logic[data_bits-1:0] rdata;
+  logic[ram_addr_bits-1:0] raddr;
+  logic[ram_word_bits-1:0] rdata;
 
-  logic[addr_bits-1:0] waddr;
-  logic[data_bits-1:0] wdata;
+  logic[ram_addr_bits-1:0] waddr;
+  logic[ram_word_bits-1:0] wdata;
   logic wren;
 
-  block_ram
-  #(
-    .filename("data/message.hex"),
-    .width(ram_width),
-    .depth(ram_depth),
-  )
+  block_ram #(.filename("data/message.hex"), .width(ram_width), .depth(ram_depth))
   my_ram(
-    .rclk(CLK),
+    .rclk (CLK),
     .raddr(raddr),
     .rdata(rdata),
-    .wclk(CLK),
+    .wclk (CLK),
     .waddr(waddr),
     .wdata(wdata),
-    .wren(wren),
+    .wren (wren),
   );
 
   //----------------------------------------
 
-  /*
-  logic[7:0]  reg_raddr0;
-  logic[31:0] reg_rdata0;
-  logic[7:0]  reg_raddr1;
-  logic[31:0] reg_rdata1;
-  logic[7:0]  reg_waddr;
-  logic[31:0] reg_wdata;
-  logic       reg_wren;
+  localparam thread_count = 4;
 
-  pinwheel_regfile regfile(
-    .clk(CLK),
+  localparam reg_count = 32;
+  localparam reg_width = 32;
+  localparam reg_total = reg_count * thread_count;
+  localparam reg_addr_bits = $clog2(reg_count * thread_count);
+  localparam reg_word_bits = 32;
+
+  logic[reg_addr_bits-1:0] reg_raddr0;
+  logic[reg_word_bits-1:0] reg_rdata0;
+  logic[reg_addr_bits-1:0] reg_raddr1;
+  logic[reg_word_bits-1:0] reg_rdata1;
+  logic[reg_addr_bits-1:0] reg_waddr;
+  logic[reg_word_bits-1:0] reg_wdata;
+  logic reg_wren;
+
+  pinwheel_regfile #(.reg_count(reg_count), .reg_width(reg_width), .thread_count(thread_count))
+  regfile(
+    .clk   (CLK),
     .raddr0(reg_raddr0),
     .rdata0(reg_rdata0),
     .raddr1(reg_raddr1),
@@ -116,15 +119,19 @@ module uart_ice40(
 
   //----------------------------------------
 
-  logic[9:0]  code_raddr;
-  logic[31:0] code_rdata;
-  logic[9:0]  code_waddr;
-  logic[31:0] code_wdata;
-  logic       code_wren;
+  localparam code_size_bytes = 4096;
+  localparam code_addr_bits = $clog2(code_size_bytes / 4);
+  localparam code_word_bits = 32;
 
-  pinwheel_ram code_ram
-  (
-    .clk(CLK),
+  logic[code_addr_bits-1:0] code_raddr;
+  logic[code_word_bits-1:0] code_rdata;
+  logic[code_addr_bits-1:0] code_waddr;
+  logic[code_word_bits-1:0] code_wdata;
+  logic code_wren;
+
+  pinwheel_ram #(.size_bytes(code_size_bytes))
+  code_ram(
+    .clk  (CLK),
     .raddr(code_raddr),
     .rdata(code_rdata),
     .waddr(code_waddr),
@@ -134,27 +141,30 @@ module uart_ice40(
 
   //----------------------------------------
 
-  logic[9:0]  data_raddr;
-  logic[31:0] data_rdata;
-  logic[9:0]  data_waddr;
-  logic[31:0] data_wdata;
-  logic       data_wren;
+  localparam data_size_bytes = 4096;
+  localparam data_addr_bits = $clog2(data_size_bytes / 4);
+  localparam data_word_bits = 32;
+
+  logic[data_addr_bits-1:0] data_raddr;
+  logic[data_word_bits-1:0] data_rdata;
+  logic[data_addr_bits-1:0] data_waddr;
+  logic[data_word_bits-1:0] data_wdata;
+  logic data_wren;
 
   pinwheel_ram data_ram
   (
-    .clk(CLK),
+    .clk  (CLK),
     .raddr(data_raddr),
     .rdata(data_rdata),
     .waddr(data_waddr),
     .wdata(data_wdata),
     .wren (data_wren),
   );
-  */
 
   //----------------------------------------
 
   logic[63:0] counter;
-  logic[addr_bits-1:0] index;
+  logic[ram_addr_bits-1:0] index;
 
   always_comb begin
     raddr = index;

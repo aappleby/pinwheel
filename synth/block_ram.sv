@@ -10,16 +10,16 @@ module block_ram
 (
   input  logic rclk,
   input  logic[addr_bits-1:0] raddr,
-  output logic[data_bits-1:0] rdata,
+  output logic[word_bits-1:0] rdata,
 
   input  logic wclk,
   input  logic[addr_bits-1:0] waddr,
-  input  logic[data_bits-1:0] wdata,
+  input  logic[word_bits-1:0] wdata,
   input  logic wren,
 );
 
   localparam addr_bits = $clog2(depth);
-  localparam data_bits = width;
+  localparam word_bits = width;
 
   initial begin
     $readmemh(filename, mem);
