@@ -1,7 +1,7 @@
 `ifndef UART_HELLO_H
 `define UART_HELLO_H
 
-`include "metron/metron_tools.sv"
+`include "metron_tools.sv"
 
 //==============================================================================
 
@@ -22,7 +22,7 @@ module uart_hello (
   parameter repeat_msg = 0;
 /*public:*/
   initial begin
-    $readmemh("examples/uart/message.hex", memory, 0, 511);
+    $readmemh("message.hex", memory, 0, 511);
   end
 
   // The byte of data we want transmitted is always the one at the cursor.

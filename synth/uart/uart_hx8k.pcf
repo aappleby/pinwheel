@@ -22,7 +22,6 @@
 
 #-------------------------------------------------------------------------------
 
-# Control pins
 set_io -nowarn EXT_CLK  J3    # 12 MHz clock on IOL_14A_GBIN6 in bank 3
 set_io -nowarn CDONE    M10
 set_io -nowarn CRESET_B M11
@@ -51,3 +50,15 @@ set_io -nowarn SER_CTSn A15
 set_io -nowarn SER_RTSn B13
 set_io -nowarn SER_TX   B12
 set_io -nowarn SER_RX   B10
+
+#-------------------------------------------------------------------------------
+# Application pins
+
+set_io -nowarn DEBUG[0] C16
+set_io -nowarn DEBUG[1] D16
+set_io -nowarn DEBUG[2] E16
+set_io -nowarn DEBUG[3] F16
+set_io -nowarn DEBUG[4] G16
+set_io -nowarn DEBUG[5] H16
+set_io -nowarn DEBUG[6] J15
+set_io -nowarn DEBUG[7] G14
