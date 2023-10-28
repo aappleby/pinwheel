@@ -36,6 +36,7 @@
 #.vscode
 bin
 obj
+gen
 icarus
 yosys
 verilator
