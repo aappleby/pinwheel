@@ -21,13 +21,6 @@ namespace TL {
   static const int Grant = 4;
   static const int GrantData = 5;
   static const int ReleaseAck = 6;
-
-  /*
-  // FIXME metron doesn't like functions in namespaces
-  logic<32> expand_bitmask(logic<4> mask) {
-    return cat(dup<8>(mask[3]), dup<8>(mask[2]), dup<8>(mask[1]), dup<8>(mask[0]));
-  }
-  */
 };
 
 //----------------------------------------

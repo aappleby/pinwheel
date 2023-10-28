@@ -1,4 +1,4 @@
-#include "pinwheel/metron/pinwheel.h"
+#include "pinwheel/soc/pinwheel_soc.h"
 #include "metrolib/core/Log.h"
 
 #include <elf.h>

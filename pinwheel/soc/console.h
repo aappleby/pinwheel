@@ -2,7 +2,7 @@
 #define PINWHEEL_RTL_CONSOLE_H
 
 #include "metron/metron_tools.h"
-#include "pinwheel/metron/tilelink.h"
+#include "pinwheel/tools/tilelink.h"
 
 // Pseudo-hardware, not actually synthesizable
 

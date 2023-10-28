@@ -21,7 +21,7 @@ module pinwheel_regfile
 
   localparam reg_total = reg_count * thread_count;
   localparam addr_bits = $clog2(reg_count * thread_count);
-  localparam word_bits = 32;
+  localparam word_bits = reg_width;
 
   block_ram #(.width(word_bits), .depth(reg_total)) regs0(
     .rclk(clk), .raddr(raddr0), .rdata(rdata0),

@@ -1,20 +1,11 @@
-#ifndef PINHWEEL_RTL_REGFILE_H
-#define PINHWEEL_RTL_REGFILE_H
+#ifndef PINHWEEL_SOC_REGFILE_H
+#define PINHWEEL_SOC_REGFILE_H
 
 #include "metron/metron_tools.h"
+#include "pinwheel/tools/regfile_if.h"
 
 //------------------------------------------------------------------------------
 // verilator lint_off unusedsignal
-
-struct regfile_in {
-  logic<8>  raddr1;
-  logic<8>  raddr2;
-  logic<8>  waddr;
-  logic<32> wdata;
-  logic<1>  wren;
-};
-
-//------------------------------------------------------------------------------
 
 class regfile {
 public:
@@ -61,4 +52,4 @@ public:
 //------------------------------------------------------------------------------
 // verilator lint_on unusedsignal
 
-#endif // PINHWEEL_RTL_REGFILE_H
+#endif // PINHWEEL_SOC_REGFILE_H

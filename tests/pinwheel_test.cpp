@@ -1,5 +1,5 @@
 #include "metrolib/core/Tests.h"
-#include "pinwheel/metron/pinwheel.h"
+#include "pinwheel/soc/pinwheel_soc.h"
 
 #include <elf.h>
 #include <sys/stat.h>
@@ -55,22 +55,15 @@ bool load_elf(const char* firmware_filename) {
 
 //------------------------------------------------------------------------------
 
-TestResults run_test_elf(const char* test_filename, int reps = 1, int max_cycles = 100000, bool expect_fail = false) {
-  TEST_INIT("'%-30s', %d reps: ", test_filename, reps);
+TestResults run_test_hex(const char* code_filename, const char* data_filename, int reps = 1, int max_cycles = 100000, bool expect_fail = false) {
+  TEST_INIT("'%-30s', %d reps: ", code_filename, reps);
 
   double time = 0;
   int tocks = 0;
   double time_a, time_b;
   int elapsed_cycles = 0;
 
-  load_elf(test_filename);
-
-  pinwheel top("code.hex", "data.hex");
-
-  bool load_ok = top.load_elf(test_filename);
-  if (!load_ok) {
-    TEST_FAIL("Could not load %s\n", test_filename);
-  }
+  pinwheel top(code_filename, data_filename);
 
   for (int rep = 0; rep < reps; rep++) {
     top.tock(1, 0, 0);
@@ -122,25 +115,34 @@ TestResults run_rv32i_tests(int reps, int max_cycles) {
   const int instruction_count = sizeof(instructions) / sizeof(instructions[0]);
 
   for (int i = 0; i < instruction_count; i++) {
-    char firmware_filename[256];
-    sprintf(firmware_filename, "tests/rv_tests/%s.elf", instructions[i]);
-    results << run_test_elf(firmware_filename, reps, max_cycles);
+    char code_filename[256];
+    char data_filename[256];
+    sprintf(code_filename, "tests/rv_tests/%s.code.vh", instructions[i]);
+    sprintf(data_filename, "tests/rv_tests/%s.data.vh", instructions[i]);
+    results << run_test_hex(code_filename, data_filename, reps, max_cycles);
   }
   TEST_DONE();
 }
 
 //------------------------------------------------------------------------------
 
-TestResults run_microtests() {
+TestResults run_microtests(int reps, int max_cycles) {
   TEST_INIT("Running microtests");
-  results << run_test_elf("bin/tests/firmware/basic");
-  results << run_test_elf("bin/tests/firmware/call_jalr");
-  results << run_test_elf("bin/tests/firmware/get_hart");
-  results << run_test_elf("bin/tests/firmware/start_thread");
-  results << run_test_elf("bin/tests/firmware/stepping");
-  results << run_test_elf("bin/tests/firmware/write_regs");
-  results << run_test_elf("bin/tests/firmware/yield");
-  results << run_test_elf("bin/tests/firmware/read_regs");
+
+  const char* tests[8] = {
+    "basic", "call_jalr", "get_hart", "start_thread",
+    "stepping", "write_regs", "yield", "read_regs"
+  };
+
+  const int test_count = sizeof(tests) / sizeof(tests[0]);
+
+  for (int i =0; i < test_count; i++) {
+    char code_filename[256];
+    char data_filename[256];
+    sprintf(code_filename, "bin/tests/firmware/%s.code.vh", tests[i]);
+    sprintf(data_filename, "bin/tests/firmware/%s.data.vh", tests[i]);
+    results << run_test_hex(code_filename, data_filename, reps, max_cycles);
+  }
 
   // This one is broken...?
   //results << run_test_elf("bin/tests/firmware/write_code");

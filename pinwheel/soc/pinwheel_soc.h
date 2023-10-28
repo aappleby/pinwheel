@@ -3,11 +3,11 @@
 
 #include "metron/metron_tools.h"
 
-#include "pinwheel/metron/block_ram.h"
-#include "pinwheel/metron/pinwheel_core.h"
-#include "pinwheel/metron/regfile.h"
-#include "pinwheel/metron/test_reg.h"
-#include "pinwheel/metron/tilelink.h"
+#include "pinwheel/core/pinwheel_core.h"
+#include "pinwheel/soc/block_ram.h"
+#include "pinwheel/soc/regfile.h"
+#include "pinwheel/soc/test_reg.h"
+#include "pinwheel/tools/tilelink.h"
 
 //------------------------------------------------------------------------------
 // verilator lint_off unusedsignal

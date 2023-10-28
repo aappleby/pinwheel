@@ -5,7 +5,8 @@
 #include "metrolib/appbase/TextPainter.h"
 #include "metrolib/appbase/Viewport.h"
 #include "metrolib/core/StateStack.h"
-#include "pinwheel/metron/pinwheel.h"
+
+#include "pinwheel/soc/pinwheel_soc.h"
 #include "pinwheel/simulator/pinwheel_sim.h"
 #include "pinwheel/simulator/sim_thread.h"
 

@@ -26,33 +26,32 @@ build symlinks/metrolib/bin/metrolib/libappbase.a symlinks/metrolib/bin/metrolib
 ################################################################################
 # Syntax check for Pinwheel Metron RTL
 
-build obj/pinwheel/metron/tilelink.h.ok      : check_cpp pinwheel/metron/tilelink.h
-build obj/pinwheel/metron/regfile.h.ok       : check_cpp pinwheel/metron/regfile.h
-build obj/pinwheel/metron/serial.h.ok        : check_cpp pinwheel/metron/serial.h
-build obj/pinwheel/metron/test_reg.h.ok      : check_cpp pinwheel/metron/test_reg.h
-build obj/pinwheel/metron/block_ram.h.ok     : check_cpp pinwheel/metron/block_ram.h
-build obj/pinwheel/metron/pinwheel_core.h.ok : check_cpp pinwheel/metron/pinwheel_core.h
-build obj/pinwheel/metron/pinwheel.h.ok      : check_cpp pinwheel/metron/pinwheel.h
+build obj/pinwheel/tools/tilelink.h.ok     : check_cpp pinwheel/tools/tilelink.h
+build obj/pinwheel/soc/regfile.h.ok        : check_cpp pinwheel/soc/regfile.h
+build obj/pinwheel/soc/serial.h.ok         : check_cpp pinwheel/soc/serial.h
+build obj/pinwheel/soc/test_reg.h.ok       : check_cpp pinwheel/soc/test_reg.h
+build obj/pinwheel/soc/block_ram.h.ok      : check_cpp pinwheel/soc/block_ram.h
+build obj/pinwheel/core/pinwheel_core.h.ok : check_cpp pinwheel/core/pinwheel_core.h
+build obj/pinwheel/soc/pinwheel_soc.h.ok   : check_cpp pinwheel/soc/pinwheel_soc.h
 
 ################################################################################
 # Debugger app
 
-build obj/pinwheel/metron/pinwheel.o:            compile_cpp pinwheel/metron/pinwheel.cpp
-build obj/pinwheel/metron/console.o:             compile_cpp pinwheel/metron/console.cpp
+build obj/pinwheel/soc/pinwheel_soc.o : compile_cpp pinwheel/soc/pinwheel_soc.cpp
+build obj/pinwheel/soc/console.o      : compile_cpp pinwheel/soc/console.cpp
 
-build obj/pinwheel/simulator/pinwheel_app.o:  compile_cpp pinwheel/simulator/pinwheel_app.cpp
-build obj/pinwheel/simulator/pinwheel_main.o: compile_cpp pinwheel/simulator/pinwheel_main.cpp
-build obj/pinwheel/simulator/pinwheel_sim.o:  compile_cpp pinwheel/simulator/pinwheel_sim.cpp
-build obj/pinwheel/simulator/sim_thread.o:    compile_cpp pinwheel/simulator/sim_thread.cpp
+build obj/pinwheel/simulator/pinwheel_app.o  : compile_cpp pinwheel/simulator/pinwheel_app.cpp
+build obj/pinwheel/simulator/pinwheel_main.o : compile_cpp pinwheel/simulator/pinwheel_main.cpp
+build obj/pinwheel/simulator/pinwheel_sim.o  : compile_cpp pinwheel/simulator/pinwheel_sim.cpp
+build obj/pinwheel/simulator/sim_thread.o    : compile_cpp pinwheel/simulator/sim_thread.cpp
 
-build obj/pinwheel/tools/rvdisasm.o:          compile_cpp pinwheel/tools/rvdisasm.cpp
-
-build obj/symlinks/glad/glad.o:               compile_cpp symlinks/glad/glad.c
+build obj/pinwheel/tools/rvdisasm.o : compile_cpp pinwheel/tools/rvdisasm.cpp
+build obj/symlinks/glad/glad.o      : compile_cpp symlinks/glad/glad.c
 
 build bin/pinwheel_app: c_binary $
   obj/symlinks/glad/glad.o $
   bin/imgui/libimgui.a $
-  obj/pinwheel/metron/pinwheel.o $
+  obj/pinwheel/soc/pinwheel_soc.o $
   obj/pinwheel/simulator/pinwheel_app.o $
   obj/pinwheel/simulator/pinwheel_main.o $
   obj/pinwheel/simulator/pinwheel_sim.o $
@@ -69,7 +68,7 @@ build bin/pinwheel_app: c_binary $
 build obj/tests/pinwheel_test.o:      compile_cpp tests/pinwheel_test.cpp
 
 build bin/pinwheel_test: c_binary $
-  obj/pinwheel/metron/pinwheel.o $
+  obj/pinwheel/soc/pinwheel_soc.o $
   obj/tests/pinwheel_test.o | feature_tests
 
 #build obj/pinwheel_test_pass: run_test bin/pinwheel_test
@@ -77,35 +76,37 @@ build bin/pinwheel_test: c_binary $
 ################################################################################
 # Metron conversion tests
 
-build gen/pinwheel/metron/riscv_constants.sv   : metron pinwheel/metron/riscv_constants.h
-build gen/pinwheel/metron/tilelink.sv          : metron pinwheel/metron/tilelink.h
-build gen/pinwheel/metron/regfile.sv           : metron pinwheel/metron/regfile.h
-build gen/pinwheel/metron/serial.sv            : metron pinwheel/metron/serial.h        | pinwheel/metron/tilelink.h
-build gen/pinwheel/metron/test_reg.sv          : metron pinwheel/metron/test_reg.h      | pinwheel/metron/tilelink.h
-build gen/pinwheel/metron/block_ram.sv         : metron pinwheel/metron/block_ram.h     | pinwheel/metron/tilelink.h
-build gen/pinwheel/metron/pinwheel_core.sv     : metron pinwheel/metron/pinwheel_core.h | pinwheel/metron/regfile.h pinwheel/metron/tilelink.h
-build gen/pinwheel/metron/pinwheel.sv          : metron pinwheel/metron/pinwheel.h      | pinwheel/metron/block_ram.h pinwheel/metron/console.h pinwheel/metron/pinwheel_core.h pinwheel/metron/regfile.h pinwheel/metron/test_reg.h pinwheel/metron/tilelink.h
+build gen/pinwheel/tools/riscv_constants.sv    : metron pinwheel/tools/riscv_constants.h
+build gen/pinwheel/tools/tilelink.sv           : metron pinwheel/tools/tilelink.h
+build gen/pinwheel/tools/regfile_if.sv         : metron pinwheel/tools/regfile_if.h
+
+build gen/pinwheel/core/pinwheel_core.sv       : metron pinwheel/core/pinwheel_core.h | pinwheel/tools/regfile_if.h pinwheel/tools/tilelink.h
+
+build gen/pinwheel/soc/regfile.sv              : metron pinwheel/soc/regfile.h
+build gen/pinwheel/soc/serial.sv               : metron pinwheel/soc/serial.h         | pinwheel/tools/regfile_if.h pinwheel/tools/tilelink.h
+build gen/pinwheel/soc/test_reg.sv             : metron pinwheel/soc/test_reg.h       | pinwheel/tools/regfile_if.h pinwheel/tools/tilelink.h
+build gen/pinwheel/soc/block_ram.sv            : metron pinwheel/soc/block_ram.h      | pinwheel/tools/regfile_if.h pinwheel/tools/tilelink.h
+build gen/pinwheel/soc/pinwheel_soc.sv         : metron pinwheel/soc/pinwheel_soc.h   | pinwheel/tools/regfile_if.h pinwheel/tools/tilelink.h pinwheel/core/pinwheel_core.h pinwheel/soc/block_ram.h pinwheel/soc/console.h pinwheel/soc/regfile.h pinwheel/soc/test_reg.h
 
 build all_pinwheel_sv : phony $
-  gen/pinwheel/metron/console.sv $
-  gen/pinwheel/metron/tilelink.sv $
-  gen/pinwheel/metron/regfile.sv $
-  gen/pinwheel/metron/serial.sv $
-  gen/pinwheel/metron/test_reg.sv $
-  gen/pinwheel/metron/block_ram.sv $
-  gen/pinwheel/metron/pinwheel_core.sv $
-  gen/pinwheel/metron/pinwheel.sv
+  gen/pinwheel/tools/tilelink.sv $
+  gen/pinwheel/soc/regfile.sv $
+  gen/pinwheel/soc/serial.sv $
+  gen/pinwheel/soc/test_reg.sv $
+  gen/pinwheel/soc/block_ram.sv $
+  gen/pinwheel/core/pinwheel_core.sv $
+  gen/pinwheel/soc/pinwheel_soc.sv
 
 ################################################################################
 # Verilator tests
 
-build gen/pinwheel/verilator/Vpinwheel.mk gen/pinwheel/verilator/Vpinwheel.h : verilator gen/pinwheel/metron/pinwheel.sv | all_pinwheel_sv
+build gen/pinwheel/verilator/Vpinwheel.mk gen/pinwheel/verilator/Vpinwheel.h : verilator gen/pinwheel/soc/pinwheel_soc.sv | all_pinwheel_sv
   includes = -I. -Igen -Isymlinks/metron
 
 ################################################################################
 # Yosys tests
 
-build gen/pinwheel/yosys/pinwheel_core.json : yosys gen/pinwheel/metron/pinwheel_core.sv | all_pinwheel_sv
+build gen/pinwheel/yosys/pinwheel_core.json : yosys gen/pinwheel/core/pinwheel_core.sv | all_pinwheel_sv
   includes = -Igen -Isymlinks/metron
 
 #build bin/pinwheel/yosys/pinwheel_core.asc: nextpnr-ice40 gen/pinwheel/yosys/pinwheel_core.json
@@ -119,14 +120,21 @@ build gen/pinwheel/yosys/pinwheel_core.json : yosys gen/pinwheel/metron/pinwheel
 
 # This is really noisy and so disabled for the moment. It does pass, though
 
-#build gen/pinwheel/icarus/pinwheel.iv : iverilog gen/pinwheel/metron/pinwheel.sv | all_pinwheel_sv
+#build gen/pinwheel/icarus/pinwheel.iv : iverilog gen/pinwheel/soc/pinwheel_soc.sv | all_pinwheel_sv
 #  includes = -Igen -Isymlinks/metron
 
 ################################################################################
 # RISC-V test binaries
 
-build obj/rv_tests_built : run_command
-  command = make -C tests/rv_tests && touch obj/rv_tests_built
+#rule elf_to_code_hex
+#	command = riscv64-unknown-elf-objcopy -O binary $< $@ -j .init -j .text --change-addresses -0x400000
+
+#rule elf_to_data_hex
+#	riscv64-unknown-elf-objcopy -O binary ${in} $@ -j .data -j .eh_frame -j .fini_array -j .init_array --change-addresses -0x80000000
+
+
+#build obj/rv_tests_built : run_command
+#  command = make -C tests/rv_tests && touch obj/rv_tests_built
 
 build obj/tests/firmware/start.o : rv_assemble tests/firmware/start.s
 
@@ -141,25 +149,36 @@ build obj/tests/firmware/write_code.o   : rv_compile_cpp tests/firmware/write_co
 build obj/tests/firmware/write_regs.o   : rv_compile_cpp tests/firmware/write_regs.cpp
 build obj/tests/firmware/yield.o        : rv_compile_cpp tests/firmware/yield.cpp
 
-build bin/tests/firmware/basic          : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/basic.o        | tests/firmware/pinwheel.ld
-build bin/tests/firmware/call_jalr      : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/call_jalr.o    | tests/firmware/pinwheel.ld
-build bin/tests/firmware/get_hart       : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/get_hart.o     | tests/firmware/pinwheel.ld
-build bin/tests/firmware/hello          : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/hello.o        | tests/firmware/pinwheel.ld
-build bin/tests/firmware/read_regs      : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/read_regs.o    | tests/firmware/pinwheel.ld
-build bin/tests/firmware/start_thread   : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/start_thread.o | tests/firmware/pinwheel.ld
-build bin/tests/firmware/stepping       : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/stepping.o     | tests/firmware/pinwheel.ld
-build bin/tests/firmware/write_code     : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/write_code.o   | tests/firmware/pinwheel.ld
-build bin/tests/firmware/write_regs     : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/write_regs.o   | tests/firmware/pinwheel.ld
-build bin/tests/firmware/yield          : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/yield.o        | tests/firmware/pinwheel.ld
+build bin/tests/firmware/basic.elf            : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/basic.o        | tests/firmware/pinwheel.ld
+build bin/tests/firmware/call_jalr.elf        : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/call_jalr.o    | tests/firmware/pinwheel.ld
+build bin/tests/firmware/get_hart.elf         : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/get_hart.o     | tests/firmware/pinwheel.ld
+build bin/tests/firmware/hello.elf            : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/hello.o        | tests/firmware/pinwheel.ld
+build bin/tests/firmware/read_regs.elf        : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/read_regs.o    | tests/firmware/pinwheel.ld
+build bin/tests/firmware/start_thread.elf     : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/start_thread.o | tests/firmware/pinwheel.ld
+build bin/tests/firmware/stepping.elf         : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/stepping.o     | tests/firmware/pinwheel.ld
+build bin/tests/firmware/write_code.elf       : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/write_code.o   | tests/firmware/pinwheel.ld
+build bin/tests/firmware/write_regs.elf       : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/write_regs.o   | tests/firmware/pinwheel.ld
+build bin/tests/firmware/yield.elf            : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/yield.o        | tests/firmware/pinwheel.ld
 
-build feature_tests : phony $
-  bin/tests/firmware/basic $
-  bin/tests/firmware/call_jalr $
-  bin/tests/firmware/get_hart $
-  bin/tests/firmware/hello $
-  bin/tests/firmware/read_regs $
-  bin/tests/firmware/start_thread $
-  bin/tests/firmware/stepping $
-  bin/tests/firmware/write_code $
-  bin/tests/firmware/write_regs $
-  bin/tests/firmware/yield
+#build bin/tests/firmware/basic.code.vh        : elf_to_hex bin/tests/firmware/basic.elf
+#build bin/tests/firmware/call_jalr.code.vh    : elf_to_hex bin/tests/firmware/call_jalr.elf
+#build bin/tests/firmware/get_hart.code.vh     : elf_to_hex bin/tests/firmware/get_hart.elf
+#build bin/tests/firmware/hello.code.vh        : elf_to_hex bin/tests/firmware/hello.elf
+#build bin/tests/firmware/read_regs.code.vh    : elf_to_hex bin/tests/firmware/read_regs.elf
+#build bin/tests/firmware/start_thread.code.vh : elf_to_hex bin/tests/firmware/start_thread.elf
+#build bin/tests/firmware/stepping.code.vh     : elf_to_hex bin/tests/firmware/stepping.elf
+#build bin/tests/firmware/write_code.code.vh   : elf_to_hex bin/tests/firmware/write_code.elf
+#build bin/tests/firmware/write_regs.code.vh   : elf_to_hex bin/tests/firmware/write_regs.elf
+#build bin/tests/firmware/yield.code.vh        : elf_to_hex bin/tests/firmware/yield.elf
+
+#build feature_tests : phony $
+#  bin/tests/firmware/basic $
+#  bin/tests/firmware/call_jalr $
+#  bin/tests/firmware/get_hart $
+#  bin/tests/firmware/hello $
+#  bin/tests/firmware/read_regs $
+#  bin/tests/firmware/start_thread $
+#  bin/tests/firmware/stepping $
+#  bin/tests/firmware/write_code $
+#  bin/tests/firmware/write_regs $
+#  bin/tests/firmware/yield

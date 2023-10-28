@@ -1,6 +1,7 @@
 #include "pinwheel/simulator/pinwheel_app.h"
 
 #include "pinwheel/tools/rvdisasm.h"
+#include "pinwheel/tools/tilelink.h"
 
 #define SDL_MAIN_HANDLED
 #ifdef _MSC_VER
@@ -13,12 +14,8 @@
 #include "metrolib/core/Dumper.h"
 #include "metrolib/core/Log.h"
 
-//#include <algorithm>
-
 #include <elf.h>
 #include <sys/stat.h>
-
-#include "pinwheel/metron/tilelink.h"
 
 inline static const char* tilelink_op_to_string(int op) {
   switch(op) {

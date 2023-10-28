@@ -2,9 +2,9 @@
 #define PINWHEEL_RTL_PINWHEEL_CORE_H
 
 #include "metron/metron_tools.h"
-#include "pinwheel/metron/regfile.h"
-#include "pinwheel/metron/tilelink.h"
-#include "pinwheel/metron/riscv_constants.h"
+#include "pinwheel/tools/regfile_if.h"
+#include "pinwheel/tools/tilelink.h"
+#include "pinwheel/tools/riscv_constants.h"
 
 //------------------------------------------------------------------------------
 /* verilator lint_off UNUSEDSIGNAL */
