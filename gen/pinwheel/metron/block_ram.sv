@@ -22,7 +22,9 @@ module block_ram (
 
   parameter /*const char**/ filename = "";
   initial begin
-    if (filename) $readmemh(filename, data);
+    if (filename) begin
+      $readmemh(filename, data);
+    end
   end
 
   /* metron_noconvert */ /*logic<32> get() const { return bus_tld.d_data; }*/

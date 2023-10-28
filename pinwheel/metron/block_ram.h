@@ -13,7 +13,9 @@ class block_ram {
 public:
 
   block_ram(const char* filename = nullptr) {
-    if (filename) readmemh(filename, data);
+    if (filename) {
+      readmemh(filename, data);
+    }
   }
 
   /* metron_noconvert */ logic<32> get() const { return bus_tld.d_data; }

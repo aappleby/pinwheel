@@ -1,6 +1,9 @@
 #include "metrolib/core/Tests.h"
 #include "pinwheel/metron/pinwheel.h"
 
+#include <elf.h>
+#include <sys/stat.h>
+
 //------------------------------------------------------------------------------
 
 double timestamp() {
@@ -17,6 +20,41 @@ double total_time = 0;
 
 //------------------------------------------------------------------------------
 
+bool load_elf(const char* firmware_filename) {
+  struct stat sb;
+  if (stat(firmware_filename, &sb) == -1) {
+    return false;
+  }
+  uint8_t* blob = new uint8_t[sb.st_size];
+  FILE* f = fopen(firmware_filename, "rb");
+  auto result = fread(blob, 1, sb.st_size, f);
+  if (result != sb.st_size) {
+    printf("fread failed\n");
+    exit(-1);
+  }
+  fclose(f);
+
+  Elf32_Ehdr& header = *(Elf32_Ehdr*)blob;
+  for (int i = 0; i < header.e_phnum; i++) {
+    Elf32_Phdr& phdr = *(Elf32_Phdr*)(blob + header.e_phoff + header.e_phentsize * i);
+    if (phdr.p_type & PT_LOAD) {
+      if (phdr.p_flags & PF_X) {
+        LOG_G("Code @ 0x%08x = %d bytes\n", phdr.p_vaddr, phdr.p_filesz);
+        //int len = code_ram.data_size() < phdr.p_filesz ? code_ram.data_size() : phdr.p_filesz;
+        //memcpy(code_ram.get_data(), blob + phdr.p_offset, len);
+      }
+      else if (phdr.p_flags & PF_W) {
+        LOG_G("Data @ 0x%08x = %d bytes\n", phdr.p_vaddr, phdr.p_filesz);
+        //int len = data_ram.data_size() < phdr.p_filesz ? data_ram.data_size() : phdr.p_filesz;
+        //memcpy(data_ram.get_data(), blob + phdr.p_offset, len);
+      }
+    }
+  }
+  return true;
+}
+
+//------------------------------------------------------------------------------
+
 TestResults run_test_elf(const char* test_filename, int reps = 1, int max_cycles = 100000, bool expect_fail = false) {
   TEST_INIT("'%-30s', %d reps: ", test_filename, reps);
 
@@ -25,7 +63,9 @@ TestResults run_test_elf(const char* test_filename, int reps = 1, int max_cycles
   double time_a, time_b;
   int elapsed_cycles = 0;
 
-  pinwheel top;
+  load_elf(test_filename);
+
+  pinwheel top("code.hex", "data.hex");
 
   bool load_ok = top.load_elf(test_filename);
   if (!load_ok) {

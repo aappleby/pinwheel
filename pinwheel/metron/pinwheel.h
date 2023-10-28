@@ -16,9 +16,10 @@
 class pinwheel {
 public:
 
-  pinwheel(const char* text_file = nullptr, const char* data_file = nullptr)
-  : code_ram(text_file),
-    data_ram(data_file) {
+  pinwheel(
+    const char* code_hexfile = "code.hex",
+    const char* data_hexfile = "data.hex"
+  ) : code_ram(code_hexfile), data_ram(data_hexfile) {
   }
 
   /*metron_noconvert*/ pinwheel* clone();

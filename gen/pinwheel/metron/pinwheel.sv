@@ -27,8 +27,8 @@ module pinwheel (
 );
 /*public:*/
 
-  parameter /*const char**/ text_file = "";
-  parameter /*const char**/ data_file = "";
+  parameter /*const char**/ code_hexfile = "code.hex";
+  parameter /*const char**/ data_hexfile = "data.hex";
   initial begin
   end
 
@@ -131,7 +131,7 @@ module pinwheel (
     .addr_mask(32'hF0000000),
     .addr_tag(32'h00000000),
     // Constructor Parameters
-    .filename(text_file)
+    .filename(code_hexfile)
   ) code_ram(
     // Global clock
     .clock(clock),
@@ -147,7 +147,7 @@ module pinwheel (
     .addr_mask(32'hF0000000),
     .addr_tag(32'h80000000),
     // Constructor Parameters
-    .filename(data_file)
+    .filename(data_hexfile)
   ) data_ram(
     // Global clock
     .clock(clock),
