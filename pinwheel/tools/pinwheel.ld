@@ -16,6 +16,7 @@ SECTIONS {
     *(.text);
     *(.text.*);
     _etext = .;
+    . = ALIGN(4);
   } >ROM
 
   .data : {
@@ -32,5 +33,6 @@ SECTIONS {
     _sbss = .;
     *(.bss);
     _ebss = .;
+    . = ALIGN(4);
   } >RAM
 }

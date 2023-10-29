@@ -8,8 +8,8 @@
 
 #define RVTEST_CODE_BEGIN		\
 	.text;				\
-	.global test;			\
-test:
+	.global _start;			\
+_start:
 
 #define RVTEST_PASS			\
 .pass:					\

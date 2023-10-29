@@ -117,8 +117,8 @@ TestResults run_rv32i_tests(int reps, int max_cycles) {
   for (int i = 0; i < instruction_count; i++) {
     char code_filename[256];
     char data_filename[256];
-    sprintf(code_filename, "tests/rv_tests/%s.code.vh", instructions[i]);
-    sprintf(data_filename, "tests/rv_tests/%s.data.vh", instructions[i]);
+    sprintf(code_filename, "bin/tests/rv_tests/%s.code.vh", instructions[i]);
+    sprintf(data_filename, "bin/tests/rv_tests/%s.data.vh", instructions[i]);
     results << run_test_hex(code_filename, data_filename, reps, max_cycles);
   }
   TEST_DONE();
@@ -168,7 +168,7 @@ int main(int argc, const char** argv) {
 
   TestResults results;
   results << run_rv32i_tests(reps, max_cycles);
-  results << run_microtests();
+  results << run_microtests(reps, max_cycles);
   results.show_result();
 
   LOG_B("Total tocks %f\n", double(total_tocks));

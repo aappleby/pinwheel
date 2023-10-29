@@ -30,6 +30,16 @@
           "ignoreFailures": true
         }
       ]
-    },  ]
+    },
+    {
+      "name": "test_elf_to_hex",
+      "preLaunchTask": "build_elf_to_hex",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/tests/rv_tests/elf_to_hex",
+      "cwd": "${workspaceFolder}/tests/rv_tests",
+      "args": ["bin/sw.elf"],
+    },
+  ]
 }
 // clang-format on

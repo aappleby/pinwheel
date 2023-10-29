@@ -17,8 +17,8 @@ class pinwheel {
 public:
 
   pinwheel(
-    const char* code_hexfile = "code.hex",
-    const char* data_hexfile = "data.hex"
+    const char* code_hexfile = "pinwheel/tools/blank.code.vh",
+    const char* data_hexfile = "pinwheel/tools/blank.data.vh"
   ) : code_ram(code_hexfile), data_ram(data_hexfile) {
   }
 
@@ -32,9 +32,11 @@ public:
   //----------------------------------------
   // FIXME const local variable should not become parameter
 
-  void tock(logic<1> reset_in, logic<1> _serial_valid, logic<8> _serial_data) {
+  // FIXME yosys can't handle structs as local variables
 
-    tilelink_d bus_tld;
+  /* metron_internal */ tilelink_d bus_tld;
+
+  void tock(logic<1> reset_in, logic<1> _serial_valid, logic<8> _serial_data) {
     bus_tld.d_opcode = b3(DONTCARE);
     bus_tld.d_param  = b2(DONTCARE);
     bus_tld.d_size   = b3(DONTCARE);

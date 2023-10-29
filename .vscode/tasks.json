@@ -24,7 +24,6 @@
       "problemMatcher": "$gcc",
       "group": {
         "kind": "build",
-        "isDefault": false
       },
       "presentation": {
         "echo": false,
@@ -40,13 +39,21 @@
       "problemMatcher": "$gcc",
       "group": {
         "kind": "build",
-        "isDefault": false
       },
       "presentation": {
         "echo": false,
         "showReuseMessage": false,
         "clear": true
       }
+    },
+    {
+      "type": "shell",
+      "label": "build_elf_to_hex",
+      "command": "ninja",
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+      },
     },
   ]
 }
