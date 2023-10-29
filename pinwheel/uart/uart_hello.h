@@ -8,8 +8,8 @@
 template <int repeat_msg = 0>
 class uart_hello {
 public:
-  uart_hello() {
-    readmemh("examples/uart/message.hex", memory, 0, 511);
+  uart_hello(const char* message = "examples/uart/message.hex") {
+    readmemh(message, memory, 0, 511);
   }
 
   // The byte of data we want transmitted is always the one at the cursor.

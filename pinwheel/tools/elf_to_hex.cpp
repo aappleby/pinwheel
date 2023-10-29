@@ -12,14 +12,6 @@ namespace fs = std::filesystem;
 std::vector<uint8_t> code;
 std::vector<uint8_t> data;
 
-/*
-Program Headers:
-  Type           Offset   VirtAddr   PhysAddr   FileSiz MemSiz  Flg Align
-  LOAD           0x001000 0x00400000 0x00400000 0x004a4 0x004a4 R E 0x1000
-  LOAD           0x002000 0x80000000 0x80000000 0x00028 0x00028 RW  0x1000
-  NULL           0x000000 0x80000028 0x80000028 0x00000 0x00800 RW  0x1
-*/
-
 //------------------------------------------------------------------------------
 
 bool load_elf(std::string filename) {

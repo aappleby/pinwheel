@@ -34,8 +34,6 @@ public:
 
   // FIXME yosys can't handle structs as local variables
 
-  /* metron_internal */ tilelink_d bus_tld;
-
   void tock(logic<1> reset_in, logic<1> _serial_valid, logic<8> _serial_data) {
     bus_tld.d_opcode = b3(DONTCARE);
     bus_tld.d_param  = b2(DONTCARE);
@@ -70,6 +68,7 @@ public:
 
   //----------------------------------------
 
+  /* metron_internal */ tilelink_d    bus_tld;
   /* metron_internal */ pinwheel_core core;
   /* metron_internal */ regfile       regs;
   /* metron_internal */ block_ram<0xF0000000, 0x00000000> code_ram;

@@ -65,6 +65,14 @@ build obj/pinwheel/core/pinwheel_core.h.ok : check_cpp pinwheel/core/pinwheel_co
 build obj/pinwheel/soc/pinwheel_soc.h.ok   : check_cpp pinwheel/soc/pinwheel_soc.h
 
 ################################################################################
+# Pinwheel UART demo
+
+build obj/demo/demo_mc.o : compile_cpp demo/demo_mc.cpp
+build bin/demo/demo_mc2   : c_binary $
+  obj/demo/demo_mc.o $
+  symlinks/metrolib/bin/metrolib/libcore.a
+
+################################################################################
 # Debugger app
 
 build obj/pinwheel/soc/pinwheel_soc.o : compile_cpp pinwheel/soc/pinwheel_soc.cpp
@@ -143,9 +151,6 @@ build gen/pinwheel/yosys/pinwheel_soc.json : yosys gen/pinwheel/soc/pinwheel_soc
 
 ################################################################################
 # RISC-V test binaries
-
-#build obj/rv_tests_built : run_command
-#  command = make -C tests/rv_tests && touch obj/rv_tests_built
 
 build obj/tests/rv_tests/addi.o      : rv_assemble tests/rv_tests/addi.S
 build obj/tests/rv_tests/add.o       : rv_assemble tests/rv_tests/add.S

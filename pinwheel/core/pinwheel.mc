@@ -1,47 +1,47 @@
-Pinwheel # {
-  ticks : u64
-  code : BlockRam
-  data : BlockRam
-  regs : BlockRegfile
+Pinwheel : {
+  ticks : u64;
+  code  : BlockRam;
+  data  : BlockRam;
+  regs  : BlockRegfile;
 
   vane0 : {
-    hart : l5
-    pc : l32
-    enable : l1
-    active : l1
-  }
+    hart   : b5;
+    pc     : b32;
+    enable : b1;
+    active : b1;
+  };
 
   vane1 : {
-    hart : l5
-    pc : l32
-    insn : l32
-    enable : l1
-    active : l1
-  }
+    hart   : b5;
+    pc     : b32;
+    insn   : b32;
+    enable : b1;
+    active : b1;
+  };
 
   vane2 : {
-    hart : l5
-    pc : l32
-    insn : l32
-    enable : l1
-    active : l1
-    mem_addr : l32
-    alu_out : l32
-  }
+    hart     : b5;
+    pc       : b32;
+    insn     : b32;
+    enable   : b1;
+    active   : b1;
+    mem_addr : b32;
+    alu_out  : b32;
+  };
 
-  debug_reg : l32
-}
+  debug_reg : b32;
+};
 
 //--------------------------------------------------------------------------------
 
-void BlockRam::tick_read(logic<32> raddr, logic<1> rden) {
+void BlockRam::tick_read(raddr : b32, rden : b1) {
   out @= rden ? data[b10(raddr, 2)] : 0;
 }
 
-void BlockRam::tick_write(logic<32> waddr, logic<32> wdata, logic<4> wmask, logic<1> wren) {
+void BlockRam::tick_write(b32 waddr, b32 wdata, b4 wmask, b1 wren) {
   if (wren) {
-    old_data := data[b10(waddr, 2)];
-    new_data := wdata << (8 * b2(waddr));
+    old_data = data[b10(waddr, 2)];
+    new_data = wdata << (8 * b2(waddr));
     data[b10(waddr, 2)] @=
       ((wmask[0] ? new_data : old_data) & 0x000000FF) |
       ((wmask[1] ? new_data : old_data) & 0x0000FF00) |
@@ -52,12 +52,12 @@ void BlockRam::tick_write(logic<32> waddr, logic<32> wdata, logic<4> wmask, logi
 
 //--------------------------------------------------------------------------------
 
-void BlockRegfile::tick_read(logic<10> raddr1, logic<10> raddr2, logic<1> rden) {
+void BlockRegfile::tick_read(b10 raddr1, b10 raddr2, b1 rden) {
   out_a @= rden ? data[raddr1] : 0
   out_b @= rden ? data[raddr2] : 0
 }
 
-void BlockRegfile::tick_write(logic<10> waddr, logic<32> wdata, logic<1> wren) {
+void BlockRegfile::tick_write(b10 waddr, b32 wdata, b1 wren) {
   if (wren) {
     data[waddr] @= wdata;
   }
@@ -83,8 +83,8 @@ reset() {
 //--------------------------------------------------------------------------------
 
 unpack(insn, addr, data) {
-  align := b2(addr);
-  f3    := b3(insn, 12);
+  align = b2(addr);
+  f3    = b3(insn, 12);
 
   return match f3 {
     0 -> signed( b8(data, align << 3), 32)
@@ -100,22 +100,22 @@ unpack(insn, addr, data) {
 
 //--------------------------------------------------------------------------------
 
-alu(insn : l32, pc : l32, reg_a : l32, reg_b : l32) {
-  op  := b5(insn, 2);
-  f3  := b3(insn, 12);
-  alt := b1(insn, 30);
+alu(insn : b32, pc : b32, reg_a : b32, reg_b : b32) {
+  op  = b5(insn, 2);
+  f3  = b3(insn, 12);
+  alt = b1(insn, 30);
 
-  imm_i := sign_extend<32>(b12(insn, 20));
-  imm_u := b20(insn, 12) :: b12(0);
+  imm_i = sign_extend<32>(b12(insn, 20));
+  imm_u = b20(insn, 12) :: b12(0);
 
-  alu_a := reg_a
-  alu_b := match 1 {
+  alu_a = reg_a
+  alu_b = match 1 {
     op == OP_ALU && f3 == 0 && alt -> -reg_b
     op == OP_ALUI -> imm_i
     _ -> reg_b
   }
 
-  alu_out := match f3 {
+  alu_out = match f3 {
     0 -> alu_a + alu_b
     1 -> alu_a << b5(alu_b)
     2 -> signed(alu_a) < signed(alu_b)
@@ -140,16 +140,16 @@ alu(insn : l32, pc : l32, reg_a : l32, reg_b : l32) {
 
 //--------------------------------------------------------------------------------
 
-pc_gen(pc : l32, insn : l32, active : l1, reg_a : l32, reg_b : l32) {
+pc_gen(pc : b32, insn : b32, active : b1, reg_a : b32, reg_b : b32) {
   if (!active) return pc;
 
-  op  := b5(insn, 2);
-  eq  := reg_a == reg_b;
-  slt := signed(reg_a) < signed(reg_b);
-  ult := reg_a < reg_b;
-  f3  := b3(insn, 12);
+  op  = b5(insn, 2);
+  eq  = reg_a == reg_b;
+  slt = signed(reg_a) < signed(reg_b);
+  ult = reg_a < reg_b;
+  f3  = b3(insn, 12);
 
-  take_branch := match f3 {
+  take_branch = match f3 {
     0 ->   eq
     1 ->  !eq
     2 ->   eq
@@ -161,9 +161,9 @@ pc_gen(pc : l32, insn : l32, active : l1, reg_a : l32, reg_b : l32) {
     _ ->    0
   }
 
-  imm_b := dup<20>(insn[31]) :: insn[7] :: b6(insn, 25) :: b4(insn, 8) :: b1(0);
-  imm_j := dup<12>(insn[31]) :: b8(insn, 12) :: insn[20] :: b10(insn, 21) :: b1(0);
-  imm_i := sign_extend<32>(b12(insn, 20));
+  imm_b = dup<20>(insn[31]) :: insn[7] :: b6(insn, 25) :: b4(insn, 8) :: b1(0);
+  imm_j = dup<12>(insn[31]) :: b8(insn, 12) :: insn[20] :: b10(insn, 21) :: b1(0);
+  imm_i = sign_extend<32>(b12(insn, 20));
 
   return match op {
     OP_BRANCH -> pc + (take_branch ? imm_b : b32(4))
@@ -175,23 +175,23 @@ pc_gen(pc : l32, insn : l32, active : l1, reg_a : l32, reg_b : l32) {
 
 //--------------------------------------------------------------------------------
 
-addr_gen(insn : l32, reg_a : l32) -> l32 {
-  op    := b5(insn, 2);
-  imm_i := sign_extend<32>(b12(insn, 20));
-  imm_s := dup<21>(insn[31]) :: b6(insn, 25) :: b5(insn, 7);
-  addr  := reg_a + ((op == OP_STORE) ? imm_s : imm_i);
+addr_gen(insn : b32, reg_a : b32) -> b32 {
+  op    = b5(insn, 2);
+  imm_i = sign_extend<32>(b12(insn, 20));
+  imm_s = dup<21>(insn[31]) :: b6(insn, 25) :: b5(insn, 7);
+  addr  = reg_a + ((op == OP_STORE) ? imm_s : imm_i);
   return addr;
 }
 
 //--------------------------------------------------------------------------------
 
-mask_gen(insn : l32, reg_a : l32) -> l4 {
-  op    := b5(insn, 2);
-  imm_i := sign_extend<32>(b12(insn, 20));
-  imm_s := dup<21>(insn[31]) :: b6(insn, 25) :: b5(insn, 7);
-  addr  := reg_a + ((op == OP_STORE) ? imm_s : imm_i);
-  f3    := b3(insn, 12);
-  align := b2(addr);
+mask_gen(insn : b32, reg_a : b32) -> l4 {
+  op    = b5(insn, 2);
+  imm_i = sign_extend<32>(b12(insn, 20));
+  imm_s = dup<21>(insn[31]) :: b6(insn, 25) :: b5(insn, 7);
+  addr  = reg_a + ((op == OP_STORE) ? imm_s : imm_i);
+  f3    = b3(insn, 12);
+  align = b2(addr);
 
   if (op != OP_STORE) return 0;
   return match f3 {
@@ -204,71 +204,71 @@ mask_gen(insn : l32, reg_a : l32) -> l4 {
 
 //--------------------------------------------------------------------------------
 
-tick(reset_in : l1) {
+tick(reset_in : b1) {
   ticks@ = ticks + 1;
 
   //----------
 
   with vane0 {
     // Vane 0 becomes active if vane 2 was set to enable
-    hart   @= vane2.hart;
-    pc     @= vane2.pc;
-    enable @= vane2.enable;
-    active @= vane2.enable | vane2.active;
+    @hart   = vane2.hart;
+    @pc     = vane2.pc;
+    @enable = vane2.enable;
+    @active = vane2.enable | vane2.active;
 
-    reg_read := {
-      addr1: hart :: b5(code.out, 15)
-      addr2: hart :: b5(code.out, 20)
-      rden:  active
+    @reg_read = {
+      addr1 = hart :: b5(code.out, 15);
+      addr2 = hart :: b5(code.out, 20);
+      rden  = active;
+    };
+
+    @code_read = {
+      addr = pc;
+      rden = @active; // ?
     }
-
-    code_read := {
-      addr : pc,
-      rden : active
-    }    
   }
 
   with vane1 {
-    reg_a := b5(insn, 15) ? regs.out_a : b32(0); // Mask out r0 if we read it from the regfile.
-    reg_b := b5(insn, 20) ? regs.out_b : b32(0); // Mask out r0 if we read it from the regfile.
+    reg_a = b5(insn, 15) ? regs.out_a : b32(0); // Mask out r0 if we read it from the regfile.
+    reg_b = b5(insn, 20) ? regs.out_b : b32(0); // Mask out r0 if we read it from the regfile.
 
-    op   := b5(insn, 2);
-    addr := addr_gen(insn, reg_a);
-    mask := mask_gen(insn, reg_a);
+    op   = b5(insn, 2);
+    addr = addr_gen(insn, reg_a);
+    mask = mask_gen(insn, reg_a);
 
-    code_cs    := addr[31:28] == 0x0;
-    data_cs    := addr[31:28] == 0x8;
-    debug_cs   := addr[31:28] == 0xF;
-    regfile_cs := addr[31:28] == 0x1;
-    
-    mem_read := {
-      raddr: addr
-      rden:  active && op == OP_LOAD
+    code_cs    = addr[31:28] == 0x0;
+    data_cs    = addr[31:28] == 0x8;
+    debug_cs   = addr[31:28] == 0xF;
+    regfile_cs = addr[31:28] == 0x1;
+
+    mem_read = {
+      raddr = addr;
+      rden  = active && op == OP_LOAD;
     }
 
-    mem_write := {
+    mem_write = {
       waddr: addr
       wdata: reg_b
       wmask: mask_gen(insn, reg_a)
       wren:  active && op == OP_STORE
     }
 
-    data_read   := mem_read  with rden = rden & data_cs
-    data_write  := mem_write with wren = wren & data_cs
+    data_read   = mem_read  with rden = rden & data_cs
+    data_write  = mem_write with wren = wren & data_cs
 
-    code_read   := mem_read  with rden = rden & code_cs
-    code_write  := mem_write with wren = wren & code_cs
+    code_read   = mem_read  with rden = rden & code_cs
+    code_write  = mem_write with wren = wren & code_cs
 
-    debug_read  := mem_read  with rden = rden & debug_cs
-    debug_write := mem_write with wren = wren & debug_cs
+    debug_read  = mem_read  with rden = rden & debug_cs
+    debug_write = mem_write with wren = wren & debug_cs
 
-    reg_read := {
+    reg_read = {
       raddr1: addr[11:2]
       raddr2: DONTCARE
       rden:   active && op == OP_LOAD && regfile_cs
     }
 
-    reg_write := {
+    reg_write = {
       waddr: addr[11:2]
       wdata: reg_b
       wren:  active && op == OP_STORE && regfile_cs
@@ -283,25 +283,25 @@ tick(reset_in : l1) {
   }
 
   with vane2 {
-    op := b5(insn, 2);
+    @op = b5(insn, 2);
 
-    reg_write := {
+    @reg_write = {
       addr: hart :: b5(insn, 7)
       data: op == OP_LOAD ? bus_rdata : alu_out
       wren: @vane0.active && addr != 0 && op != OP_STORE && op != OP_BRANCH;
     }
 
     // Vane 2 updates the PC from vane 1
-    hart     @= vane1.hart;
-    pc       @= pc_gen(vane1); 
-    insn     @= vane1.insn;
-    enable   @= vane1.enable;
-    active   @= vane1.active;
-    alu_out  @= alu(vane1);
-    mem_addr @= vane1.mem_addr;
+    @hart     = vane1.hart;
+    @pc       = pc_gen(vane1);
+    @insn     = vane1.insn;
+    @enable   = vane1.enable;
+    @active   = vane1.active;
+    @alu_out  = alu(vane1);
+    @mem_addr = vane1.mem_addr;
   }
 
-  bus_rdata := unpack(
+  bus_rdata = unpack(
     vane2.insn,
     vane2.mem_addr,
     match vane2.mem_addr[31:28] {
@@ -313,14 +313,14 @@ tick(reset_in : l1) {
     }
   );
 
-  data.read  @= vane1.data_read
-  data.write @= vane1.data_write
+  @data.read  = vane1.data_read
+  @data.write = vane1.data_write
 
-  code.read  @= @vane0.active ? @vane.code_read : vane1.code_read
-  code.write @= vane1.code_write
+  @code.read  = @vane0.active ? @vane0.code_read : vane1.code_read
+  @code.write = vane1.code_write
 
-  debug_reg.read  @= vane1.debug_read
-  debug_reg.write @= vane1.debug_write
+  @debug_reg.read  = vane1.debug_read
+  @debug_reg.write = vane1.debug_write
 
   regs.read @= match(1) {
     vane0.reg_read.rden -> vane0.reg_read
