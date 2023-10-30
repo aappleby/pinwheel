@@ -46,14 +46,5 @@
         "clear": true
       }
     },
-    {
-      "type": "shell",
-      "label": "build_elf_to_hex",
-      "command": "ninja",
-      "problemMatcher": "$gcc",
-      "group": {
-        "kind": "build",
-      },
-    },
   ]
 }
