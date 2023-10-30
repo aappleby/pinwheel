@@ -3,7 +3,7 @@ build bin/demo/demo_mc2   : c_binary $
   obj/demo/demo_mc.o $
   symlinks/metrolib/bin/metrolib/libcore.a
 
-build gen/demo/demo_ice40.json : yosys demo/demo_ice40.sv
+build gen/demo/demo_ice40.json : yosys demo/demo_ice40.sv | gen/pinwheel/soc/pinwheel_soc.sv
   includes = -I. -Igen -Isymlinks/metron
 
 build gen/demo/demo_ice40.asc : nextpnr-ice40 gen/demo/demo_ice40.json
