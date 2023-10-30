@@ -22,8 +22,8 @@ bool PinwheelSim::busy() const {
 void PinwheelSim::step() {
   if (steps) {
     auto& pinwheel = states.top();
-    pinwheel.tock(0, 0, 0);
-    pinwheel.tick(0, 0, 0);
+    pinwheel.tock(0);
+    pinwheel.tick(0);
     console1.tick(0, pinwheel.core.bus_tla);
     console2.tick(0, pinwheel.core.bus_tla);
     console3.tick(0, pinwheel.core.bus_tla);

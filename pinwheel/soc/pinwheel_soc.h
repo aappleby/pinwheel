@@ -38,7 +38,7 @@ public:
 
   // FIXME yosys can't handle structs as local variables
 
-  void tock(logic<1> reset_in, logic<1> _serial_valid, logic<8> _serial_data) {
+  void tock(logic<1> reset_in) {
     bus_tld.d_opcode = b3(DONTCARE);
     bus_tld.d_param  = b2(DONTCARE);
     bus_tld.d_size   = b3(DONTCARE);
@@ -63,24 +63,25 @@ public:
 
     regs.tick(core.core_to_reg);
 
-    // Grab signals from our submodules before we tick them.
-    logic<8> data = hello.get_data();
-    logic<1> request = hello.get_request();
+    {
+      // Grab signals from our submodules before we tick them.
+      logic<8> data = hello.get_data();
+      logic<1> request = hello.get_request();
 
-    logic<1> serial = tx.get_serial();
-    logic<1> clear_to_send = tx.get_clear_to_send();
-    logic<1> idle = tx.get_idle();
+      logic<1> serial = tx.get_serial();
+      logic<1> clear_to_send = tx.get_clear_to_send();
+      logic<1> idle = tx.get_idle();
 
-    // Tick all submodules.
-    hello.tick(reset_in, clear_to_send, idle);
-    tx.tick(reset_in, data, request);
-    rx.tick(reset_in, serial);
+      hello.tick(reset_in, clear_to_send, idle);
+      tx.tick(reset_in, data, request);
+      rx.tick(reset_in, serial);
+    }
   }
 
   //----------------------------------------
   // FIXME trace modules individually
 
-  void tick(logic<1> reset_in, logic<1> _serial_valid, logic<8> _serial_data) {
+  void tick(logic<1> reset_in) {
   }
 
   //----------------------------------------
@@ -119,14 +120,12 @@ public:
     return rx.get_checksum();
   }
 
-  //----------------------------------------
-private:
   // Our UART client that transmits our "hello world" test message
-  uart_hello<true /*repeat_msg*/>  hello;
+  /* metron_internal */ uart_hello<false /*repeat_msg*/>  hello;
   // The UART transmitter
-  uart_tx<4 /*cycles_per_bit*/> tx;
+  /* metron_internal */ uart_tx<3 /*cycles_per_bit*/> tx;
   // The UART receiver
-  uart_rx<4 /*cycles_per_bit*/> rx;
+  /* metron_internal */ uart_rx<3 /*cycles_per_bit*/> rx;
 
 };
 

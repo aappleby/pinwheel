@@ -11,31 +11,6 @@ include symlinks/metrolib/ninja/config_${target}.ninja
 includes = ${includes} -Isymlinks/metrolib
 includes = ${includes} -Isymlinks/metron
 
-rv_toolchain=riscv64-unknown-elf
-#rv_opts_c = ${rv_opts_c} -O0
-rv_opts_c = ${rv_opts_c} -O3
-#rv_opts_c = ${rv_opts_c} -Os
-rv_opts_c = ${rv_opts_c} -std=gnu++2a -mabi=ilp32 -march=rv32i -mstrict-align -g -MMD -MF ${out}.d
-
-################################################################################
-# C/C++ RISC-V Rules
-
-rule rv_compile_cpp
-  command = ${rv_toolchain}-g++ ${rv_opts_c} -MMD -MF ${out}.d -c ${in} -o ${out}
-  depfile = ${out}.d
-  deps = gcc
-
-rule rv_assemble
-  command = ${rv_toolchain}-gcc ${rv_opts_c} -MMD -MF ${out}.d -c ${in} -o ${out}
-  depfile = ${out}.d
-  deps = gcc
-
-rule rv_c_binary
-  command = ${rv_toolchain}-gcc ${rv_opts_c} -nostdlib -nostartfiles -Wl,-T pinwheel/tools/pinwheel.ld ${in} -o ${out} -lgcc
-
-rule run_test
-  command = ${in} | grep "All tests pass" && touch ${out}
-
 ################################################################################
 # Prereqs
 
@@ -51,14 +26,6 @@ build obj/pinwheel/soc/test_reg.h.ok       : check_cpp pinwheel/soc/test_reg.h
 build obj/pinwheel/soc/block_ram.h.ok      : check_cpp pinwheel/soc/block_ram.h
 build obj/pinwheel/core/pinwheel_core.h.ok : check_cpp pinwheel/core/pinwheel_core.h
 build obj/pinwheel/soc/pinwheel_soc.h.ok   : check_cpp pinwheel/soc/pinwheel_soc.h
-
-################################################################################
-# Pinwheel UART demo
-
-build obj/demo/demo_mc.o : compile_cpp demo/demo_mc.cpp
-build bin/demo/demo_mc2   : c_binary $
-  obj/demo/demo_mc.o $
-  symlinks/metrolib/bin/metrolib/libcore.a
 
 ################################################################################
 # Debugger app
@@ -95,35 +62,38 @@ build gen/pinwheel/tools/riscv_constants.sv    : metron pinwheel/tools/riscv_con
 build gen/pinwheel/tools/tilelink.sv           : metron pinwheel/tools/tilelink.h
 build gen/pinwheel/tools/regfile_if.sv         : metron pinwheel/tools/regfile_if.h
 build gen/pinwheel/core/pinwheel_core.sv       : metron pinwheel/core/pinwheel_core.h    |  pinwheel/tools/regfile_if.h pinwheel/tools/tilelink.h
-build gen/pinwheel/soc/regfile.sv              : metron pinwheel/soc/regfile.h
-build gen/pinwheel/soc/serial.sv               : metron pinwheel/soc/serial.h            | pinwheel/tools/regfile_if.h pinwheel/tools/tilelink.h
-build gen/pinwheel/soc/test_reg.sv             : metron pinwheel/soc/test_reg.h          | pinwheel/tools/regfile_if.h pinwheel/tools/tilelink.h
-build gen/pinwheel/soc/block_ram.sv            : metron pinwheel/soc/block_ram.h         | pinwheel/tools/regfile_if.h pinwheel/tools/tilelink.h
-build gen/pinwheel/soc/pinwheel_soc.sv         : metron pinwheel/soc/pinwheel_soc.h      | pinwheel/tools/regfile_if.h pinwheel/tools/tilelink.h pinwheel/core/pinwheel_core.h pinwheel/soc/block_ram.h pinwheel/soc/console.h pinwheel/soc/regfile.h pinwheel/soc/test_reg.h
 
 build gen/pinwheel/uart/uart_hello.sv          : metron pinwheel/uart/uart_hello.h
 build gen/pinwheel/uart/uart_rx.sv             : metron pinwheel/uart/uart_rx.h
 build gen/pinwheel/uart/uart_tx.sv             : metron pinwheel/uart/uart_tx.h
 
-build all_pinwheel_sv : phony $
-  gen/pinwheel/tools/tilelink.sv $
-  gen/pinwheel/soc/regfile.sv $
-  gen/pinwheel/soc/serial.sv $
-  gen/pinwheel/soc/test_reg.sv $
-  gen/pinwheel/soc/block_ram.sv $
-  gen/pinwheel/core/pinwheel_core.sv $
-  gen/pinwheel/soc/pinwheel_soc.sv
+build gen/pinwheel/soc/regfile.sv              : metron pinwheel/soc/regfile.h
+build gen/pinwheel/soc/serial.sv               : metron pinwheel/soc/serial.h            | pinwheel/tools/regfile_if.h pinwheel/tools/tilelink.h
+build gen/pinwheel/soc/test_reg.sv             : metron pinwheel/soc/test_reg.h          | pinwheel/tools/regfile_if.h pinwheel/tools/tilelink.h
+build gen/pinwheel/soc/block_ram.sv            : metron pinwheel/soc/block_ram.h         | pinwheel/tools/regfile_if.h pinwheel/tools/tilelink.h
+
+build gen/pinwheel/soc/pinwheel_soc.sv         : metron pinwheel/soc/pinwheel_soc.h | $
+  pinwheel/uart/uart_hello.h $
+  pinwheel/uart/uart_rx.h $
+  pinwheel/uart/uart_tx.h $
+  pinwheel/tools/regfile_if.h $
+  pinwheel/tools/tilelink.h $
+  pinwheel/core/pinwheel_core.h $
+  pinwheel/soc/block_ram.h $
+  pinwheel/soc/console.h $
+  pinwheel/soc/regfile.h $
+  pinwheel/soc/test_reg.h
 
 ################################################################################
 # Verilator tests
 
-build gen/pinwheel/verilator/Vpinwheel_soc.mk gen/pinwheel/verilator/Vpinwheel_soc.h : verilator gen/pinwheel/soc/pinwheel_soc.sv | all_pinwheel_sv
+build gen/pinwheel/verilator/Vpinwheel_soc.mk gen/pinwheel/verilator/Vpinwheel_soc.h : verilator gen/pinwheel/soc/pinwheel_soc.sv
   includes = -I. -Igen -Isymlinks/metron
 
 ################################################################################
 # Yosys tests
 
-build gen/pinwheel/yosys/pinwheel_soc.json : yosys gen/pinwheel/soc/pinwheel_soc.sv | all_pinwheel_sv
+build gen/pinwheel/yosys/pinwheel_soc.json : yosys gen/pinwheel/soc/pinwheel_soc.sv
   includes = -I. -Igen -Isymlinks/metron
 
 #build bin/pinwheel/yosys/pinwheel_core.asc: nextpnr-ice40 gen/pinwheel/yosys/pinwheel_core.json
@@ -138,7 +108,7 @@ build gen/pinwheel/yosys/pinwheel_soc.json : yosys gen/pinwheel/soc/pinwheel_soc
 
 # This is really noisy and so disabled for the moment. It does pass, though
 
-#build gen/pinwheel/icarus/pinwheel.iv : iverilog gen/pinwheel/soc/pinwheel_soc.sv | all_pinwheel_sv
+#build gen/pinwheel/icarus/pinwheel.iv : iverilog gen/pinwheel/soc/pinwheel_soc.sv
 #  includes = -Igen -Isymlinks/metron
 
 include tests/firmware.ninja
@@ -154,3 +124,8 @@ build bin/pinwheel_test: c_binary $
   obj/tests/pinwheel_test.o | firmware
 
 #build obj/pinwheel_test_pass: run_test bin/pinwheel_test
+
+################################################################################
+# Pinwheel UART demo
+
+include demo/demo.ninja
