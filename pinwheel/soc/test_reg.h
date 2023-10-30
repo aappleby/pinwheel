@@ -14,7 +14,7 @@ public:
 
   tilelink_d bus_tld;
 
-  /* metron_noconvert */ logic<32> get() const { return bus_tld.d_data; }
+  logic<32> get() const { return bus_tld.d_data; }
 
   test_reg(logic<32> init = 0) {
     bus_tld.d_opcode = TL::AccessAckData;

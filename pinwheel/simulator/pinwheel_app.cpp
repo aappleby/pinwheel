@@ -69,7 +69,7 @@ void PinwheelApp::app_init(int screen_w, int screen_h) {
   console_painter.init_ascii();
   box_painter.init();
 
-  auto& p = pinwheel_sim->states.top();
+  auto& p = pinwheel_sim->states.top().soc;
 
   p.tock(true);
   p.tick(true);
@@ -178,7 +178,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
 
   StringDumper d;
 
-  auto& pinwheel = pinwheel_sim->states.top();
+  auto& pinwheel = pinwheel_sim->states.top().soc;
 
   uint32_t insn_a = b24(pinwheel.core.reg_hpc_a) ? uint32_t(pinwheel.code_ram.get()) : 0;
 

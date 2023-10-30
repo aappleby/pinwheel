@@ -12,19 +12,21 @@
 TestResults test_uart_metron() {
   TEST_INIT("Metron UART simulation\n");
 
-  pinwheel top(
+  pinwheel_soc top(
     "gen/tests/firmware/hello.code.vh",
     "gen/tests/firmware/hello.data.vh",
     "pinwheel/uart/message.hex");
 
 
   top.tock(1);
+  top.tick(1);
 
   LOG_B("========================================\n");
 
   for (int cycle = 0; cycle < 20000; cycle++) {
     bool old_valid = top.get_valid();
     top.tock(0);
+    top.tick(0);
     if (!old_valid && top.get_valid()) {
       LOG_B("%c", (uint8_t)top.get_data_out());
     }

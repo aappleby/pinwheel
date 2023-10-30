@@ -21,8 +21,20 @@ module pinwheel_ice40(
   output logic [7:0] LEDS,
 
   // Top pin row connection to logic analyser
-  output logic [2:0] DEBUG
+  output logic [7:0] DEBUG
 );
+
+  initial begin
+    int i;
+
+    SER_DCDn = 1;
+    SER_DSRn = 1;
+    SER_CTSn = 1;
+    SER_TX = 1;
+
+    for (i = 0; i < 8; i++) LEDS[i]  = 0;
+    for (i = 0; i < 8; i++) DEBUG[i] = 0;
+  end
 
   logic CLK;
   logic pll_lock;

@@ -17,21 +17,19 @@
 // verilator lint_off unusedsignal
 // verilator lint_off undriven
 
-class pinwheel {
+class pinwheel_soc {
 public:
 
-  pinwheel(
+  pinwheel_soc(
     const char* code_hexfile = "pinwheel/tools/blank.code.vh",
     const char* data_hexfile = "pinwheel/tools/blank.data.vh",
     const char* message_hex  = "pinwheel/uart/message.hex")
   : code_ram(code_hexfile), data_ram(data_hexfile), hello(message_hex) {
   }
 
-  /*metron_noconvert*/ pinwheel* clone();
-  /*metron_noconvert*/ size_t    size_bytes();
-  /*metron_noconvert*/ uint32_t* get_code();
-  /*metron_noconvert*/ uint32_t* get_data();
-  /*metron_noconvert*/ logic<32> get_debug() const;
+  // FIXME why does this hang yosys if exposed?
+
+  /*metron_noconvert*/ logic<32> get_debug() { return debug_reg.get(); }
 
   //----------------------------------------
   // FIXME const local variable should not become parameter
@@ -95,28 +93,28 @@ public:
 
 
   // The actual bit of data currently on the transmitter's output
-  logic<1> get_serial() const {
+  /* metron_noconvert*/ logic<1> get_serial() const {
     return tx.get_serial();
   }
 
   // Returns true if the receiver has a byte in its buffer
-  logic<1> get_valid() const {
+  /* metron_noconvert*/ logic<1> get_valid() const {
     return rx.get_valid();
   }
 
   // The next byte of data from the receiver
-  logic<8> get_data_out() const {
+  /* metron_noconvert*/ logic<8> get_data_out() const {
     return rx.get_data_out();
   }
 
   // True if the client has sent its message and the transmitter has finished
   // transmitting it.
-  logic<1> get_done() const {
+  /* metron_noconvert*/ logic<1> get_done() const {
     return hello.get_done() && tx.get_idle();
   }
 
   // Checksum of all the bytes received
-  logic<32> get_checksum() const {
+  /* metron_noconvert*/ logic<32> get_checksum() const {
     return rx.get_checksum();
   }
 

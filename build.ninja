@@ -30,7 +30,6 @@ build obj/pinwheel/soc/pinwheel_soc.h.ok   : check_cpp pinwheel/soc/pinwheel_soc
 ################################################################################
 # Debugger app
 
-build obj/pinwheel/soc/pinwheel_soc.o : compile_cpp pinwheel/soc/pinwheel_soc.cpp
 build obj/pinwheel/soc/console.o      : compile_cpp pinwheel/soc/console.cpp
 
 build obj/pinwheel/simulator/pinwheel_app.o  : compile_cpp pinwheel/simulator/pinwheel_app.cpp
@@ -44,7 +43,6 @@ build obj/symlinks/glad/glad.o      : compile_cpp symlinks/glad/glad.c
 build bin/pinwheel_app: c_binary $
   obj/symlinks/glad/glad.o $
   bin/imgui/libimgui.a $
-  obj/pinwheel/soc/pinwheel_soc.o $
   obj/pinwheel/simulator/pinwheel_app.o $
   obj/pinwheel/simulator/pinwheel_main.o $
   obj/pinwheel/simulator/pinwheel_sim.o $
@@ -92,6 +90,9 @@ build gen/pinwheel/verilator/Vpinwheel_soc.mk gen/pinwheel/verilator/Vpinwheel_s
 
 ################################################################################
 # Yosys tests
+
+#build gen/pinwheel/yosys/pinwheel_soc.json : yosys_check gen/pinwheel/soc/pinwheel_soc.sv
+#  includes = -I. -Igen -Isymlinks/metron
 
 build gen/pinwheel/yosys/pinwheel_soc.json : yosys gen/pinwheel/soc/pinwheel_soc.sv
   includes = -I. -Igen -Isymlinks/metron
