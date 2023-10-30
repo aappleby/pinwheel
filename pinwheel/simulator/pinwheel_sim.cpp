@@ -2,8 +2,8 @@
 
 //------------------------------------------------------------------------------
 
-PinwheelSim::PinwheelSim(const char* text_file, const char* data_file)
-: states(new pinwheel(text_file, data_file, "pinwheel/uart/message.hex")),
+PinwheelSim::PinwheelSim(const char* code_hex, const char* data_hex, const char* message_hex)
+: states(new pinwheel(code_hex, data_hex, message_hex)),
   console1(0xF0000000, 0x40000000),
   console2(0xF0000000, 0x50000000),
   console3(0xF0000000, 0x60000000),

@@ -6,7 +6,7 @@
 
 struct PinwheelSim : public Sim {
 
-  PinwheelSim(const char* text_file = nullptr, const char* data_file = nullptr);
+  PinwheelSim(const char* code_hex, const char* data_hex, const char* message_hex);
 
   virtual bool busy() const override;
   virtual void step() override;

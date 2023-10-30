@@ -20,41 +20,6 @@ double total_time = 0;
 
 //------------------------------------------------------------------------------
 
-bool load_elf(const char* firmware_filename) {
-  struct stat sb;
-  if (stat(firmware_filename, &sb) == -1) {
-    return false;
-  }
-  uint8_t* blob = new uint8_t[sb.st_size];
-  FILE* f = fopen(firmware_filename, "rb");
-  auto result = fread(blob, 1, sb.st_size, f);
-  if (result != sb.st_size) {
-    printf("fread failed\n");
-    exit(-1);
-  }
-  fclose(f);
-
-  Elf32_Ehdr& header = *(Elf32_Ehdr*)blob;
-  for (int i = 0; i < header.e_phnum; i++) {
-    Elf32_Phdr& phdr = *(Elf32_Phdr*)(blob + header.e_phoff + header.e_phentsize * i);
-    if (phdr.p_type & PT_LOAD) {
-      if (phdr.p_flags & PF_X) {
-        LOG_G("Code @ 0x%08x = %d bytes\n", phdr.p_vaddr, phdr.p_filesz);
-        //int len = code_ram.data_size() < phdr.p_filesz ? code_ram.data_size() : phdr.p_filesz;
-        //memcpy(code_ram.get_data(), blob + phdr.p_offset, len);
-      }
-      else if (phdr.p_flags & PF_W) {
-        LOG_G("Data @ 0x%08x = %d bytes\n", phdr.p_vaddr, phdr.p_filesz);
-        //int len = data_ram.data_size() < phdr.p_filesz ? data_ram.data_size() : phdr.p_filesz;
-        //memcpy(data_ram.get_data(), blob + phdr.p_offset, len);
-      }
-    }
-  }
-  return true;
-}
-
-//------------------------------------------------------------------------------
-
 TestResults run_test_hex(const char* code_filename, const char* data_filename, int reps = 1, int max_cycles = 100000, bool expect_fail = false) {
   TEST_INIT("'%-30s', %d reps: ", code_filename, reps);
 
@@ -117,8 +82,8 @@ TestResults run_rv32i_tests(int reps, int max_cycles) {
   for (int i = 0; i < instruction_count; i++) {
     char code_filename[256];
     char data_filename[256];
-    sprintf(code_filename, "bin/tests/rv_tests/%s.code.vh", instructions[i]);
-    sprintf(data_filename, "bin/tests/rv_tests/%s.data.vh", instructions[i]);
+    sprintf(code_filename, "gen/tests/rv_tests/%s.code.vh", instructions[i]);
+    sprintf(data_filename, "gen/tests/rv_tests/%s.data.vh", instructions[i]);
     results << run_test_hex(code_filename, data_filename, reps, max_cycles);
   }
   TEST_DONE();
@@ -139,8 +104,8 @@ TestResults run_microtests(int reps, int max_cycles) {
   for (int i =0; i < test_count; i++) {
     char code_filename[256];
     char data_filename[256];
-    sprintf(code_filename, "bin/tests/firmware/%s.code.vh", tests[i]);
-    sprintf(data_filename, "bin/tests/firmware/%s.data.vh", tests[i]);
+    sprintf(code_filename, "gen/tests/firmware/%s.code.vh", tests[i]);
+    sprintf(data_filename, "gen/tests/firmware/%s.data.vh", tests[i]);
     results << run_test_hex(code_filename, data_filename, reps, max_cycles);
   }
 

@@ -36,9 +36,4 @@ struct PinwheelApp : public App {
   SimThread*     sim_thread = nullptr;
   bool running = false;
   bool fastmode = false;
-
-  int64_t ticks_old = 0;
-  int64_t ticks_new = 0;
-  double  time_old = 0;
-  double  time_new = 0;
 };

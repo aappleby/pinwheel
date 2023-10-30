@@ -44,7 +44,18 @@ const char* PinwheelApp::app_get_title() {
 //------------------------------------------------------------------------------
 
 void PinwheelApp::app_init(int screen_w, int screen_h) {
-  pinwheel_sim = new PinwheelSim();
+
+  //const char* firmware_filename = "bin/tests/firmware/write_code";
+  //const char* firmware_filename = "bin/tests/firmware/basic";
+  //const char* firmware_filename = "bin/tests/firmware/hello";
+  //const char* firmware_filename = "tests/rv_tests/add.elf";
+
+  pinwheel_sim = new PinwheelSim(
+    "gen/tests/firmware/hello.code.vh",
+    "gen/tests/firmware/hello.data.vh",
+    "pinwheel/uart/message.hex"
+  );
+
   sim_thread = new SimThread(pinwheel_sim);
 
   dvec2 screen_size(screen_w, screen_h);
@@ -59,13 +70,6 @@ void PinwheelApp::app_init(int screen_w, int screen_h) {
   box_painter.init();
 
   auto& p = pinwheel_sim->states.top();
-
-  //const char* firmware_filename = "bin/tests/firmware/write_code";
-  //const char* firmware_filename = "bin/tests/firmware/basic";
-  //const char* firmware_filename = "bin/tests/firmware/hello";
-  const char* firmware_filename = "tests/rv_tests/add.elf";
-
-  p.load_elf(firmware_filename);
 
   p.tock(true, 0, 0);
   p.tick(true, 0, 0);
@@ -93,7 +97,6 @@ void PinwheelApp::app_update(dvec2 screen_size, double delta)  {
   SDL_Event event;
   sim_thread->pause();
 
-  auto time_now = timestamp();
   auto keyboard_state = SDL_GetKeyboardState(nullptr);
 
   int manual_steps = 0;
@@ -161,13 +164,6 @@ void PinwheelApp::app_update(dvec2 screen_size, double delta)  {
     pinwheel_sim->steps = manual_steps;
   }
 
-  if (running) {
-    ticks_old = ticks_new;
-    ticks_new = pinwheel_sim->ticks;
-    time_old = time_new;
-    time_new = time_now;
-  }
-
   sim_thread->resume();
   fflush(stdout);
 }
@@ -208,12 +204,16 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
     d.s.push_back(1);
     d("debug_reg     0x%08x\n", pinwheel.debug_reg.get());
     d("ticks         %lld\n",   pinwheel.core.reg_ticks);
-    d("speed         %f\n",     double(sim_thread->sim_steps) / sim_thread->sim_time);
+    d("tick rate     %f\n",     double(sim_thread->sim_steps) / sim_thread->sim_time);
     d("states        %d\n",     pinwheel_sim->states.state_count());
     d("state bytes   %d\n",     pinwheel_sim->states.state_size_bytes());
     d("debug reg     0x%llx\n", pinwheel.get_debug());
-    d("tick rate     %f\n",     double(ticks_new - ticks_old) / (time_new - time_old));
     d("\n");
+
+    if (running) {
+      sim_thread->sim_steps = 0;
+      sim_thread->sim_time = 0;
+    }
   }
 
   {

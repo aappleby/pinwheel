@@ -28,8 +28,7 @@ public:
   }
 
   /*metron_noconvert*/ pinwheel* clone();
-  /*metron_noconvert*/ size_t size_bytes();
-  /*metron_noconvert*/ bool load_elf(const char* firmware_filename);
+  /*metron_noconvert*/ size_t    size_bytes();
   /*metron_noconvert*/ uint32_t* get_code();
   /*metron_noconvert*/ uint32_t* get_data();
   /*metron_noconvert*/ logic<32> get_debug() const;
