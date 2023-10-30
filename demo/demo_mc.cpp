@@ -14,7 +14,7 @@ void benchmark() {
   const int repeat_msg = 1;
   const int cycle_max = 1000000000;
 
-  uart_top<cycles_per_bit, repeat_msg> top;
+  uart_top<cycles_per_bit, repeat_msg> top("pinwheel/uart/message.hex");
   top.tock(1);
 
   auto time_a = timestamp();
@@ -34,7 +34,7 @@ TestResults test_uart_metron() {
   TEST_INIT("Metron UART simulation\n");
 
   const int cycles_per_bit = 3;
-  uart_top<cycles_per_bit, 0> top;
+  uart_top<cycles_per_bit, 0> top("pinwheel/uart/message.hex");
   top.tock(1);
 
   LOG_B("========================================\n");

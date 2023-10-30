@@ -91,15 +91,19 @@ build bin/pinwheel_app: c_binary $
 ################################################################################
 # Metron conversion tests
 
-build gen/pinwheel/tools/riscv_constants.sv    : metron pinwheel/tools/riscv_constants.h | symlinks/metron/bin/metron
-build gen/pinwheel/tools/tilelink.sv           : metron pinwheel/tools/tilelink.h        | symlinks/metron/bin/metron
-build gen/pinwheel/tools/regfile_if.sv         : metron pinwheel/tools/regfile_if.h      | symlinks/metron/bin/metron
-build gen/pinwheel/core/pinwheel_core.sv       : metron pinwheel/core/pinwheel_core.h    | symlinks/metron/bin/metron pinwheel/tools/regfile_if.h pinwheel/tools/tilelink.h
-build gen/pinwheel/soc/regfile.sv              : metron pinwheel/soc/regfile.h           | symlinks/metron/bin/metron
-build gen/pinwheel/soc/serial.sv               : metron pinwheel/soc/serial.h            | symlinks/metron/bin/metron pinwheel/tools/regfile_if.h pinwheel/tools/tilelink.h
-build gen/pinwheel/soc/test_reg.sv             : metron pinwheel/soc/test_reg.h          | symlinks/metron/bin/metron pinwheel/tools/regfile_if.h pinwheel/tools/tilelink.h
-build gen/pinwheel/soc/block_ram.sv            : metron pinwheel/soc/block_ram.h         | symlinks/metron/bin/metron pinwheel/tools/regfile_if.h pinwheel/tools/tilelink.h
-build gen/pinwheel/soc/pinwheel_soc.sv         : metron pinwheel/soc/pinwheel_soc.h      | symlinks/metron/bin/metron pinwheel/tools/regfile_if.h pinwheel/tools/tilelink.h pinwheel/core/pinwheel_core.h pinwheel/soc/block_ram.h pinwheel/soc/console.h pinwheel/soc/regfile.h pinwheel/soc/test_reg.h
+build gen/pinwheel/tools/riscv_constants.sv    : metron pinwheel/tools/riscv_constants.h
+build gen/pinwheel/tools/tilelink.sv           : metron pinwheel/tools/tilelink.h
+build gen/pinwheel/tools/regfile_if.sv         : metron pinwheel/tools/regfile_if.h
+build gen/pinwheel/core/pinwheel_core.sv       : metron pinwheel/core/pinwheel_core.h    |  pinwheel/tools/regfile_if.h pinwheel/tools/tilelink.h
+build gen/pinwheel/soc/regfile.sv              : metron pinwheel/soc/regfile.h
+build gen/pinwheel/soc/serial.sv               : metron pinwheel/soc/serial.h            | pinwheel/tools/regfile_if.h pinwheel/tools/tilelink.h
+build gen/pinwheel/soc/test_reg.sv             : metron pinwheel/soc/test_reg.h          | pinwheel/tools/regfile_if.h pinwheel/tools/tilelink.h
+build gen/pinwheel/soc/block_ram.sv            : metron pinwheel/soc/block_ram.h         | pinwheel/tools/regfile_if.h pinwheel/tools/tilelink.h
+build gen/pinwheel/soc/pinwheel_soc.sv         : metron pinwheel/soc/pinwheel_soc.h      | pinwheel/tools/regfile_if.h pinwheel/tools/tilelink.h pinwheel/core/pinwheel_core.h pinwheel/soc/block_ram.h pinwheel/soc/console.h pinwheel/soc/regfile.h pinwheel/soc/test_reg.h
+
+build gen/pinwheel/uart/uart_hello.sv          : metron pinwheel/uart/uart_hello.h
+build gen/pinwheel/uart/uart_rx.sv             : metron pinwheel/uart/uart_rx.h
+build gen/pinwheel/uart/uart_tx.sv             : metron pinwheel/uart/uart_tx.h
 
 build all_pinwheel_sv : phony $
   gen/pinwheel/tools/tilelink.sv $

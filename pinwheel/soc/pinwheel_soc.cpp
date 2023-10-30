@@ -5,7 +5,7 @@
 #include <sys/stat.h>
 
 pinwheel* pinwheel::clone() {
-  pinwheel* p = new pinwheel();
+  pinwheel* p = new pinwheel(nullptr, nullptr, nullptr);
   memcpy(p, this, sizeof(*this));
   return p;
 }

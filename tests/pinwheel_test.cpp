@@ -63,7 +63,7 @@ TestResults run_test_hex(const char* code_filename, const char* data_filename, i
   double time_a, time_b;
   int elapsed_cycles = 0;
 
-  pinwheel top(code_filename, data_filename);
+  pinwheel top(code_filename, data_filename, "pinwheel/uart/message.hex");
 
   for (int rep = 0; rep < reps; rep++) {
     top.tock(1, 0, 0);

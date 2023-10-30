@@ -31,6 +31,21 @@
         }
       ]
     },
+    {
+      "name": "demo_mc",
+      "preLaunchTask": "build_all",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/bin/demo/demo_mc2",
+      "cwd": "${workspaceFolder}",
+      "setupCommands": [
+        { // Display content in STL containers pretty
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ]
+    },
   ]
 }
 // clang-format on
