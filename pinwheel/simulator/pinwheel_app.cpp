@@ -250,7 +250,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
     d("op   0x%08x ",  pinwheel.core.reg_insn_b); print_rv(d, pinwheel.core.reg_insn_b); d("\n");
     d("r1   0x%08x\n", pinwheel.regs.get_rs1());
     d("r2   0x%08x\n", pinwheel.regs.get_rs2());
-    const auto imm_b  = pinwheel.core.decode_imm(pinwheel.core.reg_insn_b);
+    const auto imm_b  = pinwheel.core.dbg_decode_imm(pinwheel.core.reg_insn_b);
     const auto addr_b = b32(pinwheel.regs.get_rs1() + imm_b);
     d("addr 0x%08x\n", addr_b);
     d("\n");
@@ -274,8 +274,8 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
     d.s.push_back(hart_d_col);
     d("pc   0x%08x\n", pinwheel.core.reg_hpc_d);
     d("op   0x%08x ",  pinwheel.core.reg_insn_d); print_rv(d, pinwheel.core.reg_insn_d); d("\n");
-    if (pinwheel.core.sig_rf_wren) {
-      d("r%02d  0x%08x\n", pinwheel.core.sig_rf_waddr, pinwheel.core.sig_rf_wdata);
+    if (pinwheel.core.reg_if.wren) {
+      d("r%02d  0x%08x\n", pinwheel.core.reg_if.waddr, pinwheel.core.reg_if.wdata);
     }
     else {
       d("rXX  0xXXXXXXXX\n");

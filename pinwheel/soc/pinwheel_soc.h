@@ -59,7 +59,7 @@ public:
     debug_reg.tock(core.bus_tla);
     code_ram.tock(core.code_tla);
     data_ram.tock(core.bus_tla);
-    regs.tick(core.core_to_reg);
+    regs.tock(core.reg_if);
 
     logic<1> clear_to_send = tx.get_clear_to_send();
     logic<1> idle = tx.get_idle();
