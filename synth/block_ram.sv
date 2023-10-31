@@ -3,7 +3,7 @@
 
 module block_ram
 #(
- parameter filename = "data/zero.hex",
+ parameter filename = "zero.hex",
  parameter width = 8,
  parameter depth = 4096
 )

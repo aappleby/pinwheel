@@ -72,7 +72,6 @@ void PinwheelApp::app_init(int screen_w, int screen_h) {
   auto& p = pinwheel_sim->states.top().soc;
 
   p.tock(true);
-  p.tick(true);
 
   sim_thread->start();
 }

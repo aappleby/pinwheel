@@ -1,4 +1,5 @@
 target=DEBUG
+# FIXME why is stepping_code failing in release builds?
 #target=RELEASE
 #target=SIZE
 
@@ -82,10 +83,24 @@ build gen/pinwheel/soc/pinwheel_soc.sv         : metron pinwheel/soc/pinwheel_so
   pinwheel/soc/regfile.h $
   pinwheel/soc/test_reg.h
 
+build all_sv : phony $
+  gen/pinwheel/tools/riscv_constants.sv $
+  gen/pinwheel/tools/tilelink.sv $
+  gen/pinwheel/tools/regfile_if.sv $
+  gen/pinwheel/core/pinwheel_core.sv $
+  gen/pinwheel/uart/uart_hello.sv $
+  gen/pinwheel/uart/uart_rx.sv $
+  gen/pinwheel/uart/uart_tx.sv $
+  gen/pinwheel/soc/regfile.sv $
+  gen/pinwheel/soc/serial.sv $
+  gen/pinwheel/soc/test_reg.sv $
+  gen/pinwheel/soc/block_ram.sv $
+  gen/pinwheel/soc/pinwheel_soc.sv
+
 ################################################################################
 # Verilator tests
 
-build gen/pinwheel/verilator/Vpinwheel_soc.mk gen/pinwheel/verilator/Vpinwheel_soc.h : verilator gen/pinwheel/soc/pinwheel_soc.sv
+build gen/pinwheel/verilator/Vpinwheel_soc.mk gen/pinwheel/verilator/Vpinwheel_soc.h : verilator gen/pinwheel/soc/pinwheel_soc.sv | all_sv
   includes = -I. -Igen -Isymlinks/metron
 
 ################################################################################
@@ -94,7 +109,7 @@ build gen/pinwheel/verilator/Vpinwheel_soc.mk gen/pinwheel/verilator/Vpinwheel_s
 #build gen/pinwheel/yosys/pinwheel_soc.json : yosys_check gen/pinwheel/soc/pinwheel_soc.sv
 #  includes = -I. -Igen -Isymlinks/metron
 
-build gen/pinwheel/yosys/pinwheel_soc.json : yosys gen/pinwheel/soc/pinwheel_soc.sv
+build gen/pinwheel/yosys/pinwheel_soc.json : yosys gen/pinwheel/soc/pinwheel_soc.sv | all_sv
   includes = -I. -Igen -Isymlinks/metron
 
 #build bin/pinwheel/yosys/pinwheel_core.asc: nextpnr-ice40 gen/pinwheel/yosys/pinwheel_core.json

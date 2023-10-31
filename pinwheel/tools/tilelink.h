@@ -35,7 +35,7 @@ struct tilelink_a {
   logic<4>  a_mask;
   logic<32> a_data;
   logic<1>  a_valid;
-  logic<1>  a_ready;
+  logic<1>  a_ready; // reverse channel
 };
 
 //----------------------------------------
@@ -49,7 +49,7 @@ struct tilelink_d {
   logic<32> d_data;
   logic<1>  d_error;
   logic<1>  d_valid;
-  logic<1>  d_ready;
+  logic<1>  d_ready; // reverse channel
 };
 
 // verilator lint_on unusedparam

@@ -237,10 +237,13 @@ public:
     core_to_reg.waddr = sig_rf_waddr;
     core_to_reg.wdata = sig_rf_wdata;
     core_to_reg.wren = sig_rf_wren;
+
+    tick(reset_in);
   }
 
   //----------------------------------------
 
+  /* metron_internal */
   void tick(logic<1> reset_in) {
     if (reset_in) {
       reg_hpc_a     = 0x00400000;

@@ -23,7 +23,6 @@ void PinwheelSim::step() {
   if (steps) {
     auto& pinwheel = states.top().soc;
     pinwheel.tock(0);
-    pinwheel.tick(0);
     console1.tick(0, pinwheel.core.bus_tla);
     console2.tick(0, pinwheel.core.bus_tla);
     console3.tick(0, pinwheel.core.bus_tla);

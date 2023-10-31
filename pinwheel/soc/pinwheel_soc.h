@@ -10,8 +10,8 @@
 #include "pinwheel/tools/tilelink.h"
 
 #include "pinwheel/uart/uart_hello.h"
-#include "pinwheel/uart/uart_rx.h"
 #include "pinwheel/uart/uart_tx.h"
+#include "pinwheel/uart/uart_rx.h"
 
 //------------------------------------------------------------------------------
 // verilator lint_off unusedsignal
@@ -54,32 +54,21 @@ public:
 
     core.tock(reset_in, code_ram.bus_tld, bus_tld, regs.get_rs1(), regs.get_rs2());
 
-    debug_reg.tick(core.bus_tla);
-    code_ram.tick(core.code_tla);
-    data_ram.tick(core.bus_tla);
-    core.tick(reset_in);
+    rxi.tock(reset_in, tx.get_serial(), core.bus_tla);
 
+    debug_reg.tock(core.bus_tla);
+    code_ram.tock(core.code_tla);
+    data_ram.tock(core.bus_tla);
     regs.tick(core.core_to_reg);
 
-    {
-      // Grab signals from our submodules before we tick them.
-      logic<8> data = hello.get_data();
-      logic<1> request = hello.get_request();
+    logic<1> clear_to_send = tx.get_clear_to_send();
+    logic<1> idle = tx.get_idle();
 
-      logic<1> serial = tx.get_serial();
-      logic<1> clear_to_send = tx.get_clear_to_send();
-      logic<1> idle = tx.get_idle();
+    logic<8> data = hello.get_data();
+    logic<1> request = hello.get_request();
 
-      hello.tick(reset_in, clear_to_send, idle);
-      tx.tick(reset_in, data, request);
-      rx.tick(reset_in, serial);
-    }
-  }
-
-  //----------------------------------------
-  // FIXME trace modules individually
-
-  void tick(logic<1> reset_in) {
+    tx.tock(reset_in, data, request);
+    hello.tock(reset_in, clear_to_send, idle);
   }
 
   //----------------------------------------
@@ -91,39 +80,9 @@ public:
   /* metron_internal */ block_ram<0xF0000000, 0x80000000> data_ram; // FIXME having this named data and a field inside block_ram named data breaks context resolve
   /* metron_internal */ test_reg <0xF0000000, 0xF0000000> debug_reg;
 
-
-  // The actual bit of data currently on the transmitter's output
-  /* metron_noconvert*/ logic<1> get_serial() const {
-    return tx.get_serial();
-  }
-
-  // Returns true if the receiver has a byte in its buffer
-  /* metron_noconvert*/ logic<1> get_valid() const {
-    return rx.get_valid();
-  }
-
-  // The next byte of data from the receiver
-  /* metron_noconvert*/ logic<8> get_data_out() const {
-    return rx.get_data_out();
-  }
-
-  // True if the client has sent its message and the transmitter has finished
-  // transmitting it.
-  /* metron_noconvert*/ logic<1> get_done() const {
-    return hello.get_done() && tx.get_idle();
-  }
-
-  // Checksum of all the bytes received
-  /* metron_noconvert*/ logic<32> get_checksum() const {
-    return rx.get_checksum();
-  }
-
-  // Our UART client that transmits our "hello world" test message
   /* metron_internal */ uart_hello<false /*repeat_msg*/>  hello;
-  // The UART transmitter
   /* metron_internal */ uart_tx<3 /*cycles_per_bit*/> tx;
-  // The UART receiver
-  /* metron_internal */ uart_rx<3 /*cycles_per_bit*/> rx;
+  /* metron_internal */ uart_rx<0xF0000000, 0xB0000000, 3> rxi;
 
 };
 

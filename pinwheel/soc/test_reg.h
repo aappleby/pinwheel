@@ -28,6 +28,13 @@ public:
     bus_tld.d_ready  = 1;
   }
 
+  void tock(tilelink_a tla) {
+    tick(tla);
+  }
+
+private:
+
+
   void tick(tilelink_a tla) {
     logic<1> cs = tla.a_valid && ((tla.a_address & addr_mask) == addr_tag);
 
@@ -39,15 +46,13 @@ public:
     }
   }
 
-private:
-
   logic<32> expand_bitmask(logic<4> mask) {
     return cat(dup<8>(mask[3]), dup<8>(mask[2]), dup<8>(mask[1]), dup<8>(mask[0]));
   }
 };
 
 // verilator lint_on unusedsignal
-// verilator lint_off unusedparam
+// verilator lint_on unusedparam
 //------------------------------------------------------------------------------
 
 #endif // PINWHEEL_RTL_TEST_REG_H

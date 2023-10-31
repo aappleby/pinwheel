@@ -20,6 +20,18 @@ public:
 
   /* metron_noconvert */ logic<32> get() const { return bus_tld.d_data; }
 
+  void tock(tilelink_a tla) {
+    tick(tla);
+  }
+
+  /* metron_noconvert */ uint32_t* get_data() { return (uint32_t*)data; }
+  /* metron_noconvert */ size_t data_size() const { return sizeof(data); }
+  /* metron_noconvert */ const uint32_t* get_data() const { return (uint32_t*)data; }
+
+  tilelink_d bus_tld;
+
+private:
+
   void tick(tilelink_a tla) {
     bus_tld.d_opcode = b3(DONTCARE);
     bus_tld.d_param  = b2(DONTCARE);
@@ -53,7 +65,7 @@ public:
         bus_tld.d_data = tla.a_data;
         bus_tld.d_valid = 1;
       }
-      else {
+      else if (tla.a_opcode == TL::Get) {
         bus_tld.d_opcode = TL::AccessAckData;
         bus_tld.d_data = data[b14(tla.a_address, 2)];
         bus_tld.d_valid = 1;
@@ -61,17 +73,11 @@ public:
     }
   }
 
-  /* metron_noconvert */ uint32_t* get_data() { return (uint32_t*)data; }
-  /* metron_noconvert */ size_t data_size() const { return sizeof(data); }
-  /* metron_noconvert */ const uint32_t* get_data() const { return (uint32_t*)data; }
-
-  tilelink_d bus_tld;
-
-  /* metron_internal*/ logic<32> data[16384];
+  logic<32> data[16384];
 };
 
 // verilator lint_on unusedsignal
-// verilator lint_off unusedparam
+// verilator lint_on unusedparam
 //------------------------------------------------------------------------------
 
 #endif // PINWHEEL_RTL_BLOCK_RAM_H

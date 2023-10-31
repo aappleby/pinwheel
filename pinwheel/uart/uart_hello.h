@@ -29,6 +29,16 @@ public:
     return state == DONE;
   }
 
+  void tock(
+    logic<1> reset,          // Top-level reset signal.
+    logic<1> clear_to_send,  // True if the transmitter can accept an input byte
+    logic<1> idle)           // True if the transmitter is idle
+  {
+    tick(reset, clear_to_send, idle);
+  }
+
+private:
+
   void tick(
     logic<1> reset,          // Top-level reset signal.
     logic<1> clear_to_send,  // True if the transmitter can accept an input byte
@@ -74,7 +84,6 @@ public:
     }
   }
 
-private:
   static const int message_len = 512;
   static const int cursor_bits = clog2(message_len);
 

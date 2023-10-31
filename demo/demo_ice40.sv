@@ -3,7 +3,8 @@
 `default_nettype none
 
 `include "ice40/SB_PLL40_CORE.v"
-`include "pinwheel/soc/pinwheel_soc.sv"
+
+//`include "pinwheel/soc/pinwheel_soc.sv"
 
 //==============================================================================
 

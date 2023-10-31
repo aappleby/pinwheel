@@ -1,11 +1,18 @@
-#ifndef UART_RX_H
-#define UART_RX_H
+#ifndef PINWHEEL_UART_UART_RX
+#define PINWHEEL_UART_UART_RX
 
 #include "metron/metron_tools.h"
+#include "pinwheel/tools/tilelink.h"
 
-//==============================================================================
+//------------------------------------------------------------------------------
+// verilator lint_off unusedsignal
+// verilator lint_off unusedparam
 
-template <int cycles_per_bit = 4>
+// 0xB0000000 = data ready
+// 0xB0000001 = data
+// 0xB0000002 = checksum
+
+template <uint32_t addr_mask = 0xF000F000, uint32_t addr_tag = 0xB0000000, int cycles_per_bit = 4>
 class uart_rx {
 public:
 
@@ -23,6 +30,54 @@ public:
   logic<32> get_checksum() const {
     return checksum;
   }
+
+  // FIXME should this be happening in tick? Probably?
+
+  void tock(logic<1> reset, logic<1> serial, tilelink_a tla)
+  {
+    tld.d_opcode = b3(DONTCARE);
+    tld.d_param  = b2(DONTCARE);
+    tld.d_size   = b3(DONTCARE);
+    tld.d_source = b1(DONTCARE);
+    tld.d_sink   = b3(DONTCARE);
+    tld.d_data   = b32(DONTCARE);
+    tld.d_error  = 0;
+    tld.d_valid  = 0;
+    tld.d_ready  = 1;
+
+    if (tla.a_valid && (tla.a_address & addr_mask) == addr_tag && tla.a_opcode == TL::Get) {
+      tld.d_opcode = TL::AccessAckData;
+      tld.d_param  = 0; // required by spec
+      tld.d_size   = 2;
+      tld.d_source = 0;
+      tld.d_sink   = 0;
+      tld.d_error  = 0;
+
+      // FIXME yosys doesn't like assignments to structs in case blocks unless
+      // they're inside {}? wat? added a workaround in Metron...
+
+      switch(tla.a_address & 0xF) {
+        case 0:
+          tld.d_data  = b32(bit_count == 8);
+          tld.d_valid = 1;
+          break;
+        case 1:
+          tld.d_data  = b32(data_out);
+          tld.d_valid = 1;
+          break;
+        case 2:
+          tld.d_data  = checksum;
+          tld.d_valid = 1;
+          break;
+      }
+    }
+
+    tick(reset, serial);
+  }
+
+  tilelink_d tld;
+
+ private:
 
   void tick(
     logic<1> reset,  // Top-level reset signal
@@ -68,7 +123,7 @@ public:
     }
   }
 
- private:
+
   // We wait for cycles_per_bit cycles
   static const int bit_delay_width = clog2(cycles_per_bit);
   static const int bit_delay_max = cycles_per_bit - 1;
@@ -88,6 +143,8 @@ public:
   logic<32> checksum;
 };
 
-//==============================================================================
+// verilator lint_on unusedsignal
+// verilator lint_on unusedparam
+//------------------------------------------------------------------------------
 
-#endif // UART_RX_H
+#endif // PINWHEEL_UART_UART_RX

@@ -30,6 +30,12 @@ public:
     return (bit_count == bit_count_max) && (bit_delay == bit_delay_max);
   }
 
+  void tock(logic<1> reset, logic<8> send_data, logic<1> send_request) {
+    tick(reset, send_data, send_request);
+  }
+
+private:
+
   void tick(logic<1> reset, logic<8> send_data, logic<1> send_request) {
     if (reset) {
       bit_delay = bit_delay_max;
@@ -69,8 +75,6 @@ public:
       }
     }
   }
-
-private:
 
   // We wait {cycles_per_bit} cycles between sending bits.
   static const int bit_delay_width = clog2(cycles_per_bit);

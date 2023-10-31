@@ -32,11 +32,9 @@ TestResults run_test_hex(const char* code_filename, const char* data_filename, i
 
   for (int rep = 0; rep < reps; rep++) {
     top.tock(1);
-    top.tick(1);
     double time_a = timestamp();
     for (elapsed_cycles = 0; elapsed_cycles < max_cycles; elapsed_cycles++) {
       top.tock(0);
-      top.tick(0);
       tocks++;
 
       // logic<3>  a_opcode;
