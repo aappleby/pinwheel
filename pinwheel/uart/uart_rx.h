@@ -33,7 +33,7 @@ public:
 
   // FIXME should this be happening in tick? Probably?
 
-  void tock(logic<1> reset, logic<1> serial, tilelink_a tla)
+  void tock(const logic<1> reset, const logic<1> serial, const tilelink_a tla)
   {
     tld.d_opcode = b3(DONTCARE);
     tld.d_param  = b2(DONTCARE);
