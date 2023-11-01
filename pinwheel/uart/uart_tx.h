@@ -38,55 +38,55 @@ public:
 
   void tock(const logic<1> reset, const logic<8> send_data, const logic<1> send_request, const tilelink_a tla) {
     tld.d_opcode = b3(DONTCARE);
-    tld.d_param  = b2(DONTCARE);
-    tld.d_size   = b3(DONTCARE);
-    tld.d_source = b1(DONTCARE);
-    tld.d_sink   = b3(DONTCARE);
+    tld.d_param  = 0; // required by spec
+    tld.d_size   = 2;
+    tld.d_source = 0;
+    tld.d_sink   = 0;
     tld.d_data   = b32(DONTCARE);
     tld.d_error  = 0;
     tld.d_valid  = 0;
     tld.d_ready  = 1;
 
+    logic<8> next_data = send_data;
+    logic<1> next_req  = send_request;
+
     if (tla.a_valid && (tla.a_address & addr_mask) == addr_tag) {
-      //send_data = 0;
-      //send_request = 0;
-
-      if (tla.a_valid && (tla.a_address & addr_mask) == addr_tag && tla.a_opcode == TL::PutFullData) {
-        tld.d_opcode = TL::AccessAck;
-        tld.d_param  = 0; // required by spec
-        tld.d_size   = 2;
-        tld.d_source = 0;
-        tld.d_sink   = 0;
-        tld.d_error  = 0;
-
-        // FIXME yosys doesn't like assignments to structs in case blocks unless
-        // they're inside {}? wat? added a workaround in Metron...
-
-        /*
+      // Read
+      if (tla.a_opcode == TL::Get) {
         switch(tla.a_address & 0xF) {
-          case 0:
-            tld.d_data  = b32(bit_count == 8);
-            tld.d_valid = 1;
+          case 0: {
+            logic<1> ctx = ((bit_count == bit_count_done) && (bit_delay == bit_delay_max)) || (bit_count > bit_count_done);
+            tld.d_opcode = TL::AccessAckData;
+            tld.d_data   = b32(ctx);
+            tld.d_valid  = 1;
             break;
-          case 1:
-            tld.d_data  = b32(data_out);
-            tld.d_valid = 1;
+          }
+          default: {
+            tld.d_error = 1;
             break;
-          case 2:
-            tld.d_data  = checksum;
-            tld.d_valid = 1;
-            break;
+          }
         }
-        */
-        tick(reset, send_data, send_request);
       }
-      else {
-        tick(reset, send_data, send_request);
+
+      // Write
+      else if (tla.a_opcode == TL::PutFullData) {
+        switch(tla.a_address & 0xF) {
+          case 1: {
+            next_data = b8(tla.a_data);
+            next_req  = 1;
+            tld.d_opcode = TL::AccessAck;
+            tld.d_valid  = 1;
+            break;
+          }
+          default: {
+            tld.d_error = 1;
+            break;
+          }
+        }
       }
     }
-    else {
-      tick(reset, send_data, send_request);
-    }
+
+    tick(reset, next_data, next_req);
   }
 
   tilelink_d tld;

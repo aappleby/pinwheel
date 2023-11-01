@@ -6,17 +6,23 @@
 
 //------------------------------------------------------------------------------
 
-struct PinwheelWrapper {
+struct PinwheelDUT {
 
-  PinwheelWrapper(
+  PinwheelDUT(
     const char* code_hexfile = "pinwheel/tools/blank.code.vh",
     const char* data_hexfile = "pinwheel/tools/blank.data.vh",
     const char* message_hex  = "pinwheel/uart/message.hex")
-  : soc(code_hexfile, data_hexfile, message_hex) {
+  : soc(code_hexfile, data_hexfile, message_hex)
+  {
+    console1.init(0xF0000000, 0x40000000);
+    console2.init(0xF0000000, 0x50000000);
+    console3.init(0xF0000000, 0x60000000);
+    console4.init(0xF0000000, 0x70000000);
+    console5.init(0x00000000, 0x00000000);
   }
 
-  PinwheelWrapper* clone() {
-    PinwheelWrapper* p = new PinwheelWrapper(nullptr, nullptr, nullptr);
+  PinwheelDUT* clone() {
+    PinwheelDUT* p = new PinwheelDUT(nullptr, nullptr, nullptr);
     memcpy(p, this, sizeof(*this));
     return p;
   }
@@ -24,6 +30,11 @@ struct PinwheelWrapper {
   size_t size_bytes() { return sizeof(*this); }
 
   pinwheel_soc soc;
+  Console console1;
+  Console console2;
+  Console console3;
+  Console console4;
+  Console console5;
 };
 
 //------------------------------------------------------------------------------
@@ -36,14 +47,9 @@ struct PinwheelSim : public Sim {
   virtual bool busy() const override;
   virtual void step() override;
 
-  StatePointerStack<PinwheelWrapper> states;
+  StatePointerStack<PinwheelDUT> states;
   int64_t steps = 0;
   int64_t ticks = 0;
-
-  Console console1;
-  Console console2;
-  Console console3;
-  Console console4;
 };
 
 //------------------------------------------------------------------------------

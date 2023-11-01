@@ -3,11 +3,7 @@
 //------------------------------------------------------------------------------
 
 PinwheelSim::PinwheelSim(const char* code_hex, const char* data_hex, const char* message_hex)
-: states(new PinwheelWrapper(code_hex, data_hex, message_hex)),
-  console1(0xF0000000, 0x40000000),
-  console2(0xF0000000, 0x50000000),
-  console3(0xF0000000, 0x60000000),
-  console4(0xF0000000, 0x70000000)
+: states(new PinwheelDUT(code_hex, data_hex, message_hex))
 {
 }
 
@@ -21,12 +17,20 @@ bool PinwheelSim::busy() const {
 
 void PinwheelSim::step() {
   if (steps) {
-    auto& pinwheel = states.top().soc;
-    pinwheel.tock(0);
-    console1.tick(0, pinwheel.core.bus_tla);
-    console2.tick(0, pinwheel.core.bus_tla);
-    console3.tick(0, pinwheel.core.bus_tla);
-    console4.tick(0, pinwheel.core.bus_tla);
+    auto& pinwheel = states.top();
+
+    auto old_uart_valid = pinwheel.soc.uart0_rx.get_valid();
+
+    pinwheel.soc.tock(0);
+    pinwheel.console1.tick(0, pinwheel.soc.core.bus_tla);
+    pinwheel.console2.tick(0, pinwheel.soc.core.bus_tla);
+    pinwheel.console3.tick(0, pinwheel.soc.core.bus_tla);
+    pinwheel.console4.tick(0, pinwheel.soc.core.bus_tla);
+
+    if (!old_uart_valid && pinwheel.soc.uart0_rx.get_valid()) {
+      pinwheel.console5.putchar(pinwheel.soc.uart0_rx.get_data_out());
+    }
+
     steps--;
     ticks++;
   }

@@ -178,6 +178,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   StringDumper d;
 
   auto& pinwheel = pinwheel_sim->states.top().soc;
+  auto& dut = pinwheel_sim->states.top();
 
   uint32_t insn_a = b24(pinwheel.core.reg_hpc_a) ? uint32_t(pinwheel.code_ram.get()) : 0;
 
@@ -345,10 +346,12 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   text_painter.render_string(view, screen_size, "Lat 2K of RAM", 1024, 256 + 128 + 64 - 12);
   data_painter.dump(view, screen_size, 1024, 256 + 128 + 64, 1, 1, 64, 32, vec4(0.0, 0.0, 0.0, 0.4), data_base + 65536 - (64*32));
 
-  console_painter.dump(view, screen_size, 32*19,  32, 1, 1, pinwheel_sim->console1.width, pinwheel_sim->console1.height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel_sim->console1.buf);
-  console_painter.dump(view, screen_size, 32*19, 256, 1, 1, pinwheel_sim->console2.width, pinwheel_sim->console2.height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel_sim->console2.buf);
-  console_painter.dump(view, screen_size, 32*19, 480, 1, 1, pinwheel_sim->console3.width, pinwheel_sim->console3.height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel_sim->console3.buf);
-  console_painter.dump(view, screen_size, 32*19, 704, 1, 1, pinwheel_sim->console4.width, pinwheel_sim->console4.height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel_sim->console4.buf);
+  console_painter.dump(view, screen_size, 32*19,  32, 1, 1, dut.console1.width, dut.console1.height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)dut.console1.buf);
+  console_painter.dump(view, screen_size, 32*19, 256, 1, 1, dut.console2.width, dut.console2.height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)dut.console2.buf);
+  console_painter.dump(view, screen_size, 32*19, 480, 1, 1, dut.console3.width, dut.console3.height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)dut.console3.buf);
+  console_painter.dump(view, screen_size, 32*19, 704, 1, 1, dut.console4.width, dut.console4.height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)dut.console4.buf);
+
+  console_painter.dump(view, screen_size, 1024 + 256, 704 + 128 + 32, 1, 1, dut.console5.width, dut.console5.height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)dut.console5.buf);
 
   //box_painter.push_corner_size(1024 + (harts[0]->pc % 64) * 14 - 1, 512 + (harts[0]->pc / 64) * 12, 12*4+2*3+2, 12, 0x8000FFFF);
   //box_painter.push_corner_size(1024 + (harts[1]->pc % 64) * 14 - 1, 512 + (harts[1]->pc / 64) * 12, 12*4+2*3+2, 12, 0x80FFFF00);

@@ -36,10 +36,10 @@ public:
   void tock(const logic<1> reset, const logic<1> serial, const tilelink_a tla)
   {
     tld.d_opcode = b3(DONTCARE);
-    tld.d_param  = b2(DONTCARE);
-    tld.d_size   = b3(DONTCARE);
-    tld.d_source = b1(DONTCARE);
-    tld.d_sink   = b3(DONTCARE);
+    tld.d_param  = 0; // required by spec
+    tld.d_size   = 2;
+    tld.d_source = 0;
+    tld.d_sink   = 0;
     tld.d_data   = b32(DONTCARE);
     tld.d_error  = 0;
     tld.d_valid  = 0;
@@ -47,14 +47,7 @@ public:
 
     if (tla.a_valid && (tla.a_address & addr_mask) == addr_tag && tla.a_opcode == TL::Get) {
       tld.d_opcode = TL::AccessAckData;
-      tld.d_param  = 0; // required by spec
-      tld.d_size   = 2;
-      tld.d_source = 0;
-      tld.d_sink   = 0;
       tld.d_error  = 0;
-
-      // FIXME yosys doesn't like assignments to structs in case blocks unless
-      // they're inside {}? wat? added a workaround in Metron...
 
       switch(tla.a_address & 0xF) {
         case 0:
