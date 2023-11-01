@@ -5,7 +5,7 @@
 #include "pinwheel/tools/tilelink.h"
 
 // 0xB0000000 = send ready
-// 0xB0000001 = data
+// 0xB0000004 = data
 
 //------------------------------------------------------------------------------
 // verilator lint_off unusedsignal
@@ -54,7 +54,7 @@ public:
       // Read
       if (tla.a_opcode == TL::Get) {
         switch(tla.a_address & 0xF) {
-          case 0: {
+          case 0x0000: {
             logic<1> ctx = ((bit_count == bit_count_done) && (bit_delay == bit_delay_max)) || (bit_count > bit_count_done);
             tld.d_opcode = TL::AccessAckData;
             tld.d_data   = b32(ctx);
@@ -71,7 +71,7 @@ public:
       // Write
       else if (tla.a_opcode == TL::PutFullData) {
         switch(tla.a_address & 0xF) {
-          case 1: {
+          case 0x0004: {
             next_data = b8(tla.a_data);
             next_req  = 1;
             tld.d_opcode = TL::AccessAck;

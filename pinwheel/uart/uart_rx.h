@@ -9,8 +9,8 @@
 // verilator lint_off unusedparam
 
 // 0xB0000000 = data ready
-// 0xB0000001 = data
-// 0xB0000002 = checksum
+// 0xB0000004 = data
+// 0xB0000008 = checksum
 
 template <uint32_t addr_mask = 0xF000F000, uint32_t addr_tag = 0xB0000000, int cycles_per_bit = 4>
 class uart_rx {
@@ -50,15 +50,15 @@ public:
       tld.d_error  = 0;
 
       switch(tla.a_address & 0xF) {
-        case 0:
+        case 0x0000:
           tld.d_data  = b32(bit_count == 8);
           tld.d_valid = 1;
           break;
-        case 1:
+        case 0x0004:
           tld.d_data  = b32(data_out);
           tld.d_valid = 1;
           break;
-        case 2:
+        case 0x0008:
           tld.d_data  = checksum;
           tld.d_valid = 1;
           break;

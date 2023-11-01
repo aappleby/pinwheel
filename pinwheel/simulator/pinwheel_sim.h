@@ -6,9 +6,9 @@
 
 //------------------------------------------------------------------------------
 
-struct PinwheelDUT {
+struct PinwheelTB {
 
-  PinwheelDUT(
+  PinwheelTB(
     const char* code_hexfile = "pinwheel/tools/blank.code.vh",
     const char* data_hexfile = "pinwheel/tools/blank.data.vh",
     const char* message_hex  = "pinwheel/uart/message.hex")
@@ -21,8 +21,8 @@ struct PinwheelDUT {
     console5.init(0x00000000, 0x00000000);
   }
 
-  PinwheelDUT* clone() {
-    PinwheelDUT* p = new PinwheelDUT(nullptr, nullptr, nullptr);
+  PinwheelTB* clone() {
+    PinwheelTB* p = new PinwheelTB(nullptr, nullptr, nullptr);
     memcpy(p, this, sizeof(*this));
     return p;
   }
@@ -47,7 +47,7 @@ struct PinwheelSim : public Sim {
   virtual bool busy() const override;
   virtual void step() override;
 
-  StatePointerStack<PinwheelDUT> states;
+  StatePointerStack<PinwheelTB> states;
   int64_t steps = 0;
   int64_t ticks = 0;
 };

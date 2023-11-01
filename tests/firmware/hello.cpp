@@ -132,6 +132,13 @@ void main0() {
   uint32_t pc2 = (2 << 24) | uint32_t(&_start);
   uint32_t pc3 = (3 << 24) | uint32_t(&_start);
 
+  for (int i = 0; i < 200; i++) {
+    volatile uint32_t* data_in  = (uint32_t*)0xB0000004;
+    volatile uint32_t* data_out = (uint32_t*)0x40000000;
+
+    *data_out = *data_in;
+  }
+
   c->printf("Starting thread-swapping loop\n", get_hart());
 
   csr_swap_secondary_thread(pc1);

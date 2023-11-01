@@ -3,7 +3,7 @@
 //------------------------------------------------------------------------------
 
 PinwheelSim::PinwheelSim(const char* code_hex, const char* data_hex, const char* message_hex)
-: states(new PinwheelDUT(code_hex, data_hex, message_hex))
+: states(new PinwheelTB(code_hex, data_hex, message_hex))
 {
 }
 
