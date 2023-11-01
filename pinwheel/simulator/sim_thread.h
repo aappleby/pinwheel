@@ -31,6 +31,8 @@ struct AtomicFlags {
 //--------------------------------------------------------------------------------
 
 struct Sim {
+  virtual ~Sim() {}
+
   virtual bool busy() const = 0;
   virtual void step() = 0;
 };

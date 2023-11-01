@@ -6,6 +6,11 @@
 #include "pinwheel/tools/tilelink.h"
 #include "pinwheel/tools/riscv_constants.h"
 
+// CSR 0x800 - swap secondary thread
+// CSR 0x801 - swap current thread
+
+// FIXME where does the old PC go when we swap the current thread?
+
 //------------------------------------------------------------------------------
 /* verilator lint_off UNUSEDSIGNAL */
 
@@ -18,15 +23,6 @@ public:
 
   void tock(logic<1> reset_in, tilelink_d code_tld, tilelink_d bus_tld, logic<32> reg_rdata1, logic<32> reg_rdata2) {
 
-    {
-      logic<32> sig_insn_a  = b24(reg_hpc_a) ? code_tld.d_data : b32(0);
-      logic<5>  rs1a_a  = b5(sig_insn_a, 15);
-      logic<5>  rs2a_a  = b5(sig_insn_a, 20);
-      reg_if.raddr1 = cat(b3(reg_hpc_a, 24), rs1a_a);
-      reg_if.raddr2 = cat(b3(reg_hpc_a, 24), rs2a_a);
-    }
-
-
     //----------
     // Fetch
 
@@ -38,6 +34,10 @@ public:
         logic<5>  rs2a_b = b5(reg_insn_b, 20);
         logic<32> rs1_b  = rs1a_b ? reg_rdata1 : b32(0);
         logic<32> rs2_b  = rs2a_b ? reg_rdata2 : b32(0);
+        logic<32> imm_b  = decode_imm(reg_insn_b);
+        logic<32> addr_b = b32(rs1_b + imm_b);
+        logic<5>  op_b   = b5(reg_insn_b, 2);
+
         logic<1> eq  = rs1_b == rs2_b;
         logic<1> slt = signed(rs1_b) < signed(rs2_b);
         logic<1> ult = rs1_b < rs2_b;
@@ -54,18 +54,11 @@ public:
           case 7:  take_branch = !ult; break;
           default: take_branch =    0; break;
         }
-      }
 
-      if (b24(reg_hpc_b)) {
-        logic<5>  rs1a_b = b5(reg_insn_b, 15);
-        logic<32> rs1_b  = rs1a_b ? reg_rdata1 : b32(0);
-        logic<32> imm_b = decode_imm(reg_insn_b);
-        logic<32> sig_addr_b  = b32(rs1_b + imm_b);
-        logic<5>  op_b   = b5(reg_insn_b, 2);
         switch(op_b) {
           case RV32I::OP_BRANCH: next_hpc_a = take_branch ? reg_hpc_b + imm_b : reg_hpc_b + 4; break;
           case RV32I::OP_JAL:    next_hpc_a = reg_hpc_b + imm_b; break;
-          case RV32I::OP_JALR:   next_hpc_a = sig_addr_b; break;
+          case RV32I::OP_JALR:   next_hpc_a = addr_b; break;
           case RV32I::OP_LUI:    next_hpc_a = reg_hpc_b + 4; break;
           case RV32I::OP_AUIPC:  next_hpc_a = reg_hpc_b + 4; break;
           case RV32I::OP_LOAD:   next_hpc_a = reg_hpc_b + 4; break;
@@ -77,7 +70,6 @@ public:
       }
     }
 
-    next_hpc_a = (next_hpc_a & 0x00FFFFFF) | (reg_hpc_b & 0xFF000000);
 
     //----------
     // Execute
@@ -105,22 +97,39 @@ public:
         case RV32I::OP_OP:     alu_result = execute_alu   (reg_insn_b, rs1_b, rs2_b); break;
         default:               alu_result = b32(DONTCARE);     break;
       }
+    }
 
+    //----------
+    // PC hackery to swap threads
+
+    next_hpc_a = (next_hpc_a & 0x00FFFFFF) | (reg_hpc_b & 0xFF000000);
+
+    {
+      // If we write to CSR 0x800, we swap the secondary thread's PC with the
+      // register value.
+      logic<5>  op_c  = b5 (reg_insn_c, 2);
+      logic<3>  f3_c  = b3 (reg_insn_c, 12);
+      logic<12> csr_c = b12(reg_insn_c, 20);
+
+      if (op_c == RV32I::OP_SYSTEM && f3_c == RV32I::F3_CSRRW && csr_c == 0x800) {
+        logic<32> temp = result_c;
+        result_c = next_hpc_a;
+        next_hpc_a = temp;
+      }
+    }
+
+
+    {
+      // If we write to CSR 0x801, we swap the current thread's PC with the
+      // register value.
+      logic<5>  op_b  = b5 (reg_insn_b, 2);
+      logic<3>  f3_b  = b3 (reg_insn_b, 12);
       logic<12> csr_b = b12(reg_insn_b, 20);
-      logic<3>  f3_b   = b3(reg_insn_b, 12);
+
       if (op_b == RV32I::OP_SYSTEM && f3_b == RV32I::F3_CSRRW && csr_b == 0x801) {
         logic<32> temp = alu_result;
         alu_result = next_hpc_a;
         next_hpc_a = temp;
-      }
-
-      logic<12> csr_c = b12(reg_insn_c, 20);
-      logic<3> f3_c = b3(reg_insn_c, 12);
-      logic<5> op_c = b5(reg_insn_c, 2);
-
-      if (op_c == RV32I::OP_SYSTEM && f3_c == RV32I::F3_CSRRW && csr_c == 0x800) {
-        result_c = next_hpc_a;
-        next_hpc_a = reg_result_c;
       }
     }
 
@@ -128,24 +137,28 @@ public:
     // Memory: Data bus
 
     {
-      logic<3> bus_size = b3(DONTCARE);
-      logic<32> imm_b = decode_imm(reg_insn_b);
-      logic<5>  rs1a_b = b5(reg_insn_b, 15);
-      logic<32> rs1_b  = rs1a_b ? reg_rdata1 : b32(0);
-      logic<32> sig_addr_b  = b32(rs1_b + imm_b);
-      logic<4> mask_b = 0;
-      logic<5>  rs2a_b = b5(reg_insn_b, 20);
-      logic<32> rs2_b  = rs2a_b ? reg_rdata2 : b32(0);
-      logic<3>  f3_b   = b3(reg_insn_b, 12);
+      logic<5>  op_b     = b5(reg_insn_b, 2);
+      logic<3>  f3_b     = b3(reg_insn_b, 12);
+      logic<5>  rs1a_b   = b5(reg_insn_b, 15);
+      logic<5>  rs2a_b   = b5(reg_insn_b, 20);
+
+      logic<32> rs1_b    = rs1a_b ? reg_rdata1 : b32(0);
+      logic<32> rs2_b    = rs2a_b ? reg_rdata2 : b32(0);
+
+      logic<32> imm_b    = decode_imm(reg_insn_b);
+      logic<32> addr_b   = b32(rs1_b + imm_b);
+
+      logic<3>  bus_size = b3(DONTCARE);
+      logic<4>  mask_b   = 0;
+
       if (f3_b == 0)    { mask_b = 0b0001; bus_size = 0; }
       if (f3_b == 1)    { mask_b = 0b0011; bus_size = 1; }
       if (f3_b == 2)    { mask_b = 0b1111; bus_size = 2; }
-      if (sig_addr_b[0]) mask_b = mask_b << 1;
-      if (sig_addr_b[1]) mask_b = mask_b << 2;
+      if (addr_b[0]) mask_b = mask_b << 1;
+      if (addr_b[1]) mask_b = mask_b << 2;
 
-      logic<5>  op_b   = b5(reg_insn_b, 2);
 
-      bus_tla.a_address = sig_addr_b;
+      bus_tla.a_address = addr_b;
       bus_tla.a_data    = rs2_b;
       bus_tla.a_mask    = mask_b;
       bus_tla.a_opcode  = (op_b == RV32I::OP_STORE) ? (bus_size == 2 ? TL::PutFullData : TL::PutPartialData) : TL::Get;
@@ -167,23 +180,22 @@ public:
       // and we can't do it earlier or later (we can read it during C, but then it's not back
       // in time to write to the regfile).
 
-      logic<4>       temp_mask_c = 0;
-      logic<3> f3_c = b3(reg_insn_c, 12);
-      if (f3_c == 0) temp_mask_c = 0b0001;
-      if (f3_c == 1) temp_mask_c = 0b0011;
-      if (f3_c == 2) temp_mask_c = 0b1111;
+      logic<5> op_c      = b5(reg_insn_c, 2);
+      logic<3> f3_c      = b3(reg_insn_c, 12);
+      logic<4> bus_tag_c = b4(reg_addr_c, 28);
+      logic<1> code_cs_c = bus_tag_c == 0x0 && b24(next_hpc_a) == 0;
+
+      logic<4>           temp_mask_c = 0;
+      if (f3_c == 0)     temp_mask_c = 0b0001;
+      if (f3_c == 1)     temp_mask_c = 0b0011;
+      if (f3_c == 2)     temp_mask_c = 0b1111;
       if (reg_addr_c[0]) temp_mask_c = temp_mask_c << 1;
       if (reg_addr_c[1]) temp_mask_c = temp_mask_c << 2;
 
-      logic<4>  bus_tag_c = b4(reg_addr_c, 28);
-      logic<1> code_cs_c = bus_tag_c == 0x0 && b24(next_hpc_a) == 0;
-
-      code_tla.a_address  = code_cs_c ? b24(reg_addr_c) : b24(next_hpc_a);
-      code_tla.a_data = result_c;
-      code_tla.a_mask = temp_mask_c;
-      logic<5> op_c = b5(reg_insn_c, 2);
-      logic<1> sig_code_wren  = (op_c == RV32I::OP_STORE) && code_cs_c;
-      code_tla.a_opcode  = sig_code_wren ? TL::PutFullData : TL::Get;
+      code_tla.a_address = code_cs_c ? b24(reg_addr_c) : b24(next_hpc_a);
+      code_tla.a_data    = result_c;
+      code_tla.a_mask    = temp_mask_c;
+      code_tla.a_opcode  = (op_c == RV32I::OP_STORE) && code_cs_c ? TL::PutFullData : TL::Get;
       code_tla.a_param   = b3(DONTCARE);
       code_tla.a_size    = 2;
       code_tla.a_source  = b1(DONTCARE);
@@ -192,14 +204,20 @@ public:
     }
 
     //----------
-    // Regfile write
+    // Regfile read/write
 
     {
-      logic<4>  bus_tag_c = b4(reg_addr_c, 28);
+      logic<32> insn_a = b24(reg_hpc_a) ? code_tld.d_data : b32(0);
+      logic<5>  rs1a_a = b5(insn_a, 15);
+      logic<5>  rs2a_a = b5(insn_a, 20);
+      reg_if.raddr1 = cat(b3(reg_hpc_a, 24), rs1a_a);
+      reg_if.raddr2 = cat(b3(reg_hpc_a, 24), rs2a_a);
+
+      logic<4>  bus_tag_c    = b4(reg_addr_c, 28);
       logic<1>  regfile_cs_c = bus_tag_c == 0xE;
-      logic<32> data_out_c = regfile_cs_c ? reg_rdata1 : bus_tld.d_data;
-      logic<32> unpacked_c = data_out_c;
-      logic<3>  f3_c = b3(reg_insn_c, 12);
+      logic<32> data_out_c   = regfile_cs_c ? reg_rdata1 : bus_tld.d_data;
+      logic<32> unpacked_c   = data_out_c;
+      logic<3>  f3_c         = b3(reg_insn_c, 12);
 
       if (result_c[0]) unpacked_c = unpacked_c >> 8;
       if (result_c[1]) unpacked_c = unpacked_c >> 16;
@@ -217,8 +235,16 @@ public:
       // FIXME why didn't this ternary work?
       //reg_if.waddr = cat(b3(op_c == RV32I::OP_JALR ? reg_hpc_a : reg_hpc_c, 24), rd_c);
 
-      logic<5> op_c = b5(reg_insn_c, 2);
-      logic<5> rd_c = b5(reg_insn_c, 7);
+      logic<5>  op_b   = b5(reg_insn_b, 2);
+      logic<5>  rs1a_b = b5(reg_insn_b, 15);
+      logic<32> rs1_b  = rs1a_b ? reg_rdata1 : b32(0);
+      logic<32> imm_b  = decode_imm(reg_insn_b);
+      logic<32> addr_b = b32(rs1_b + imm_b);
+      logic<1>  regfile_cs_b = b4(addr_b, 28) == 0xE;
+
+      logic<5>  op_c   = b5(reg_insn_c, 2);
+      logic<5>  rd_c   = b5(reg_insn_c, 7);
+
       if (op_c == RV32I::OP_JALR) {
         reg_if.waddr = cat(b3(reg_hpc_a, 24), rd_c);
       }
@@ -226,19 +252,16 @@ public:
         reg_if.waddr = cat(b3(reg_hpc_c, 24), rd_c);
       }
 
+      // Store and branch ops do _not_ update the regfile.
+      reg_if.wren  = b24(reg_hpc_c) && op_c != RV32I::OP_STORE && op_c != RV32I::OP_BRANCH;
       reg_if.wdata = op_c == RV32I::OP_LOAD ? unpacked_c : result_c;
-      reg_if.wren = b24(reg_hpc_c) && op_c != RV32I::OP_STORE && op_c != RV32I::OP_BRANCH;
 
+      // Don't overwrite what ever is in regfile slot 0.
       if (rd_c == 0) reg_if.wren = 0;
 
-      logic<5>  rs1a_b = b5(reg_insn_b, 15);
-      logic<32> rs1_b  = rs1a_b ? reg_rdata1 : b32(0);
-      logic<32> imm_b = decode_imm(reg_insn_b);
-      logic<32> sig_addr_b  = b32(rs1_b + imm_b);
-      logic<1> regfile_cs_b = b4(sig_addr_b, 28) == 0xE;
-      logic<5>  op_b   = b5(reg_insn_b, 2);
+      // Read from regfile is allowed if the other thread is idle
       if ((op_b == RV32I::OP_LOAD) && regfile_cs_b && (b24(reg_hpc_a) == 0)) {
-        reg_if.raddr1 = b10(sig_addr_b >> 2);
+        reg_if.raddr1 = b10(addr_b >> 2);
       }
 
       // Handle stores through the bus to the regfile.
@@ -253,24 +276,19 @@ public:
     // Writeback to core regs
 
     {
-      logic<5>  rs1a_b = b5(reg_insn_b, 15);
-      logic<32> rs1_b  = rs1a_b ? reg_rdata1 : b32(0);
-      logic<32> imm_b = decode_imm(reg_insn_b);
-      logic<32> sig_addr_b  = b32(rs1_b + imm_b);
-      logic<32> sig_insn_a  = b24(reg_hpc_a) ? code_tld.d_data : b32(0);
       tick(reset_in,
-          next_hpc_a, sig_insn_a,
-          sig_addr_b, alu_result,
-          result_c);
+           code_tld.d_data,
+           reg_rdata1,
+           next_hpc_a,
+           alu_result,
+           result_c);
     }
   }
-
 
   //----------------------------------------
 
   tilelink_a bus_tla;
   tilelink_a code_tla;
-
   regfile_if reg_if;
 
 public:
@@ -299,7 +317,15 @@ private:
 
   //----------------------------------------
 
-  void tick(logic<1> reset_in, logic<32> next_hpc_a, logic<32> sig_insn_a, logic<32> sig_addr_b, logic<32> alu_result, logic<32> sig_result_c) {
+  void tick(logic<1> reset_in,
+            logic<32> code_tld_data, logic<32> reg_rdata1, logic<32> next_hpc_a, logic<32> alu_result, logic<32> result_c) {
+
+    logic<5>  rs1a_b  = b5(reg_insn_b, 15);
+    logic<32> rs1_b   = rs1a_b ? reg_rdata1 : b32(0);
+    logic<32> imm_b   = decode_imm(reg_insn_b);
+    logic<32> addr_b  = b32(rs1_b + imm_b);
+    logic<32> insn_a  = b24(reg_hpc_a) ? code_tld_data : b32(0);
+
     if (reset_in) {
       reg_hpc_a     = 0x00400000;
 
@@ -318,23 +344,17 @@ private:
       reg_ticks     = 0;
     }
     else {
-      //logic<5>  _rs1a_b = b5(reg_insn_b, 15);
-      //logic<32> _rs1_b  = _rs1a_b ? reg_rdata1 : b32(0);
-      //logic<32> _imm_b = decode_imm(reg_insn_b);
-      //logic<32> _sig_addr_b  = b32(_rs1_b + _imm_b);
-      //logic<32> _sig_insn_a  = b24(reg_hpc_a) ? code_tld.d_data : b32(0);
-
       reg_hpc_d     = reg_hpc_c;
       reg_insn_d    = reg_insn_c;
-      reg_result_d  = sig_result_c;
+      reg_result_d  = result_c;
 
       reg_hpc_c     = reg_hpc_b;
       reg_insn_c    = reg_insn_b;
-      reg_addr_c    = sig_addr_b;
+      reg_addr_c    = addr_b;
       reg_result_c  = alu_result;
 
       reg_hpc_b     = reg_hpc_a;
-      reg_insn_b    = sig_insn_a;
+      reg_insn_b    = insn_a;
 
       reg_hpc_a     = next_hpc_a;
 

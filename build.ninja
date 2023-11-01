@@ -9,6 +9,8 @@ include symlinks/metrolib/ninja/rules.ninja
 include symlinks/metrolib/ninja/config_ALL.ninja
 include symlinks/metrolib/ninja/config_${target}.ninja
 
+#opts_cpp = ${opts_cpp} -fsanitize=undefined
+
 includes = ${includes} -Isymlinks/metrolib
 includes = ${includes} -Isymlinks/metron
 
@@ -52,7 +54,7 @@ build bin/pinwheel_app: c_binary $
   symlinks/metrolib/bin/metrolib/libappbase.a $
   symlinks/metrolib/bin/metrolib/libcore.a $
   bin/imgui/libimgui.a
-  libraries=-lSDL2
+  libraries=-lSDL2 -lubsan
 
 ################################################################################
 # Metron conversion tests
@@ -137,6 +139,7 @@ build obj/tests/pinwheel_test.o:      compile_cpp tests/pinwheel_test.cpp
 
 build bin/pinwheel_test: c_binary $
   obj/tests/pinwheel_test.o | firmware
+  libraries = -lubsan
 
 #build obj/pinwheel_test_pass: run_test bin/pinwheel_test
 

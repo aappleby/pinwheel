@@ -31,6 +31,7 @@ struct PinwheelWrapper {
 struct PinwheelSim : public Sim {
 
   PinwheelSim(const char* code_hex, const char* data_hex, const char* message_hex);
+  virtual ~PinwheelSim() {}
 
   virtual bool busy() const override;
   virtual void step() override;
