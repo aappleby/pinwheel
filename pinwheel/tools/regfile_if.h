@@ -6,9 +6,9 @@
 #include "metron/metron_tools.h"
 
 struct regfile_if {
-  logic<8>  raddr1;
-  logic<8>  raddr2;
-  logic<8>  waddr;
+  logic<13> raddr1;
+  logic<13> raddr2;
+  logic<13> waddr;
   logic<32> wdata;
   logic<1>  wren;
 };

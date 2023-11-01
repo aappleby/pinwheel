@@ -9,6 +9,8 @@
 // CSR 0x800 - swap secondary thread
 // CSR 0x801 - swap current thread
 
+// 0xE0000000 - mapped regfile base address
+
 // FIXME where does the old PC go when we swap the current thread?
 
 //------------------------------------------------------------------------------
@@ -24,130 +26,55 @@ public:
   void tock(logic<1> reset_in, tilelink_d code_tld, tilelink_d bus_tld, logic<32> reg_rdata1, logic<32> reg_rdata2) {
 
     //----------
-    // Fetch
+    // Decode instruction A
 
-    logic<32> next_hpc_a = 0;
-    {
-      logic<1> take_branch = 0;
-      if (b24(reg_hpc_b)) {
-        logic<5>  rs1a_b = b5(reg_insn_b, 15);
-        logic<5>  rs2a_b = b5(reg_insn_b, 20);
-        logic<32> rs1_b  = rs1a_b ? reg_rdata1 : b32(0);
-        logic<32> rs2_b  = rs2a_b ? reg_rdata2 : b32(0);
-        logic<32> imm_b  = decode_imm(reg_insn_b);
-        logic<32> addr_b = b32(rs1_b + imm_b);
-        logic<5>  op_b   = b5(reg_insn_b, 2);
+    logic<32> insn_a = b24(reg_hpc_a) ? code_tld.d_data : b32(0);
+    logic<5>  rs1a_a = b5(insn_a, 15);
+    logic<5>  rs2a_a = b5(insn_a, 20);
 
-        logic<1> eq  = rs1_b == rs2_b;
-        logic<1> slt = signed(rs1_b) < signed(rs2_b);
-        logic<1> ult = rs1_b < rs2_b;
+    //----------
+    // Decode instruction B
 
-        logic<3>  f3_b   = b3(reg_insn_b, 12);
-        switch (f3_b) {
-          case 0:  take_branch =   eq; break;
-          case 1:  take_branch =  !eq; break;
-          case 2:  take_branch =   eq; break;
-          case 3:  take_branch =  !eq; break;
-          case 4:  take_branch =  slt; break;
-          case 5:  take_branch = !slt; break;
-          case 6:  take_branch =  ult; break;
-          case 7:  take_branch = !ult; break;
-          default: take_branch =    0; break;
-        }
+    logic<5>  op_b   = b5(reg_insn_b, 2);
+    logic<3>  f3_b   = b3(reg_insn_b, 12);
+    logic<5>  rs1a_b = b5(reg_insn_b, 15);
+    logic<5>  rs2a_b = b5(reg_insn_b, 20);
 
-        switch(op_b) {
-          case RV32I::OP_BRANCH: next_hpc_a = take_branch ? reg_hpc_b + imm_b : reg_hpc_b + 4; break;
-          case RV32I::OP_JAL:    next_hpc_a = reg_hpc_b + imm_b; break;
-          case RV32I::OP_JALR:   next_hpc_a = addr_b; break;
-          case RV32I::OP_LUI:    next_hpc_a = reg_hpc_b + 4; break;
-          case RV32I::OP_AUIPC:  next_hpc_a = reg_hpc_b + 4; break;
-          case RV32I::OP_LOAD:   next_hpc_a = reg_hpc_b + 4; break;
-          case RV32I::OP_STORE:  next_hpc_a = reg_hpc_b + 4; break;
-          case RV32I::OP_SYSTEM: next_hpc_a = reg_hpc_b + 4; break;
-          case RV32I::OP_OPIMM:  next_hpc_a = reg_hpc_b + 4; break;
-          case RV32I::OP_OP:     next_hpc_a = reg_hpc_b + 4; break;
-        }
-      }
-    }
+    logic<32> rs1_b  = rs1a_b ? reg_rdata1 : b32(0);
+    logic<32> rs2_b  = rs2a_b ? reg_rdata2 : b32(0);
+    logic<32> imm_b  = decode_imm(reg_insn_b);
+    logic<32> addr_b = b32(rs1_b + imm_b);
 
+    //----------
+    // Decode instruction C
+
+    logic<5>  op_c = b5(reg_insn_c, 2);
+    logic<5>  rd_c = b5(reg_insn_c, 7);
+    logic<3>  f3_c = b3(reg_insn_c, 12);
 
     //----------
     // Execute
 
     logic<32> result_c = reg_result_c;
     logic<32> alu_result = 0;
-    {
-      logic<5>  rs1a_b = b5(reg_insn_b, 15);
-      logic<5>  rs2a_b = b5(reg_insn_b, 20);
-      logic<32> rs1_b  = rs1a_b ? reg_rdata1 : b32(0);
-      logic<32> rs2_b  = rs2a_b ? reg_rdata2 : b32(0);
-      logic<32> imm_b = decode_imm(reg_insn_b);
-      logic<32> sig_addr_b  = b32(rs1_b + imm_b);
-      logic<5>  op_b   = b5(reg_insn_b, 2);
-      switch(op_b) {
-        case RV32I::OP_BRANCH: alu_result = b32(DONTCARE);     break;
-        case RV32I::OP_JAL:    alu_result = reg_hpc_b + 4;     break;
-        case RV32I::OP_JALR:   alu_result = reg_hpc_b + 4;     break;
-        case RV32I::OP_LUI:    alu_result = imm_b;             break;
-        case RV32I::OP_AUIPC:  alu_result = reg_hpc_b + imm_b; break;
-        case RV32I::OP_LOAD:   alu_result = sig_addr_b;        break;
-        case RV32I::OP_STORE:  alu_result = rs2_b;             break;
-        case RV32I::OP_SYSTEM: alu_result = execute_system(reg_insn_b, rs1_b, rs2_b); break;
-        case RV32I::OP_OPIMM:  alu_result = execute_alu   (reg_insn_b, rs1_b, rs2_b); break;
-        case RV32I::OP_OP:     alu_result = execute_alu   (reg_insn_b, rs1_b, rs2_b); break;
-        default:               alu_result = b32(DONTCARE);     break;
-      }
+    switch(op_b) {
+      case RV32I::OP_BRANCH: alu_result = b32(DONTCARE);     break;
+      case RV32I::OP_JAL:    alu_result = reg_hpc_b + 4;     break;
+      case RV32I::OP_JALR:   alu_result = reg_hpc_b + 4;     break;
+      case RV32I::OP_LUI:    alu_result = imm_b;             break;
+      case RV32I::OP_AUIPC:  alu_result = reg_hpc_b + imm_b; break;
+      case RV32I::OP_LOAD:   alu_result = addr_b;            break;
+      case RV32I::OP_STORE:  alu_result = rs2_b;             break;
+      case RV32I::OP_SYSTEM: alu_result = execute_system(reg_insn_b, rs1_b, rs2_b); break;
+      case RV32I::OP_OPIMM:  alu_result = execute_alu   (reg_insn_b, rs1_b, rs2_b); break;
+      case RV32I::OP_OP:     alu_result = execute_alu   (reg_insn_b, rs1_b, rs2_b); break;
+      default:               alu_result = b32(DONTCARE);     break;
     }
 
     //----------
-    // PC hackery to swap threads
-
-    next_hpc_a = (next_hpc_a & 0x00FFFFFF) | (reg_hpc_b & 0xFF000000);
+    // Data bus read/write
 
     {
-      // If we write to CSR 0x800, we swap the secondary thread's PC with the
-      // register value.
-      logic<5>  op_c  = b5 (reg_insn_c, 2);
-      logic<3>  f3_c  = b3 (reg_insn_c, 12);
-      logic<12> csr_c = b12(reg_insn_c, 20);
-
-      if (op_c == RV32I::OP_SYSTEM && f3_c == RV32I::F3_CSRRW && csr_c == 0x800) {
-        logic<32> temp = result_c;
-        result_c = next_hpc_a;
-        next_hpc_a = temp;
-      }
-    }
-
-
-    {
-      // If we write to CSR 0x801, we swap the current thread's PC with the
-      // register value.
-      logic<5>  op_b  = b5 (reg_insn_b, 2);
-      logic<3>  f3_b  = b3 (reg_insn_b, 12);
-      logic<12> csr_b = b12(reg_insn_b, 20);
-
-      if (op_b == RV32I::OP_SYSTEM && f3_b == RV32I::F3_CSRRW && csr_b == 0x801) {
-        logic<32> temp = alu_result;
-        alu_result = next_hpc_a;
-        next_hpc_a = temp;
-      }
-    }
-
-    //----------
-    // Memory: Data bus
-
-    {
-      logic<5>  op_b     = b5(reg_insn_b, 2);
-      logic<3>  f3_b     = b3(reg_insn_b, 12);
-      logic<5>  rs1a_b   = b5(reg_insn_b, 15);
-      logic<5>  rs2a_b   = b5(reg_insn_b, 20);
-
-      logic<32> rs1_b    = rs1a_b ? reg_rdata1 : b32(0);
-      logic<32> rs2_b    = rs2a_b ? reg_rdata2 : b32(0);
-
-      logic<32> imm_b    = decode_imm(reg_insn_b);
-      logic<32> addr_b   = b32(rs1_b + imm_b);
-
       logic<3>  bus_size = b3(DONTCARE);
       logic<4>  mask_b   = 0;
 
@@ -170,31 +97,87 @@ public:
     }
 
     //----------
-    // Memory + code/data/reg read/write overrides for cross-thread stuff
+    // Next instruction selection
+
+    logic<32> next_hpc_a = 0;
+    if (b24(reg_hpc_b)) {
+      logic<1> eq  = rs1_b == rs2_b;
+      logic<1> slt = signed(rs1_b) < signed(rs2_b);
+      logic<1> ult = rs1_b < rs2_b;
+      logic<1> take_branch = 0;
+
+      switch (f3_b) {
+        case 0:  take_branch =   eq; break;
+        case 1:  take_branch =  !eq; break;
+        case 2:  take_branch =   eq; break;
+        case 3:  take_branch =  !eq; break;
+        case 4:  take_branch =  slt; break;
+        case 5:  take_branch = !slt; break;
+        case 6:  take_branch =  ult; break;
+        case 7:  take_branch = !ult; break;
+        default: take_branch =    0; break;
+      }
+
+      switch(op_b) {
+        case RV32I::OP_BRANCH: next_hpc_a = take_branch ? reg_hpc_b + imm_b : reg_hpc_b + 4; break;
+        case RV32I::OP_JAL:    next_hpc_a = reg_hpc_b + imm_b; break;
+        case RV32I::OP_JALR:   next_hpc_a = addr_b; break;
+        case RV32I::OP_LUI:    next_hpc_a = reg_hpc_b + 4; break;
+        case RV32I::OP_AUIPC:  next_hpc_a = reg_hpc_b + 4; break;
+        case RV32I::OP_LOAD:   next_hpc_a = reg_hpc_b + 4; break;
+        case RV32I::OP_STORE:  next_hpc_a = reg_hpc_b + 4; break;
+        case RV32I::OP_SYSTEM: next_hpc_a = reg_hpc_b + 4; break;
+        case RV32I::OP_OPIMM:  next_hpc_a = reg_hpc_b + 4; break;
+        case RV32I::OP_OP:     next_hpc_a = reg_hpc_b + 4; break;
+      }
+    }
+
+    //----------
+    // PC hackery to swap threads
+
+    next_hpc_a = (next_hpc_a & 0x00FFFFFF) | (reg_hpc_b & 0xFF000000);
 
     {
-      // We write code memory in phase C because it's busy reading the next
-      // instruction in phase B.
+      // If we write to CSR 0x800, we swap the secondary thread's PC with the
+      // register value.
+      logic<12> csr_c = b12(reg_insn_c, 20);
+      if (op_c == RV32I::OP_SYSTEM && f3_c == RV32I::F3_CSRRW && csr_c == 0x800) {
+        logic<32> temp = result_c;
+        result_c = next_hpc_a;
+        next_hpc_a = temp;
+      }
+    }
 
-      // Hmm we can't actually read from code because we also have to read our next instruction
-      // and we can't do it earlier or later (we can read it during C, but then it's not back
-      // in time to write to the regfile).
 
-      logic<5> op_c      = b5(reg_insn_c, 2);
-      logic<3> f3_c      = b3(reg_insn_c, 12);
+    {
+      // If we write to CSR 0x801, we swap the current thread's PC with the
+      // register value.
+      logic<12> csr_b  = b12(reg_insn_b, 20);
+      if (op_b == RV32I::OP_SYSTEM && f3_b == RV32I::F3_CSRRW && csr_b == 0x801) {
+        logic<32> temp = alu_result;
+        alu_result = next_hpc_a;
+        next_hpc_a = temp;
+      }
+    }
+
+    //----------
+    // Code bus read/write
+
+    {
+      // We can write code memory in phase C if the other thread is idle.
       logic<4> bus_tag_c = b4(reg_addr_c, 28);
       logic<1> code_cs_c = bus_tag_c == 0x0 && b24(next_hpc_a) == 0;
 
-      logic<4>           temp_mask_c = 0;
-      if (f3_c == 0)     temp_mask_c = 0b0001;
-      if (f3_c == 1)     temp_mask_c = 0b0011;
-      if (f3_c == 2)     temp_mask_c = 0b1111;
-      if (reg_addr_c[0]) temp_mask_c = temp_mask_c << 1;
-      if (reg_addr_c[1]) temp_mask_c = temp_mask_c << 2;
+      logic<4>           mask = 0;
+      if (f3_c == 0)     mask = 0b0001;
+      if (f3_c == 1)     mask = 0b0011;
+      if (f3_c == 2)     mask = 0b1111;
+      if (reg_addr_c[0]) mask = mask << 1;
+      if (reg_addr_c[1]) mask = mask << 2;
 
       code_tla.a_address = code_cs_c ? b24(reg_addr_c) : b24(next_hpc_a);
       code_tla.a_data    = result_c;
-      code_tla.a_mask    = temp_mask_c;
+      code_tla.a_mask    = mask;
       code_tla.a_opcode  = (op_c == RV32I::OP_STORE) && code_cs_c ? TL::PutFullData : TL::Get;
       code_tla.a_param   = b3(DONTCARE);
       code_tla.a_size    = 2;
@@ -207,82 +190,82 @@ public:
     // Regfile read/write
 
     {
-      logic<32> insn_a = b24(reg_hpc_a) ? code_tld.d_data : b32(0);
-      logic<5>  rs1a_a = b5(insn_a, 15);
-      logic<5>  rs2a_a = b5(insn_a, 20);
+      // By default, we use the register indices from instruction A to read the
+      // regfile.
       reg_if.raddr1 = cat(b3(reg_hpc_a, 24), rs1a_a);
       reg_if.raddr2 = cat(b3(reg_hpc_a, 24), rs2a_a);
 
-      logic<4>  bus_tag_c    = b4(reg_addr_c, 28);
-      logic<1>  regfile_cs_c = bus_tag_c == 0xE;
-      logic<32> data_out_c   = regfile_cs_c ? reg_rdata1 : bus_tld.d_data;
-      logic<32> unpacked_c   = data_out_c;
-      logic<3>  f3_c         = b3(reg_insn_c, 12);
-
-      if (result_c[0]) unpacked_c = unpacked_c >> 8;
-      if (result_c[1]) unpacked_c = unpacked_c >> 16;
-      switch (f3_c) {
-        case 0:  unpacked_c = sign_extend<32>( b8(unpacked_c)); break;
-        case 1:  unpacked_c = sign_extend<32>(b16(unpacked_c)); break;
-        case 4:  unpacked_c = zero_extend<32>( b8(unpacked_c)); break;
-        case 5:  unpacked_c = zero_extend<32>(b16(unpacked_c)); break;
-      }
-
-      // If we're using jalr to jump between threads, we use the hart from HPC _A_
-      // as the target for the write so that the link register will be written
-      // in the _destination_ regfile.
-
-      // FIXME why didn't this ternary work?
-      //reg_if.waddr = cat(b3(op_c == RV32I::OP_JALR ? reg_hpc_a : reg_hpc_c, 24), rd_c);
-
-      logic<5>  op_b   = b5(reg_insn_b, 2);
-      logic<5>  rs1a_b = b5(reg_insn_b, 15);
-      logic<32> rs1_b  = rs1a_b ? reg_rdata1 : b32(0);
-      logic<32> imm_b  = decode_imm(reg_insn_b);
-      logic<32> addr_b = b32(rs1_b + imm_b);
-      logic<1>  regfile_cs_b = b4(addr_b, 28) == 0xE;
-
-      logic<5>  op_c   = b5(reg_insn_c, 2);
-      logic<5>  rd_c   = b5(reg_insn_c, 7);
-
-      if (op_c == RV32I::OP_JALR) {
-        reg_if.waddr = cat(b3(reg_hpc_a, 24), rd_c);
-      }
-      else {
-        reg_if.waddr = cat(b3(reg_hpc_c, 24), rd_c);
-      }
-
-      // Store and branch ops do _not_ update the regfile.
-      reg_if.wren  = b24(reg_hpc_c) && op_c != RV32I::OP_STORE && op_c != RV32I::OP_BRANCH;
-      reg_if.wdata = op_c == RV32I::OP_LOAD ? unpacked_c : result_c;
-
-      // Don't overwrite what ever is in regfile slot 0.
-      if (rd_c == 0) reg_if.wren = 0;
-
-      // Read from regfile is allowed if the other thread is idle
+      // But if the other thread is idle, we can read the regfile through the
+      // memory mapping.
+      logic<1> regfile_cs_b = b4(addr_b, 28) == 0xE;
       if ((op_b == RV32I::OP_LOAD) && regfile_cs_b && (b24(reg_hpc_a) == 0)) {
         reg_if.raddr1 = b10(addr_b >> 2);
       }
+    }
 
-      // Handle stores through the bus to the regfile.
-      if (op_c == RV32I::OP_STORE && regfile_cs_c) {
+    //----------
+    // Regfile write
+
+    // Normally we write 'result' to 'rd' if rd != 0 and the thread is active.
+    reg_if.waddr = cat(b3(reg_hpc_c, 24), rd_c);
+    reg_if.wdata = result_c;
+    reg_if.wren  = rd_c && b24(reg_hpc_c);
+
+    // Loads write the contents of the memory bus to the regfile.
+    if (op_c == RV32I::OP_LOAD) {
+      // The result of the last memory read comes from either the data bus,
+      // or the regfile if we read from the memory-mapped regfile last tock.
+      logic<1> regfile_cs = b4(reg_addr_c, 28) == 0xE;
+      logic<32> mem = regfile_cs ? reg_rdata1 : bus_tld.d_data;
+
+      if (result_c[0]) mem = mem >> 8;
+      if (result_c[1]) mem = mem >> 16;
+      switch (f3_c) {
+        case 0:  mem = sign_extend<32>( b8(mem)); break;
+        case 1:  mem = sign_extend<32>(b16(mem)); break;
+        case 4:  mem = zero_extend<32>( b8(mem)); break;
+        case 5:  mem = zero_extend<32>(b16(mem)); break;
+      }
+
+      reg_if.waddr = cat(b3(reg_hpc_c, 24), rd_c);
+      reg_if.wdata = mem;
+      reg_if.wren  = rd_c && b24(reg_hpc_c);
+    }
+
+    // Stores don't write to the regfile unless there's a memory-mapped write
+    // to the regfile.
+    else if (op_c == RV32I::OP_STORE) {
+      logic<1> regfile_cs = b4(reg_addr_c, 28) == 0xE;
+      if (regfile_cs) {
         reg_if.waddr = b10(reg_addr_c >> 2);
         reg_if.wdata = result_c;
-        reg_if.wren = 1;
+        reg_if.wren  = 1;
       }
+      else {
+        reg_if.waddr = b10(DONTCARE);
+        reg_if.wdata = b32(DONTCARE);
+        reg_if.wren  = 0;
+      }
+    }
+
+    // Branches never write to the regfile.
+    else if (op_c == RV32I::OP_BRANCH) {
+      reg_if.waddr = b10(DONTCARE);
+      reg_if.wdata = b32(DONTCARE);
+      reg_if.wren  = 0;
+    }
+
+    // If we're using jalr to jump between threads, we use the hart from HPC _A_
+    // as the target for the write so that the link register will be written
+    // in the _destination_ regfile.
+    else if (op_c == RV32I::OP_JALR) {
+      reg_if.waddr = cat(b3(reg_hpc_a, 24), rd_c);
     }
 
     //----------
     // Writeback to core regs
 
-    {
-      tick(reset_in,
-           code_tld.d_data,
-           reg_rdata1,
-           next_hpc_a,
-           alu_result,
-           result_c);
-    }
+    tick(reset_in, code_tld.d_data, reg_rdata1, next_hpc_a, alu_result, result_c);
   }
 
   //----------------------------------------
@@ -318,8 +301,12 @@ private:
   //----------------------------------------
 
   void tick(logic<1> reset_in,
-            logic<32> code_tld_data, logic<32> reg_rdata1, logic<32> next_hpc_a, logic<32> alu_result, logic<32> result_c) {
-
+            logic<32> code_tld_data,
+            logic<32> reg_rdata1,
+            logic<32> next_hpc_a,
+            logic<32> alu_result,
+            logic<32> result_c)
+  {
     logic<5>  rs1a_b  = b5(reg_insn_b, 15);
     logic<32> rs1_b   = rs1a_b ? reg_rdata1 : b32(0);
     logic<32> imm_b   = decode_imm(reg_insn_b);
@@ -439,6 +426,8 @@ private:
     }
     return result;
   }
+
+  //----------------------------------------
 };
 
 /* verilator lint_on UNUSEDSIGNAL */
