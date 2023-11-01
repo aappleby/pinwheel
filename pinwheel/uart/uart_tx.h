@@ -4,6 +4,9 @@
 #include "metron/metron_tools.h"
 #include "pinwheel/tools/tilelink.h"
 
+// 0xB0000000 = send ready
+// 0xB0000001 = data
+
 //------------------------------------------------------------------------------
 // verilator lint_off unusedsignal
 // verilator lint_off unusedparam
@@ -33,7 +36,7 @@ public:
     return (bit_count == bit_count_max) && (bit_delay == bit_delay_max);
   }
 
-  void tock(logic<1> reset, logic<8> send_data, logic<1> send_request) {
+  void tock(logic<1> reset, logic<8> send_data, logic<1> send_request, tilelink_a tla) {
     tld.d_opcode = b3(DONTCARE);
     tld.d_param  = b2(DONTCARE);
     tld.d_size   = b3(DONTCARE);
@@ -44,7 +47,38 @@ public:
     tld.d_valid  = 0;
     tld.d_ready  = 1;
 
-    tick(reset, send_data, send_request);
+    if (tla.a_valid && (tla.a_address & addr_mask) == addr_tag && tla.a_opcode == TL::PutFullData) {
+      tld.d_opcode = TL::AccessAck;
+      tld.d_param  = 0; // required by spec
+      tld.d_size   = 2;
+      tld.d_source = 0;
+      tld.d_sink   = 0;
+      tld.d_error  = 0;
+
+      // FIXME yosys doesn't like assignments to structs in case blocks unless
+      // they're inside {}? wat? added a workaround in Metron...
+
+      /*
+      switch(tla.a_address & 0xF) {
+        case 0:
+          tld.d_data  = b32(bit_count == 8);
+          tld.d_valid = 1;
+          break;
+        case 1:
+          tld.d_data  = b32(data_out);
+          tld.d_valid = 1;
+          break;
+        case 2:
+          tld.d_data  = checksum;
+          tld.d_valid = 1;
+          break;
+      }
+      */
+      tick(reset, send_data, send_request);
+    }
+    else {
+      tick(reset, send_data, send_request);
+    }
   }
 
   tilelink_d tld;

@@ -67,7 +67,7 @@ public:
     logic<8> data = uart0_hello.get_data();
     logic<1> request = uart0_hello.get_request();
 
-    uart0_tx.tock(reset_in, data, request);
+    uart0_tx.tock(reset_in, data, request, core.bus_tla);
     uart0_hello.tock(reset_in, clear_to_send, idle);
   }
 
