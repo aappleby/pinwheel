@@ -24,7 +24,7 @@ public:
     const char* code_hexfile = "pinwheel/tools/blank.code.vh",
     const char* data_hexfile = "pinwheel/tools/blank.data.vh",
     const char* message_hex  = "pinwheel/uart/message.hex")
-  : code_ram(code_hexfile), data_ram(data_hexfile), hello(message_hex) {
+  : code_ram(code_hexfile), data_ram(data_hexfile), uart0_hello(message_hex) {
   }
 
   // FIXME why does this hang yosys if exposed?
@@ -54,21 +54,21 @@ public:
 
     core.tock(reset_in, code_ram.bus_tld, bus_tld, regs.get_rs1(), regs.get_rs2());
 
-    rxi.tock(reset_in, tx.get_serial(), core.bus_tla);
+    uart0_rx.tock(reset_in, uart0_tx.get_serial(), core.bus_tla);
 
     debug_reg.tock(core.bus_tla);
     code_ram.tock(core.code_tla);
     data_ram.tock(core.bus_tla);
     regs.tock(core.reg_if);
 
-    logic<1> clear_to_send = tx.get_clear_to_send();
-    logic<1> idle = tx.get_idle();
+    logic<1> clear_to_send = uart0_tx.get_clear_to_send();
+    logic<1> idle = uart0_tx.get_idle();
 
-    logic<8> data = hello.get_data();
-    logic<1> request = hello.get_request();
+    logic<8> data = uart0_hello.get_data();
+    logic<1> request = uart0_hello.get_request();
 
-    tx.tock(reset_in, data, request);
-    hello.tock(reset_in, clear_to_send, idle);
+    uart0_tx.tock(reset_in, data, request);
+    uart0_hello.tock(reset_in, clear_to_send, idle);
   }
 
   //----------------------------------------
@@ -76,14 +76,15 @@ public:
   /* metron_internal */ tilelink_d    bus_tld;
   /* metron_internal */ pinwheel_core core;
   /* metron_internal */ regfile       regs;
-  /* metron_internal */ block_ram<0xF0000000, 0x00000000> code_ram;
-  /* metron_internal */ block_ram<0xF0000000, 0x80000000> data_ram; // FIXME having this named data and a field inside block_ram named data breaks context resolve
-  /* metron_internal */ test_reg <0xF0000000, 0xF0000000> debug_reg;
 
-  /* metron_internal */ uart_hello<false /*repeat_msg*/>  hello;
-  /* metron_internal */ uart_tx<3 /*cycles_per_bit*/> tx;
-  /* metron_internal */ uart_rx<0xF0000000, 0xB0000000, 3> rxi;
 
+  /* metron_internal */ block_ram <0xF000'0000, 0x0000'0000>    code_ram;  // Code  at 0x0xxx'xxxx
+  /* metron_internal */ block_ram <0xF000'0000, 0x8000'0000>    data_ram;  // Data  at 0x8xxx'xxxx
+  /* metron_internal */ test_reg  <0xF000'0000, 0xF000'0000>    debug_reg; // Debug at 0xFxxx'xxxx
+  /* metron_internal */ uart_tx   <0xFFFF'0000, 0xB000'0000, 3> uart0_tx;  // Uart TX  0xB000'xxxx
+  /* metron_internal */ uart_rx   <0xFFFF'0000, 0xB001'0000, 3> uart0_rx;  // Uart RX  0xB001'xxxx
+
+  /* metron_internal */ uart_hello<false /*repeat_msg*/>  uart0_hello;
 };
 
 // verilator lint_on unusedsignal

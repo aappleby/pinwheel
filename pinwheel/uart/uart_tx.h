@@ -1,11 +1,14 @@
-#ifndef UART_TX_H
-#define UART_TX_H
+#ifndef PINWHEEL_UART_UART_TX_H
+#define PINWHEEL_UART_UART_TX_H
 
 #include "metron/metron_tools.h"
+#include "pinwheel/tools/tilelink.h"
 
-//==============================================================================
+//------------------------------------------------------------------------------
+// verilator lint_off unusedsignal
+// verilator lint_off unusedparam
 
-template <int cycles_per_bit = 4>
+template <uint32_t addr_mask = 0xF000F000, uint32_t addr_tag = 0xB0000000, int cycles_per_bit = 4>
 class uart_tx {
 public:
   uart_tx() {
@@ -31,8 +34,20 @@ public:
   }
 
   void tock(logic<1> reset, logic<8> send_data, logic<1> send_request) {
+    tld.d_opcode = b3(DONTCARE);
+    tld.d_param  = b2(DONTCARE);
+    tld.d_size   = b3(DONTCARE);
+    tld.d_source = b1(DONTCARE);
+    tld.d_sink   = b3(DONTCARE);
+    tld.d_data   = b32(DONTCARE);
+    tld.d_error  = 0;
+    tld.d_valid  = 0;
+    tld.d_ready  = 1;
+
     tick(reset, send_data, send_request);
   }
+
+  tilelink_d tld;
 
 private:
 
@@ -96,6 +111,8 @@ private:
   logic<9> output_buffer;
 };
 
-//==============================================================================
+// verilator lint_on unusedsignal
+// verilator lint_on unusedparam
+//------------------------------------------------------------------------------
 
-#endif // UART_TX_H
+#endif // PINWHEEL_UART_UART_TX_H
