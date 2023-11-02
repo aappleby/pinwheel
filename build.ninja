@@ -20,7 +20,7 @@ includes = ${includes} -Isymlinks/metron
 include symlinks/metrolib/ninja/build_imgui.ninja
 
 build obj/check_metron : run_command
-  command = ninja -C symlinks/metron
+  command = ninja -C symlinks/metron > /dev/null
 
 ################################################################################
 # Syntax check for Pinwheel Metron RTL
