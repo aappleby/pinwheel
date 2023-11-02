@@ -46,6 +46,7 @@ public:
     tld.d_ready  = 1;
 
     if (tla.a_valid && (tla.a_address & addr_mask) == addr_tag && tla.a_opcode == TL::Get) {
+      /* metron_noconvert */
       tld.d_opcode = TL::AccessAckData;
       tld.d_error  = 0;
 

@@ -43,7 +43,7 @@ TestResults run_test_hex(const char* code_filename, const char* data_filename, i
       // logic<1>  a_source;
       // logic<32> a_address;
 
-      if (top.core.bus_tla.a_address == 0xFFFFFFF0 && top.core.bus_tla.a_opcode == TL::PutFullData) {
+      if (top.bus_tla.a_address == 0xFFFFFFF0 && top.bus_tla.a_opcode == TL::PutFullData) {
         if (expect_fail) {
           EXPECT_NE(top.get_debug(), 1, "FAIL @ %d", elapsed_cycles);
         }

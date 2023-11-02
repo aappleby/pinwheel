@@ -23,6 +23,53 @@ public:
 
   //----------------------------------------
 
+  // FIXME yosys does not like this as a local variable
+private:
+  tilelink_a bus_tla;
+public:
+
+  tilelink_a tock_data_bus(logic<1> reset_in, logic<32> reg_rdata1, logic<32> reg_rdata2) {
+
+    //----------
+    // Decode instruction B
+
+    logic<5>  op_b   = b5(reg_insn_b, 2);
+    logic<3>  f3_b   = b3(reg_insn_b, 12);
+    logic<5>  rs1a_b = b5(reg_insn_b, 15);
+    logic<5>  rs2a_b = b5(reg_insn_b, 20);
+
+    logic<32> rs1_b  = rs1a_b ? reg_rdata1 : b32(0);
+    logic<32> rs2_b  = rs2a_b ? reg_rdata2 : b32(0);
+    logic<32> imm_b  = decode_imm(reg_insn_b);
+    logic<32> addr_b = b32(rs1_b + imm_b);
+
+    //----------
+    // Data bus read/write
+
+    logic<3>  bus_size = b3(DONTCARE);
+    logic<4>  mask_b   = 0;
+
+    if (f3_b == 0)    { mask_b = 0b0001; bus_size = 0; }
+    if (f3_b == 1)    { mask_b = 0b0011; bus_size = 1; }
+    if (f3_b == 2)    { mask_b = 0b1111; bus_size = 2; }
+    if (addr_b[0]) mask_b = mask_b << 1;
+    if (addr_b[1]) mask_b = mask_b << 2;
+
+    bus_tla.a_address = addr_b;
+    bus_tla.a_data    = rs2_b;
+    bus_tla.a_mask    = mask_b;
+    bus_tla.a_opcode  = (op_b == RV32I::OP_STORE) ? (bus_size == 2 ? TL::PutFullData : TL::PutPartialData) : TL::Get;
+    bus_tla.a_param   = b3(DONTCARE);
+    bus_tla.a_size    = bus_size;
+    bus_tla.a_source  = b1(DONTCARE);
+    bus_tla.a_valid   = (op_b == RV32I::OP_LOAD) || (op_b == RV32I::OP_STORE);
+    bus_tla.a_ready   = 1;
+
+    return bus_tla;
+  }
+
+  //----------------------------------------
+
   void tock(logic<1> reset_in, tilelink_d code_tld, tilelink_d bus_tld, logic<32> reg_rdata1, logic<32> reg_rdata2) {
 
     //----------
@@ -55,7 +102,6 @@ public:
     //----------
     // Execute
 
-    logic<32> result_c = reg_result_c;
     logic<32> alu_result = 0;
     switch(op_b) {
       case RV32I::OP_BRANCH: alu_result = b32(DONTCARE);     break;
@@ -69,31 +115,6 @@ public:
       case RV32I::OP_OPIMM:  alu_result = execute_alu   (reg_insn_b, rs1_b, rs2_b); break;
       case RV32I::OP_OP:     alu_result = execute_alu   (reg_insn_b, rs1_b, rs2_b); break;
       default:               alu_result = b32(DONTCARE);     break;
-    }
-
-    //----------
-    // Data bus read/write
-
-    {
-      logic<3>  bus_size = b3(DONTCARE);
-      logic<4>  mask_b   = 0;
-
-      if (f3_b == 0)    { mask_b = 0b0001; bus_size = 0; }
-      if (f3_b == 1)    { mask_b = 0b0011; bus_size = 1; }
-      if (f3_b == 2)    { mask_b = 0b1111; bus_size = 2; }
-      if (addr_b[0]) mask_b = mask_b << 1;
-      if (addr_b[1]) mask_b = mask_b << 2;
-
-
-      bus_tla.a_address = addr_b;
-      bus_tla.a_data    = rs2_b;
-      bus_tla.a_mask    = mask_b;
-      bus_tla.a_opcode  = (op_b == RV32I::OP_STORE) ? (bus_size == 2 ? TL::PutFullData : TL::PutPartialData) : TL::Get;
-      bus_tla.a_param   = b3(DONTCARE);
-      bus_tla.a_size    = bus_size;
-      bus_tla.a_source  = b1(DONTCARE);
-      bus_tla.a_valid   = (op_b == RV32I::OP_LOAD) || (op_b == RV32I::OP_STORE);
-      bus_tla.a_ready   = 1;
     }
 
     //----------
@@ -135,6 +156,7 @@ public:
     //----------
     // PC hackery to swap threads
 
+    logic<32> result_c = reg_result_c;
     next_hpc_a = (next_hpc_a & 0x00FFFFFF) | (reg_hpc_b & 0xFF000000);
 
     {
@@ -270,7 +292,6 @@ public:
 
   //----------------------------------------
 
-  tilelink_a bus_tla;
   tilelink_a code_tla;
   regfile_if reg_if;
 

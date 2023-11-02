@@ -22,10 +22,10 @@ void PinwheelSim::step() {
     auto old_uart_valid = pinwheel.soc.uart0_rx.get_valid();
 
     pinwheel.soc.tock(0);
-    pinwheel.console1.tick(0, pinwheel.soc.core.bus_tla);
-    pinwheel.console2.tick(0, pinwheel.soc.core.bus_tla);
-    pinwheel.console3.tick(0, pinwheel.soc.core.bus_tla);
-    pinwheel.console4.tick(0, pinwheel.soc.core.bus_tla);
+    pinwheel.console1.tick(0, pinwheel.soc.bus_tla);
+    pinwheel.console2.tick(0, pinwheel.soc.bus_tla);
+    pinwheel.console3.tick(0, pinwheel.soc.bus_tla);
+    pinwheel.console4.tick(0, pinwheel.soc.bus_tla);
 
     if (!old_uart_valid && pinwheel.soc.uart0_rx.get_valid()) {
       pinwheel.console5.putchar(pinwheel.soc.uart0_rx.get_data_out());

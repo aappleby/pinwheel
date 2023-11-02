@@ -227,10 +227,10 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
     //logic<1>  a_valid;
     //logic<1>  a_ready;
 
-    d("bus op   %s\n",     tilelink_op_to_string(pinwheel.core.bus_tla.a_opcode));
-    d("bus addr 0x%08x\n", pinwheel.core.bus_tla.a_address);
-    d("bus data 0x%08x\n", pinwheel.core.bus_tla.a_data);
-    d("bus mask 0x%08x\n", pinwheel.core.bus_tla.a_mask);
+    d("bus op   %s\n",     tilelink_op_to_string(pinwheel.bus_tla.a_opcode));
+    d("bus addr 0x%08x\n", pinwheel.bus_tla.a_address);
+    d("bus data 0x%08x\n", pinwheel.bus_tla.a_data);
+    d("bus mask 0x%08x\n", pinwheel.bus_tla.a_mask);
     d("\n");
   }
 

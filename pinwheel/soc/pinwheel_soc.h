@@ -50,15 +50,18 @@ public:
     if (data_ram.bus_tld.d_valid == 1)  bus_tld = data_ram.bus_tld;
     if (debug_reg.bus_tld.d_valid == 1) bus_tld = debug_reg.bus_tld;
 
+    //if (uart0_rx.tld.d_valid == 1) bus_tld = uart0_rx.tld;
+
     //----------
 
+    bus_tla = core.tock_data_bus(reset_in, regs.get_rs1(), regs.get_rs2());
     core.tock(reset_in, code_ram.bus_tld, bus_tld, regs.get_rs1(), regs.get_rs2());
 
-    uart0_rx.tock(reset_in, uart0_tx.get_serial(), core.bus_tla);
+    uart0_rx.tock(reset_in, uart0_tx.get_serial(), bus_tla);
 
-    debug_reg.tock(core.bus_tla);
+    debug_reg.tock(bus_tla);
     code_ram.tock(core.code_tla);
-    data_ram.tock(core.bus_tla);
+    data_ram.tock(bus_tla);
     regs.tock(core.reg_if);
 
     logic<1> clear_to_send = uart0_tx.get_clear_to_send();
@@ -67,12 +70,13 @@ public:
     logic<8> data = uart0_hello.get_data();
     logic<1> request = uart0_hello.get_request();
 
-    uart0_tx.tock(reset_in, data, request, core.bus_tla);
+    uart0_tx.tock(reset_in, data, request, bus_tla);
     uart0_hello.tock(reset_in, clear_to_send, idle);
   }
 
   //----------------------------------------
 
+  /* metron_internal */ tilelink_a    bus_tla;
   /* metron_internal */ tilelink_d    bus_tld;
   /* metron_internal */ pinwheel_core core;
   /* metron_internal */ regfile       regs;
