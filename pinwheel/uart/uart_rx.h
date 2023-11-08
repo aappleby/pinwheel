@@ -45,6 +45,8 @@ public:
     tld.d_valid  = 0;
     tld.d_ready  = 1;
 
+    logic<1> byte_consumed = 0;
+
     if (tla.a_valid && (tla.a_address & addr_mask) == addr_tag && tla.a_opcode == TL::Get) {
       /* metron_noconvert */
       tld.d_opcode = TL::AccessAckData;
@@ -52,12 +54,14 @@ public:
 
       switch(tla.a_address & 0xF) {
         case 0x0000:
-          tld.d_data  = b32(bit_count == 8);
+          tld.d_data  = b32(data_flag);
           tld.d_valid = 1;
           break;
         case 0x0004:
-          tld.d_data  = b32(data_out);
+          //tld.d_data  = b32(data_out);
+          tld.d_data = b32(data_buf);
           tld.d_valid = 1;
+          byte_consumed = 1;
           break;
         case 0x0008:
           tld.d_data  = checksum;
@@ -66,7 +70,7 @@ public:
       }
     }
 
-    tick(reset, serial);
+    tick(reset, serial, byte_consumed);
   }
 
   tilelink_d tld;
@@ -75,7 +79,9 @@ public:
 
   void tick(
     logic<1> reset,  // Top-level reset signal
-    logic<1> serial) // Serial input from the transmitter
+    logic<1> serial, // Serial input from the transmitter
+    logic<1> byte_consumed
+  )
   {
     if (reset) {
       bit_delay = bit_delay_max;
@@ -98,6 +104,8 @@ public:
 
         // If that was the last data bit, add the finished byte to our checksum.
         if (bit_count == 7) {
+          data_buf = new_output;
+          data_flag = 1;
           checksum = checksum + new_output;
         }
 
@@ -115,6 +123,8 @@ public:
         bit_count = 0;
       }
     }
+
+    if (byte_consumed) data_flag = 0;
   }
 
 
@@ -132,6 +142,9 @@ public:
 
   // The received byte
   logic<8> data_out;
+
+  logic<8> data_buf;
+  logic<1> data_flag;
 
   // The checksum of all bytes received so far.
   logic<32> checksum;

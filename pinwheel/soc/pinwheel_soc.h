@@ -49,8 +49,7 @@ public:
 
     if (data_ram.bus_tld.d_valid == 1)  bus_tld = data_ram.bus_tld;
     if (debug_reg.bus_tld.d_valid == 1) bus_tld = debug_reg.bus_tld;
-
-    //if (uart0_rx.tld.d_valid == 1) bus_tld = uart0_rx.tld;
+    if (uart0_rx.tld.d_valid == 1)      bus_tld = uart0_rx.tld;
 
     //----------
 
@@ -85,8 +84,8 @@ public:
   /* metron_internal */ block_ram <0xF000'0000, 0x0000'0000>    code_ram;  // Code  at 0x0xxx'xxxx
   /* metron_internal */ block_ram <0xF000'0000, 0x8000'0000>    data_ram;  // Data  at 0x8xxx'xxxx
   /* metron_internal */ test_reg  <0xF000'0000, 0xF000'0000>    debug_reg; // Debug at 0xFxxx'xxxx
-  /* metron_internal */ uart_tx   <0xFFFF'0000, 0xB000'0000, 3> uart0_tx;  // Uart TX  0xB000'xxxx
-  /* metron_internal */ uart_rx   <0xFFFF'0000, 0xB001'0000, 3> uart0_rx;  // Uart RX  0xB001'xxxx
+  /* metron_internal */ uart_tx   <0xFFFF'0000, 0xB000'0000, 300> uart0_tx;  // Uart TX  0xB000'xxxx
+  /* metron_internal */ uart_rx   <0xFFFF'0000, 0xB001'0000, 300> uart0_rx;  // Uart RX  0xB001'xxxx
 
   /* metron_internal */ uart_hello<false /*repeat_msg*/>  uart0_hello;
 };

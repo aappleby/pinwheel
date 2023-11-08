@@ -1,6 +1,9 @@
 #ifndef PINWHEEL_RTL_PINWHEEL_CORE_H
 #define PINWHEEL_RTL_PINWHEEL_CORE_H
 
+// FIXME need to do struct/union thing for rv32 instructions so we don't have
+// so much duplicate decoding crap
+
 #include "metron/metron_tools.h"
 #include "pinwheel/tools/regfile_if.h"
 #include "pinwheel/tools/tilelink.h"
@@ -70,12 +73,44 @@ public:
 
   //----------------------------------------
 
-  void tock(logic<1> reset_in, tilelink_d code_tld, tilelink_d bus_tld, logic<32> reg_rdata1, logic<32> reg_rdata2) {
+  /* metron_internal */
+  logic<32> execute(logic<32> reg1, logic<32> reg2) const {
+    logic<32> result = 0;
+
+    logic<5>  B_op   = b5(B_insn, 2);
+    logic<3>  B_f3   = b3(B_insn, 12);
+    logic<5>  B_rs1  = b5(B_insn, 15);
+    logic<5>  B_rs2  = b5(B_insn, 20);
+    logic<32> B_reg1 = B_rs1 ? reg1 : b32(0);
+    logic<32> B_reg2 = B_rs2 ? reg2 : b32(0);
+    logic<32> B_imm  = decode_imm(B_insn);
+    logic<32> B_addr = b32(B_reg1 + B_imm);
+
+    switch(B_op) {
+      case RV32I::OP_OPIMM:  result = execute_alu   (B_insn, B_reg1, B_reg2); break;
+      case RV32I::OP_OP:     result = execute_alu   (B_insn, B_reg1, B_reg2); break;
+      case RV32I::OP_SYSTEM: result = execute_system(B_insn, B_reg1, B_reg2); break;
+      case RV32I::OP_BRANCH: result = b32(DONTCARE); break;
+      case RV32I::OP_JAL:    result = B_pc + 4;      break;
+      case RV32I::OP_JALR:   result = B_pc + 4;      break;
+      case RV32I::OP_LUI:    result = B_imm;         break;
+      case RV32I::OP_AUIPC:  result = B_pc + B_imm;  break;
+      case RV32I::OP_LOAD:   result = B_addr;        break;
+      case RV32I::OP_STORE:  result = B_reg2;        break;
+      default:               result = b32(DONTCARE); break;
+    }
+
+    return result;
+  }
+
+  //----------------------------------------
+
+  void tock(logic<1> reset_in, tilelink_d code_tld, tilelink_d bus_tld, logic<32> reg1, logic<32> reg2) {
 
     //----------
     // Decode instruction A
 
-    logic<32> A_insn = b24(A_pc) ? code_tld.d_data : b32(0);
+    A_insn = b24(A_pc) ? code_tld.d_data : b32(0);
     logic<5>  A_rs1  = b5(A_insn, 15);
     logic<5>  A_rs2  = b5(A_insn, 20);
 
@@ -86,8 +121,8 @@ public:
     logic<3>  B_f3   = b3(B_insn, 12);
     logic<5>  B_rs1  = b5(B_insn, 15);
     logic<5>  B_rs2  = b5(B_insn, 20);
-    logic<32> B_reg1 = B_rs1 ? reg_rdata1 : b32(0);
-    logic<32> B_reg2 = B_rs2 ? reg_rdata2 : b32(0);
+    logic<32> B_reg1 = B_rs1 ? reg1 : b32(0);
+    logic<32> B_reg2 = B_rs2 ? reg2 : b32(0);
     logic<32> B_imm  = decode_imm(B_insn);
     logic<32> B_addr = b32(B_reg1 + B_imm);
 
@@ -101,86 +136,35 @@ public:
     //----------
     // Execute
 
-    logic<32> B_result = 0;
-    switch(B_op) {
-      case RV32I::OP_BRANCH: B_result = b32(DONTCARE); break;
-      case RV32I::OP_JAL:    B_result = B_pc + 4;      break;
-      case RV32I::OP_JALR:   B_result = B_pc + 4;      break;
-      case RV32I::OP_LUI:    B_result = B_imm;         break;
-      case RV32I::OP_AUIPC:  B_result = B_pc + B_imm;  break;
-      case RV32I::OP_LOAD:   B_result = B_addr;        break;
-      case RV32I::OP_STORE:  B_result = B_reg2;        break;
-      case RV32I::OP_SYSTEM: B_result = execute_system(B_insn, B_reg1, B_reg2); break;
-      case RV32I::OP_OPIMM:  B_result = execute_alu   (B_insn, B_reg1, B_reg2); break;
-      case RV32I::OP_OP:     B_result = execute_alu   (B_insn, B_reg1, B_reg2); break;
-      default:               B_result = b32(DONTCARE);     break;
-    }
+    logic<32> B_result = execute(reg1, reg2);
 
     //----------
     // Next instruction selection
 
-    logic<32> A_pc_next = 0;
-    if (b24(B_pc)) {
-      logic<1> eq  = B_reg1 == B_reg2;
-      logic<1> slt = signed(B_reg1) < signed(B_reg2);
-      logic<1> ult = B_reg1 < B_reg2;
-      logic<1> take_branch = 0;
-
-      switch (B_f3) {
-        case 0:  take_branch =   eq; break;
-        case 1:  take_branch =  !eq; break;
-        case 2:  take_branch =   eq; break;
-        case 3:  take_branch =  !eq; break;
-        case 4:  take_branch =  slt; break;
-        case 5:  take_branch = !slt; break;
-        case 6:  take_branch =  ult; break;
-        case 7:  take_branch = !ult; break;
-        default: take_branch =    0; break;
-      }
-
-      switch(B_op) {
-        case RV32I::OP_BRANCH: A_pc_next = take_branch ? B_pc + B_imm : B_pc + 4; break;
-        case RV32I::OP_JAL:    A_pc_next = B_pc + B_imm; break;
-        case RV32I::OP_JALR:   A_pc_next = B_addr; break;
-        case RV32I::OP_LUI:    A_pc_next = B_pc + 4; break;
-        case RV32I::OP_AUIPC:  A_pc_next = B_pc + 4; break;
-        case RV32I::OP_LOAD:   A_pc_next = B_pc + 4; break;
-        case RV32I::OP_STORE:  A_pc_next = B_pc + 4; break;
-        case RV32I::OP_SYSTEM: A_pc_next = B_pc + 4; break;
-        case RV32I::OP_OPIMM:  A_pc_next = B_pc + 4; break;
-        case RV32I::OP_OP:     A_pc_next = B_pc + 4; break;
-      }
-    }
-
-    // Patch in the hart index from B's PC into the _next_ A's pc
-    A_pc_next = (A_pc_next & 0x00FFFFFF) | (B_pc & 0xFF000000);
+    logic<32> A_pc_next = next_pc(reg1, reg2);
 
     //----------
     // PC hackery to swap threads
 
     logic<32> D_result = C_result;
 
-    {
-      // If we write to CSR 0x800, we swap the secondary thread's PC with the
-      // register value.
-      logic<12> csr_c = b12(C_insn, 20);
-      if (C_op == RV32I::OP_SYSTEM && C_f3 == RV32I::F3_CSRRW && csr_c == 0x800) {
-        logic<32> temp = D_result;
-        D_result = A_pc_next;
-        A_pc_next = temp;
-      }
+    // FIXME what if both threads trigger these two PC swaps at once?
+
+    // If we write to CSR 0x800, we swap the secondary thread's PC with the
+    // register value.
+    logic<12> C_csr = b12(C_insn, 20);
+    if (C_op == RV32I::OP_SYSTEM && C_f3 == RV32I::F3_CSRRW && C_csr == 0x800) {
+      D_result = A_pc_next;
+      A_pc_next = C_result;
     }
 
-
-    {
-      // If we write to CSR 0x801, we swap the current thread's PC with the
-      // register value.
-      logic<12> csr_b  = b12(B_insn, 20);
-      if (B_op == RV32I::OP_SYSTEM && B_f3 == RV32I::F3_CSRRW && csr_b == 0x801) {
-        logic<32> temp = B_result;
-        B_result = A_pc_next;
-        A_pc_next = temp;
-      }
+    // If we write to CSR 0x801, we swap the current thread's PC with the
+    // register value.
+    logic<12> B_csr  = b12(B_insn, 20);
+    if (B_op == RV32I::OP_SYSTEM && B_f3 == RV32I::F3_CSRRW && B_csr == 0x801) {
+      logic<32> temp = B_result;
+      B_result = A_pc_next;
+      A_pc_next = temp;
     }
 
     //----------
@@ -208,6 +192,50 @@ public:
       code_tla.a_valid   = 1;
       code_tla.a_ready   = 1;
     }
+
+    register_interface(bus_tld, reg1, reg2, D_result);
+
+    //----------
+    // Writeback to core regs
+
+    tick(reset_in, code_tld.d_data, reg1, A_pc_next, B_result);
+
+    // FIXME - Verilator bug?
+    //If I remove this, Verilator complains about bogus latches inferred
+    switch(B_op) {
+      case 0: break;
+    }
+  }
+
+  //----------------------------------------
+
+  /* metron_internal */
+  void register_interface(tilelink_d bus_tld, logic<32> reg1, logic<32> reg2, logic<32> D_result) {
+
+    //----------
+    // Decode instruction A
+
+    logic<5>  A_rs1  = b5(A_insn, 15);
+    logic<5>  A_rs2  = b5(A_insn, 20);
+
+    //----------
+    // Decode instruction B
+
+    logic<5>  B_op   = b5(B_insn, 2);
+    logic<3>  B_f3   = b3(B_insn, 12);
+    logic<5>  B_rs1  = b5(B_insn, 15);
+    logic<5>  B_rs2  = b5(B_insn, 20);
+    logic<32> B_reg1 = B_rs1 ? reg1 : b32(0);
+    logic<32> B_reg2 = B_rs2 ? reg2 : b32(0);
+    logic<32> B_imm  = decode_imm(B_insn);
+    logic<32> B_addr = b32(B_reg1 + B_imm);
+
+    //----------
+    // Decode instruction C
+
+    logic<5>  C_op = b5(C_insn, 2);
+    logic<5>  C_rd = b5(C_insn, 7);
+    logic<3>  C_f3 = b3(C_insn, 12);
 
     //----------
     // Regfile read/write
@@ -240,7 +268,7 @@ public:
     if (C_op == RV32I::OP_LOAD) {
       // The result of the last memory read comes from either the data bus,
       // or the regfile if we read from the memory-mapped regfile last tock.
-      logic<32> C_mem = C_regfile_cs ? reg_rdata1 : bus_tld.d_data;
+      logic<32> C_mem = C_regfile_cs ? reg1 : bus_tld.d_data;
 
       if (D_result[0]) C_mem = C_mem >> 8;
       if (D_result[1]) C_mem = C_mem >> 16;
@@ -284,12 +312,8 @@ public:
     else if (C_op == RV32I::OP_JALR) {
       reg_if.waddr = cat(b3(A_pc, 24), C_rd);
     }
-
-    //----------
-    // Writeback to core regs
-
-    tick(reset_in, code_tld.d_data, reg_rdata1, A_pc_next, B_result, D_result);
   }
+
 
   //----------------------------------------
 
@@ -303,6 +327,7 @@ public:
   // metron_internal
 
   /* metron_internal */ logic<32> A_pc;
+  /* metron_internal */ logic<32> A_insn;
 
   /* metron_internal */ logic<32> B_pc;
   /* metron_internal */ logic<32> B_insn;
@@ -312,6 +337,7 @@ public:
   /* metron_internal */ logic<32> C_addr;
   /* metron_internal */ logic<32> C_result;
 
+  // These two registers aren't actually needed, but they make debugging easier.
   /* metron_internal */ logic<32> D_pc;
   /* metron_internal */ logic<32> D_insn;
 
@@ -325,14 +351,12 @@ private:
             logic<32> code_tld_data,
             logic<32> reg_rdata1,
             logic<32> A_pc_next,
-            logic<32> B_result,
-            logic<32> D_result)
+            logic<32> B_result)
   {
     logic<5>  B_rs1  = b5(B_insn, 15);
     logic<32> B_reg1 = B_rs1 ? reg_rdata1 : b32(0);
     logic<32> B_imm  = decode_imm(B_insn);
     logic<32> B_addr = b32(B_reg1 + B_imm);
-    logic<32> A_insn = b24(A_pc) ? code_tld_data : b32(0);
 
     if (reset_in) {
       A_pc     = 0x00400000;
@@ -444,6 +468,58 @@ private:
       case RV32I::F3_CSRRCI: result = 0; break;
     }
     return result;
+  }
+
+  //----------------------------------------
+
+  logic<32> next_pc(logic<32> reg1, logic<32> reg2) const {
+
+    logic<32> pc = 0;
+
+    if (b24(B_pc)) {
+      logic<5>  B_op   = b5(B_insn, 2);
+      logic<3>  B_f3   = b3(B_insn, 12);
+      logic<5>  B_rs1  = b5(B_insn, 15);
+      logic<5>  B_rs2  = b5(B_insn, 20);
+      logic<32> B_reg1 = B_rs1 ? reg1 : b32(0);
+      logic<32> B_reg2 = B_rs2 ? reg2 : b32(0);
+      logic<32> B_imm  = decode_imm(B_insn);
+      logic<32> B_addr = b32(B_reg1 + B_imm);
+
+      logic<1> eq  = B_reg1 == B_reg2;
+      logic<1> slt = signed(B_reg1) < signed(B_reg2);
+      logic<1> ult = B_reg1 < B_reg2;
+      logic<1> take_branch = 0;
+
+      switch (B_f3) {
+        case 0:  take_branch =   eq; break;
+        case 1:  take_branch =  !eq; break;
+        case 2:  take_branch =   eq; break;
+        case 3:  take_branch =  !eq; break;
+        case 4:  take_branch =  slt; break;
+        case 5:  take_branch = !slt; break;
+        case 6:  take_branch =  ult; break;
+        case 7:  take_branch = !ult; break;
+        default: take_branch =    0; break;
+      }
+
+      switch(B_op) {
+        case RV32I::OP_BRANCH: pc = take_branch ? B_pc + B_imm : B_pc + 4; break;
+        case RV32I::OP_JAL:    pc = B_pc + B_imm; break;
+        case RV32I::OP_JALR:   pc = B_addr; break;
+        case RV32I::OP_LUI:    pc = B_pc + 4; break;
+        case RV32I::OP_AUIPC:  pc = B_pc + 4; break;
+        case RV32I::OP_LOAD:   pc = B_pc + 4; break;
+        case RV32I::OP_STORE:  pc = B_pc + 4; break;
+        case RV32I::OP_SYSTEM: pc = B_pc + 4; break;
+        case RV32I::OP_OPIMM:  pc = B_pc + 4; break;
+        case RV32I::OP_OP:     pc = B_pc + 4; break;
+      }
+    }
+
+    // Patch in the hart index from B's PC into the _next_ A's pc
+    pc = (pc & 0x00FFFFFF) | (B_pc & 0xFF000000);
+    return pc;
   }
 
   //----------------------------------------

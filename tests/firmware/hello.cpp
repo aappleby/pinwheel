@@ -109,7 +109,7 @@ extern void* _start;
 //------------------------------------------------------------------------------
 
 void print_test(Console* c) {
-  c->printf("hart    %d\n",   get_hart());
+  c->printf("thread  %d\n",   get_hart());
   c->printf("stack   0x%p\n", get_sp());
   c->printf("global  0x%p\n", get_gp());
 
@@ -126,17 +126,22 @@ void print_test(Console* c) {
 
 void main0() {
   Console* c = &c1;
-  c->printf("Hart %d started\n", get_hart());
+  c->printf("Thread %d started\n", get_hart());
 
   uint32_t pc1 = (1 << 24) | uint32_t(&_start);
   uint32_t pc2 = (2 << 24) | uint32_t(&_start);
   uint32_t pc3 = (3 << 24) | uint32_t(&_start);
 
-  for (int i = 0; i < 200; i++) {
-    volatile uint32_t* data_in  = (uint32_t*)0xB0010004;
-    volatile uint32_t* data_out = (uint32_t*)0x40000000;
-    c->printf("%c", *data_in);
+  for (int i = 0; i < 20000; i++) {
+    volatile uint32_t* data_flag = (uint32_t*)0xB0010000;
+    volatile uint32_t* data_in   = (uint32_t*)0xB0010004;
+    //volatile uint32_t* data_out = (uint32_t*)0x40000000;
+
+    if (*data_flag) {
+      c->printf("%c", *data_in);
+    }
   }
+  c->printf("\n");
 
   c->printf("Starting thread-swapping loop\n", get_hart());
 
@@ -152,7 +157,7 @@ void main0() {
 
 void main1() {
   Console* c = &c2;
-  c->printf("Hart %d started\n", get_hart());
+  c->printf("Thread %d started\n", get_hart());
 
   while(1) {
     static int rep = 0;
@@ -166,7 +171,7 @@ void main1() {
 
 void main2() {
   Console* c = &c3;
-  c->printf("Hart %d started\n", get_hart());
+  c->printf("Thread %d started\n", get_hart());
 
   while(1) {
     static int rep = 0;
@@ -180,7 +185,7 @@ void main2() {
 
 void main3() {
   Console* c = &c4;
-  c->printf("Hart %d started\n", get_hart());
+  c->printf("Thread %d started\n", get_hart());
 
   while(1) {
     static int rep = 0;

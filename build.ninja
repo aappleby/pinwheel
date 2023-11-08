@@ -1,6 +1,6 @@
-target=DEBUG
+#target=DEBUG
 # FIXME why is stepping_code failing in release builds?
-#target=RELEASE
+target=RELEASE
 #target=SIZE
 
 toolchain=x86_64-linux-gnu
