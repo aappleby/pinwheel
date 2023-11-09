@@ -9,6 +9,11 @@ template <int repeat_msg = 0>
 class uart_hello {
 public:
   uart_hello(const char* message_hex = "pinwheel/uart/message.hex") {
+    state = 0;
+    /* metron_noconvert */
+    for (int i = 0; i < 512; i++) memory[i] = 0;
+    cursor = 0;
+
     if (message_hex) {
       readmemh(message_hex, memory, 0, 511);
     }

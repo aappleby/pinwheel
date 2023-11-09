@@ -13,12 +13,17 @@
 
 class Serial {
 public:
-  tilelink_a tla;
-  tilelink_d tld;
+
+  Serial() {
+    test_reg = 0;
+  }
 
   void tock() {
     tick();
   }
+
+  tilelink_a tla;
+  tilelink_d tld;
 
 private:
 

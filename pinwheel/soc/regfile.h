@@ -17,6 +17,8 @@ public:
       data2_hi[i] = 0;
       data2_lo[i] = 0;
     }
+    out_1 = 0;
+    out_2 = 0;
   }
 
   logic<32> get_rs1() const { return out_1; }

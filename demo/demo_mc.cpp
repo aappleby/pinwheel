@@ -23,7 +23,9 @@ TestResults test_uart_metron() {
 
   LOG_B("========================================\n");
 
-  for (int cycle = 0; cycle < 20000; cycle++) {
+  //1688703
+
+  for (int cycle = 0; cycle < 1688703; cycle++) {
     bool old_valid = top.uart0_rx.get_valid();
     top.tock(0);
     if (!old_valid && top.uart0_rx.get_valid()) {

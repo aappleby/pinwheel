@@ -12,6 +12,13 @@
 class Console {
 public:
 
+  Console() {
+    addr_mask = 0;
+    addr_tag = 0;
+    x = 0;
+    y = 0;
+  }
+
   void init(uint32_t addr_mask, uint32_t addr_tag) {
     this->addr_mask = addr_mask;
     this->addr_tag = addr_tag;
@@ -71,8 +78,8 @@ public:
   uint32_t addr_mask;
   uint32_t addr_tag;
   char buf[width*height];
-  int  x = 0;
-  int  y = 0;
+  int x;
+  int y;
 };
 
 // verilator lint_on unusedparam

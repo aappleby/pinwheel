@@ -22,6 +22,41 @@
 class pinwheel_core {
 public:
 
+  pinwheel_core() {
+    A_pc = 0;
+    //A_insn = 0; // signal
+    A_insn2.raw = 0;
+    B_pc = 0;
+    B_insn = 0;
+    C_pc = 0;
+    C_insn = 0;
+    C_addr = 0;
+    C_result = 0;
+    D_pc = 0;
+    D_insn = 0;
+    ticks = 0;
+
+    bus_tla.a_opcode  = b3(DONTCARE);
+    bus_tla.a_param   = b3(DONTCARE);
+    bus_tla.a_size    = b3(DONTCARE);
+    bus_tla.a_source  = b1(DONTCARE);
+    bus_tla.a_address = b32(DONTCARE);
+    bus_tla.a_mask    = b4(DONTCARE);
+    bus_tla.a_data    = b32(DONTCARE);
+    bus_tla.a_valid   = b1(DONTCARE);
+    bus_tla.a_ready   = b1(DONTCARE);
+
+    code_tla.a_opcode  = b3(DONTCARE);
+    code_tla.a_param   = b3(DONTCARE);
+    code_tla.a_size    = b3(DONTCARE);
+    code_tla.a_source  = b1(DONTCARE);
+    code_tla.a_address = b32(DONTCARE);
+    code_tla.a_mask    = b4(DONTCARE);
+    code_tla.a_data    = b32(DONTCARE);
+    code_tla.a_valid   = b1(DONTCARE);
+    code_tla.a_ready   = b1(DONTCARE);
+  }
+
   /* metron_noconvert */ logic<32> dbg_decode_imm(logic<32> insn) const { return decode_imm(insn); }
 
   //----------------------------------------
@@ -111,6 +146,7 @@ public:
     // Decode instruction A
 
     A_insn = b24(A_pc) ? code_tld.d_data : b32(0);
+    A_insn2.raw = b24(A_pc) ? code_tld.d_data : b32(0);
     logic<5>  A_rs1  = b5(A_insn, 15);
     logic<5>  A_rs2  = b5(A_insn, 20);
 
@@ -320,29 +356,6 @@ public:
   tilelink_a code_tla;
   regfile_if reg_if;
 
-public:
-
-  //----------------------------------------
-  // Internal signals and registers
-  // metron_internal
-
-  /* metron_internal */ logic<32> A_pc;
-  /* metron_internal */ logic<32> A_insn;
-
-  /* metron_internal */ logic<32> B_pc;
-  /* metron_internal */ logic<32> B_insn;
-
-  /* metron_internal */ logic<32> C_pc;
-  /* metron_internal */ logic<32> C_insn;
-  /* metron_internal */ logic<32> C_addr;
-  /* metron_internal */ logic<32> C_result;
-
-  // These two registers aren't actually needed, but they make debugging easier.
-  /* metron_internal */ logic<32> D_pc;
-  /* metron_internal */ logic<32> D_insn;
-
-  /* metron_internal */ logic<32> ticks;
-
 private:
 
   //----------------------------------------
@@ -522,7 +535,30 @@ private:
     return pc;
   }
 
+public:
+
   //----------------------------------------
+  // Internal signals and registers
+  // metron_internal
+
+  /* metron_internal */ logic<32> A_pc;
+  /* metron_internal */ logic<32> A_insn;
+  /* metron_internal */ rv32_insn A_insn2;
+
+  /* metron_internal */ logic<32> B_pc;
+  /* metron_internal */ logic<32> B_insn;
+
+  /* metron_internal */ logic<32> C_pc;
+  /* metron_internal */ logic<32> C_insn;
+  /* metron_internal */ logic<32> C_addr;
+  /* metron_internal */ logic<32> C_result;
+
+  // These two registers aren't actually needed, but they make debugging easier.
+  /* metron_internal */ logic<32> D_pc;
+  /* metron_internal */ logic<32> D_insn;
+
+  /* metron_internal */ logic<32> ticks;
+
 };
 
 /* verilator lint_on UNUSEDSIGNAL */

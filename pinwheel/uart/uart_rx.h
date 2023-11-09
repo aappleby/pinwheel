@@ -16,6 +16,18 @@ template <uint32_t addr_mask = 0xF000F000, uint32_t addr_tag = 0xB0000000, int c
 class uart_rx {
 public:
 
+  uart_rx() {
+    tld.d_opcode = b3(DONTCARE);
+    tld.d_param  = 0; // required by spec
+    tld.d_size   = 2;
+    tld.d_source = 0;
+    tld.d_sink   = 0;
+    tld.d_data   = b32(DONTCARE);
+    tld.d_error  = 0;
+    tld.d_valid  = 0;
+    tld.d_ready  = 1;
+  }
+
   // Our output is valid once we've received 8 bits.
   logic<1> get_valid() const {
     return bit_count == 8;

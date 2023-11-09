@@ -13,9 +13,20 @@ class block_ram {
 public:
 
   block_ram(const char* filename = nullptr) {
+    /* metron_noconvert */
+    for (int i = 0; i < 16384; i++) data[i] = 0;
     if (filename) {
       readmemh(filename, data);
     }
+    bus_tld.d_opcode = b3(DONTCARE);
+    bus_tld.d_param  = b2(DONTCARE);
+    bus_tld.d_size   = b3(DONTCARE);
+    bus_tld.d_source = b1(DONTCARE);
+    bus_tld.d_sink   = b3(DONTCARE);
+    bus_tld.d_data   = b32(DONTCARE);
+    bus_tld.d_error  = 0;
+    bus_tld.d_valid  = 0;
+    bus_tld.d_ready  = 1;
   }
 
   /* metron_noconvert */ logic<32> get() const { return bus_tld.d_data; }

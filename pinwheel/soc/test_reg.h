@@ -12,10 +12,6 @@ template <uint32_t addr_mask = 0xF0000000, uint32_t addr_tag = 0xF0000000>
 class test_reg {
 public:
 
-  tilelink_d bus_tld;
-
-  logic<32> get() const { return bus_tld.d_data; }
-
   test_reg(logic<32> init = 0) {
     bus_tld.d_opcode = TL::AccessAckData;
     bus_tld.d_param  = b2(DONTCARE);
@@ -28,9 +24,13 @@ public:
     bus_tld.d_ready  = 1;
   }
 
+  logic<32> get() const { return bus_tld.d_data; }
+
   void tock(tilelink_a tla) {
     tick(tla);
   }
+
+  tilelink_d bus_tld;
 
 private:
 

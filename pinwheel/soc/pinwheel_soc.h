@@ -25,6 +25,26 @@ public:
     const char* data_hexfile = "pinwheel/tools/blank.data.vh",
     const char* message_hex  = "pinwheel/uart/message.hex")
   : code_ram(code_hexfile), data_ram(data_hexfile), uart0_hello(message_hex) {
+
+    bus_tla.a_opcode  = b3(DONTCARE);
+    bus_tla.a_param   = b3(DONTCARE);
+    bus_tla.a_size    = b3(DONTCARE);
+    bus_tla.a_source  = b1(DONTCARE);
+    bus_tla.a_address = b32(DONTCARE);
+    bus_tla.a_mask    = b4(DONTCARE);
+    bus_tla.a_data    = b32(DONTCARE);
+    bus_tla.a_valid   = b1(DONTCARE);
+    bus_tla.a_ready   = b1(DONTCARE);
+
+    bus_tld.d_opcode = b3(DONTCARE);
+    bus_tld.d_param  = b2(DONTCARE);
+    bus_tld.d_size   = b3(DONTCARE);
+    bus_tld.d_source = b1(DONTCARE);
+    bus_tld.d_sink   = b3(DONTCARE);
+    bus_tld.d_data   = b32(DONTCARE);
+    bus_tld.d_error  = b1(DONTCARE);
+    bus_tld.d_valid  = b1(DONTCARE);
+    bus_tld.d_ready  = b1(DONTCARE);
   }
 
   // FIXME why does this hang yosys if exposed?

@@ -18,6 +18,16 @@ public:
     bit_delay = bit_delay_max;
     bit_count = bit_count_max;
     output_buffer = 0;
+
+    tld.d_opcode = b3(DONTCARE);
+    tld.d_param  = b2(DONTCARE);
+    tld.d_size   = b3(DONTCARE);
+    tld.d_source = b1(DONTCARE);
+    tld.d_sink   = b3(DONTCARE);
+    tld.d_data   = b32(DONTCARE);
+    tld.d_error  = 0;
+    tld.d_valid  = 0;
+    tld.d_ready  = 1;
   }
 
   // The actual bit of data we're sending to the serial port.
