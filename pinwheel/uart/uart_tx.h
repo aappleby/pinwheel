@@ -14,9 +14,9 @@
 template <uint32_t addr_mask = 0xF000F000, uint32_t addr_tag = 0xB0000000>
 class uart_tx {
 public:
-  uart_tx(logic<16> cycles_per_bit) {
-    bit_delay     = cycles_per_bit - 1;
-    bit_delay_max = cycles_per_bit - 1;
+  uart_tx(int clock_rate, int baud_rate) {
+    bit_delay     = (clock_rate / baud_rate) - 1;
+    bit_delay_max = (clock_rate / baud_rate) - 1;
     bit_count = bit_count_max;
     output_buffer = 0;
 

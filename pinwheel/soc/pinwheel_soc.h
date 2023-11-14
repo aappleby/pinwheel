@@ -24,13 +24,13 @@ public:
     const char* code_hexfile = "pinwheel/tools/blank.code.vh",
     const char* data_hexfile = "pinwheel/tools/blank.data.vh",
     const char* message_hex  = "pinwheel/uart/message.hex",
-    int clk_rate = 12000000,
-    int uart_bps = 1000000
+    int clock_rate = 12000000,
+    int baud_rate = 115200
   )
   : code_ram(code_hexfile),
     data_ram(data_hexfile),
-    uart0_tx(clk_rate / uart_bps),
-    uart0_rx(clk_rate / uart_bps),
+    uart0_tx(clock_rate, baud_rate),
+    uart0_rx(clock_rate, baud_rate),
     uart0_hello(message_hex)
   {
 
@@ -59,10 +59,10 @@ public:
 
   /*metron_noconvert*/ logic<32> get_debug() { return debug_reg.get(); }
 
+  //logic<1> get_uart() { return uart0_tx.get_serial(); }
+
   //----------------------------------------
   // FIXME const local variable should not become parameter
-
-  // FIXME yosys can't handle structs as local variables
 
   void tock(logic<1> reset_in) {
     bus_tld.d_opcode = b3(DONTCARE);

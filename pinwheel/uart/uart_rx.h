@@ -16,9 +16,9 @@ template <uint32_t addr_mask = 0xF000F000, uint32_t addr_tag = 0xB0000000>
 class uart_rx {
 public:
 
-  uart_rx(int cycles_per_bit) {
-    bit_delay     = cycles_per_bit - 1;
-    bit_delay_max = cycles_per_bit - 1;
+  uart_rx(int clock_rate, int baud_rate) {
+    bit_delay     = (clock_rate / baud_rate) - 1;
+    bit_delay_max = (clock_rate / baud_rate) - 1;
 
     tld.d_opcode = b3(DONTCARE);
     tld.d_param  = 0; // required by spec
