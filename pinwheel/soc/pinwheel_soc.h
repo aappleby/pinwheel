@@ -4,7 +4,7 @@
 #include "metron/metron_tools.h"
 
 #include "pinwheel/core/pinwheel_core.h"
-#include "pinwheel/soc/block_ram.h"
+#include "pinwheel/soc/bus_ram.h"
 #include "pinwheel/soc/regfile.h"
 #include "pinwheel/soc/test_reg.h"
 #include "pinwheel/tools/tilelink.h"
@@ -110,8 +110,8 @@ public:
   /* metron_internal */ regfile       regs;
 
 
-  /* metron_internal */ block_ram <0xF000'0000, 0x0000'0000> code_ram;  // Code  at 0x0xxx'xxxx
-  /* metron_internal */ block_ram <0xF000'0000, 0x8000'0000> data_ram;  // Data  at 0x8xxx'xxxx
+  /* metron_internal */ bus_ram <0xF000'0000, 0x0000'0000> code_ram;  // Code  at 0x0xxx'xxxx
+  /* metron_internal */ bus_ram <0xF000'0000, 0x8000'0000> data_ram;  // Data  at 0x8xxx'xxxx
   /* metron_internal */ test_reg  <0xF000'0000, 0xF000'0000> debug_reg; // Debug at 0xFxxx'xxxx
   /* metron_internal */ uart_tx   <0xFFFF'0000, 0xB000'0000> uart0_tx;  // Uart TX  0xB000'xxxx
   /* metron_internal */ uart_rx   <0xFFFF'0000, 0xB001'0000> uart0_rx;  // Uart RX  0xB001'xxxx
