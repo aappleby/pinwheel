@@ -23,6 +23,29 @@ endmodule
 
 //------------------------------------------------------------------------------
 
+module bram256x16
+(
+  input  logic       clock,
+  input  logic[7:0]  raddr,
+  input  logic[7:0]  waddr,
+  input  logic[15:0] wdata,
+  input  logic       wren,
+  output logic[15:0] out
+);
+
+  always @(posedge clock) begin
+    if (wren) begin
+      data[waddr] <= wdata;
+    end
+    out <= waddr == raddr && wren ? wdata : data[raddr];
+  end
+
+  logic[15:0] data[0:255];
+
+endmodule
+
+//------------------------------------------------------------------------------
+
 module bram_unaligned
 (
   input  logic       clock,

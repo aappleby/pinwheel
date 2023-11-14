@@ -1,4 +1,5 @@
 set -v
-iverilog -g2012 bram_testbench.sv -o bram_testbench
+rm -f testbench
+iverilog -g2012 testbench.sv -s testbench -o testbench
 
-./bram_testbench
+./testbench
