@@ -5,13 +5,11 @@
 
 //==============================================================================
 
-template <int repeat_msg = 0>
 class uart_hello {
 public:
-  uart_hello(const char* message_hex = "pinwheel/uart/message.hex") {
+  uart_hello(const char* message_hex = "pinwheel/uart/message.hex", int _repeat_msg = false) {
     state = 0;
-    /* metron_noconvert */
-    for (int i = 0; i < 512; i++) memory[i] = 0;
+    repeat_msg = _repeat_msg;
     cursor = 0;
 
     if (message_hex) {
@@ -96,6 +94,7 @@ private:
   static const int SEND = 1; // Sending the message buffer
   static const int DONE = 2; // Message buffer sent
   logic<2> state;            // One of the above states
+  logic<1> repeat_msg;
 
   logic<8> memory[512];      // The buffer preloaded with our message
   logic<cursor_bits> cursor; // Index into the message buffer of the _next_ character to transmit

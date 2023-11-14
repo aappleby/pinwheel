@@ -13,8 +13,6 @@ class block_ram {
 public:
 
   block_ram(const char* filename = nullptr) {
-    /* metron_noconvert */
-    for (int i = 0; i < 16384; i++) data[i] = 0;
     if (filename) {
       readmemh(filename, data);
     }

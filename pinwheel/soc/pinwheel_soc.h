@@ -25,13 +25,14 @@ public:
     const char* data_hexfile = "pinwheel/tools/blank.data.vh",
     const char* message_hex  = "pinwheel/uart/message.hex",
     int clock_rate = 12000000,
-    int baud_rate = 115200
+    int baud_rate = 115200,
+    int repeat_msg = 1
   )
   : code_ram(code_hexfile),
     data_ram(data_hexfile),
     uart0_tx(clock_rate, baud_rate),
     uart0_rx(clock_rate, baud_rate),
-    uart0_hello(message_hex)
+    uart0_hello(message_hex, repeat_msg)
   {
 
     bus_tla.a_opcode  = b3(DONTCARE);
@@ -115,7 +116,7 @@ public:
   /* metron_internal */ uart_tx   <0xFFFF'0000, 0xB000'0000> uart0_tx;  // Uart TX  0xB000'xxxx
   /* metron_internal */ uart_rx   <0xFFFF'0000, 0xB001'0000> uart0_rx;  // Uart RX  0xB001'xxxx
 
-  /* metron_internal */ uart_hello<false /*repeat_msg*/>  uart0_hello;
+  /* metron_internal */ uart_hello uart0_hello;
 };
 
 // verilator lint_on unusedsignal

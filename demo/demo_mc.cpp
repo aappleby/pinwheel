@@ -1,5 +1,4 @@
 #include "pinwheel/soc/pinwheel_soc.h"
-#include "pinwheel/uart/uart_top.h"
 
 #include <stdio.h>
 
@@ -15,7 +14,10 @@ TestResults test_uart_metron() {
   pinwheel_soc top(
     "gen/tests/firmware/hello.code.vh",
     "gen/tests/firmware/hello.data.vh",
-    "pinwheel/uart/message.hex"
+    "pinwheel/uart/message.hex",
+    /*int clock_rate =*/ 12000000,
+    /*int baud_rate =*/ 1000000,
+    /*int repeat_msg =*/ 0
   );
 
 

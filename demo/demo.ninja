@@ -1,5 +1,5 @@
 build obj/demo/demo_mc.o : compile_cpp demo/demo_mc.cpp
-build bin/demo/demo_mc2   : c_binary $
+build bin/demo/demo_mc   : c_binary $
   obj/demo/demo_mc.o $
   symlinks/metrolib/bin/metrolib/libcore.a
 

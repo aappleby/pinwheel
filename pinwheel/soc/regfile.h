@@ -10,15 +10,6 @@
 class regfile {
 public:
 
-  regfile() {
-    for (int i = 0; i < 256; i++) {
-      data1[i] = 0;
-      data2[i] = 0;
-    }
-    out_1 = 0;
-    out_2 = 0;
-  }
-
   logic<32> get_rs1() const { return out_1; }
   logic<32> get_rs2() const { return out_2; }
 
