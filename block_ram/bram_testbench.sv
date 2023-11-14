@@ -11,8 +11,8 @@ module bram_testbench();
     clock = 0;
     raddr = 0;
     waddr = 0;
-    wdata = 32'h12345678;
-    wren  = 1;
+    wdata = 0;
+    wren  = 0;
     #1
 
     raddr = 0;
@@ -36,22 +36,15 @@ module bram_testbench();
     $display();
 
 
+    raddr = 4;
+    wren = 0;
+    #10 $write("%x", out);
+
     raddr = 0;
     wren = 0;
-    #10 $display("%x", out);
+    #10 $write("%x", out);
 
-    raddr = 1;
-    wren = 0;
-    #10 $display("%x", out);
-
-    raddr = 2;
-    wren = 0;
-    #10 $display("%x", out);
-
-    raddr = 3;
-    wren = 0;
-    #10 $display("%x", out);
-
+    $display();
     $finish();
   end
 
@@ -62,5 +55,10 @@ module bram_testbench();
   logic       wren;
   logic[31:0] out;
   bram_unaligned dut(.clock(clock), .raddr(raddr), .waddr(waddr), .wdata(wdata), .wren(wren), .out(out));
+
+  initial begin
+    $dumpfile("dump.vcd");
+    $dumpvars(0, bram_testbench);
+  end
 
 endmodule
