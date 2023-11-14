@@ -23,7 +23,7 @@ endmodule
 
 //------------------------------------------------------------------------------
 
-module bram256x16
+module bram_256x16
 (
   input  logic       clock,
   input  logic[7:0]  raddr,
@@ -52,6 +52,7 @@ module bram_align1_2048
   input  logic[10:0] raddr,
   input  logic[10:0] waddr,
   input  logic[31:0] wdata,
+  input  logic[2:0]  wsize,
   input  logic       wren,
   output logic[31:0] out
 );
@@ -122,6 +123,7 @@ module bram_align2_1024
   input  logic[9:0]  raddr,
   input  logic[9:0]  waddr,
   input  logic[31:0] wdata,
+  input  logic[2:0]  wsize,
   input  logic       wren,
   output logic[31:0] out
 );

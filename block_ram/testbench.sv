@@ -3,6 +3,9 @@
 
 module testbench();
 
+  logic clock;
+  always #5 clock = ~clock;
+
   task test_mem();
     int i, j, k;
 
@@ -50,14 +53,23 @@ module testbench();
     $finish();
   end
 
-  logic       clock;
+  /*
   logic[10:0] raddr;
   logic[10:0] waddr;
   logic[31:0] wdata;
+  logic[2:0]  wsize;
   logic       wren;
   logic[31:0] out;
   bram_align1_2048 dut(.clock(clock), .raddr(raddr), .waddr(waddr), .wdata(wdata), .wren(wren), .out(out));
+  */
 
-  always #5 clock = ~clock;
+  logic[9:0]  raddr;
+  logic[9:0]  waddr;
+  logic[31:0] wdata;
+  logic[2:0]  wsize;
+  logic       wren;
+  logic[31:0] out;
+  bram_align2_1024 dut(.clock(clock), .raddr(raddr), .waddr(waddr), .wdata(wdata), .wsize(wsize), .wren(wren), .out(out));
+
 
 endmodule
