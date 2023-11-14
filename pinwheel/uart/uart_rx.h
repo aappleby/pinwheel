@@ -12,11 +12,14 @@
 // 0xB0000004 = data
 // 0xB0000008 = checksum
 
-template <uint32_t addr_mask = 0xF000F000, uint32_t addr_tag = 0xB0000000, int cycles_per_bit = 4>
+template <uint32_t addr_mask = 0xF000F000, uint32_t addr_tag = 0xB0000000>
 class uart_rx {
 public:
 
-  uart_rx() {
+  uart_rx(int cycles_per_bit) {
+    bit_delay     = cycles_per_bit - 1;
+    bit_delay_max = cycles_per_bit - 1;
+
     tld.d_opcode = b3(DONTCARE);
     tld.d_param  = 0; // required by spec
     tld.d_size   = 2;
@@ -141,9 +144,8 @@ public:
 
 
   // We wait for cycles_per_bit cycles
-  static const int bit_delay_width = clog2(cycles_per_bit);
-  static const int bit_delay_max = cycles_per_bit - 1;
-  logic<bit_delay_width> bit_delay;
+  logic<16> bit_delay;
+  logic<16> bit_delay_max;
 
   // Our serial data format is 8n1, which is short for "one start bit, 8 data
   // bits, no parity bit, one stop bit". If bit_count == 1, we're only waiting

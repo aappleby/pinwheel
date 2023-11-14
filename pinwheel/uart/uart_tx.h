@@ -11,11 +11,12 @@
 // verilator lint_off unusedsignal
 // verilator lint_off unusedparam
 
-template <uint32_t addr_mask = 0xF000F000, uint32_t addr_tag = 0xB0000000, int cycles_per_bit = 4>
+template <uint32_t addr_mask = 0xF000F000, uint32_t addr_tag = 0xB0000000>
 class uart_tx {
 public:
-  uart_tx() {
-    bit_delay = bit_delay_max;
+  uart_tx(logic<16> cycles_per_bit) {
+    bit_delay     = cycles_per_bit - 1;
+    bit_delay_max = cycles_per_bit - 1;
     bit_count = bit_count_max;
     output_buffer = 0;
 
@@ -144,9 +145,8 @@ private:
   }
 
   // We wait {cycles_per_bit} cycles between sending bits.
-  static const int bit_delay_width = clog2(cycles_per_bit);
-  static const int bit_delay_max   = cycles_per_bit - 1;
-  logic<bit_delay_width> bit_delay;
+  logic<16> bit_delay;
+  logic<16> bit_delay_max;
 
   // We send 1 start bit, 8 data bits, and 1 stop bit per byte = 10 bits per
   // byte total. We also send 7 additional stop bits between messages to

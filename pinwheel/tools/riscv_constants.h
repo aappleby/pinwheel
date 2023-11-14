@@ -5,6 +5,42 @@
 
 // verilator lint_off unusedparam
 namespace RV32I {
+  static const int OP2_LOAD    = 0b0000011;
+  static const int OP2_LOADFP  = 0b0000111;
+  static const int OP2_CUSTOM0 = 0b0001011;
+  static const int OP2_MISCMEM = 0b0001111;
+  static const int OP2_OPIMM   = 0b0010011;
+  static const int OP2_AUIPC   = 0b0010111;
+  static const int OP2_OPIMM32 = 0b0011011;
+  static const int OP2_48B1    = 0b0011111;
+
+  static const int OP2_STORE   = 0b0100011;
+  static const int OP2_STOREFP = 0b0100111;
+  static const int OP2_CUSTOM1 = 0b0101011;
+  static const int OP2_AMO     = 0b0101111;
+  static const int OP2_OP      = 0b0110011;
+  static const int OP2_LUI     = 0b0110111;
+  static const int OP2_OP32    = 0b0111011;
+  static const int OP2_64B     = 0b0111111;
+
+  static const int OP2_MADD    = 0b1000011;
+  static const int OP2_MSUB    = 0b1000111;
+  static const int OP2_NMSUB   = 0b1001011;
+  static const int OP2_NMADD   = 0b1001111;
+  static const int OP2_OPFP    = 0b1010011;
+  static const int OP2_RES1    = 0b1010111;
+  static const int OP2_CUSTOM2 = 0b1011011;
+  static const int OP2_48B2    = 0b1011111;
+
+  static const int OP2_BRANCH  = 0b1100011;
+  static const int OP2_JALR    = 0b1100111;
+  static const int OP2_RES2    = 0b1101011;
+  static const int OP2_JAL     = 0b1101111;
+  static const int OP2_SYSTEM  = 0b1110011;
+  static const int OP2_RES3    = 0b1110111;
+  static const int OP2_CUSTOM3 = 0b1111011;
+  static const int OP2_80B     = 0b1111111;
+
   static const int OP_LOAD    = 0b00000;
   static const int OP_LOADFP  = 0b00001;
   static const int OP_CUSTOM0 = 0b00010;

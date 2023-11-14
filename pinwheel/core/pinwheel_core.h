@@ -71,13 +71,8 @@ public:
     //----------
     // Decode instruction B
 
-    logic<5>  B_op   = b5(B_insn, 2);
-    logic<3>  B_f3   = b3(B_insn, 12);
-    logic<5>  B_rs1  = b5(B_insn, 15);
-    logic<5>  B_rs2  = b5(B_insn, 20);
-
-    logic<32> B_reg1 = B_rs1 ? reg_rdata1 : b32(0);
-    logic<32> B_reg2 = B_rs2 ? reg_rdata2 : b32(0);
+    logic<32> B_reg1 = B_insn2.r.rs1 ? reg_rdata1 : b32(0);
+    logic<32> B_reg2 = B_insn2.r.rs2 ? reg_rdata2 : b32(0);
     logic<32> B_imm  = decode_imm(B_insn);
     logic<32> B_addr = b32(B_reg1 + B_imm);
 
@@ -87,20 +82,20 @@ public:
     logic<3>  bus_size = b3(DONTCARE);
     logic<4>  mask_b   = 0;
 
-    if (B_f3 == 0)    { mask_b = 0b0001; bus_size = 0; }
-    if (B_f3 == 1)    { mask_b = 0b0011; bus_size = 1; }
-    if (B_f3 == 2)    { mask_b = 0b1111; bus_size = 2; }
+    if (B_insn2.r.f3 == 0)    { mask_b = 0b0001; bus_size = 0; }
+    if (B_insn2.r.f3 == 1)    { mask_b = 0b0011; bus_size = 1; }
+    if (B_insn2.r.f3 == 2)    { mask_b = 0b1111; bus_size = 2; }
     if (B_addr[0]) mask_b = mask_b << 1;
     if (B_addr[1]) mask_b = mask_b << 2;
 
     bus_tla.a_address = B_addr;
     bus_tla.a_data    = B_reg2;
     bus_tla.a_mask    = mask_b;
-    bus_tla.a_opcode  = (B_op == RV32I::OP_STORE) ? (bus_size == 2 ? TL::PutFullData : TL::PutPartialData) : TL::Get;
+    bus_tla.a_opcode  = (B_insn2.r.op == RV32I::OP2_STORE) ? (bus_size == 2 ? TL::PutFullData : TL::PutPartialData) : TL::Get;
     bus_tla.a_param   = b3(DONTCARE);
     bus_tla.a_size    = bus_size;
     bus_tla.a_source  = b1(DONTCARE);
-    bus_tla.a_valid   = (B_op == RV32I::OP_LOAD) || (B_op == RV32I::OP_STORE);
+    bus_tla.a_valid   = (B_insn2.r.op == RV32I::OP2_LOAD) || (B_insn2.r.op == RV32I::OP2_STORE);
     bus_tla.a_ready   = 1;
 
     return bus_tla;
@@ -257,7 +252,6 @@ public:
     //----------
     // Decode instruction B
 
-    logic<5>  B_op   = b5(B_insn, 2);
     logic<3>  B_f3   = b3(B_insn, 12);
     logic<5>  B_rs1  = b5(B_insn, 15);
     logic<5>  B_rs2  = b5(B_insn, 20);
@@ -285,7 +279,7 @@ public:
       // But if the other thread is idle, we can read the regfile through the
       // memory mapping.
       logic<1> B_regfile_cs = b4(B_addr, 28) == 0xE;
-      if ((B_op == RV32I::OP_LOAD) && B_regfile_cs && (b24(A_pc) == 0)) {
+      if ((B_insn2.r.op == RV32I::OP2_LOAD) && B_regfile_cs && (b24(A_pc) == 0)) {
         reg_if.raddr1 = b10(B_addr >> 2);
       }
     }
@@ -398,6 +392,7 @@ private:
 
       B_pc     = A_pc;
       B_insn   = A_insn;
+      B_insn2.raw = A_insn2.raw;
 
       A_pc     = A_pc_next;
 
@@ -430,6 +425,33 @@ private:
     }
     return result;
   }
+
+  /*
+  logic<32> decode_imm2(rv32_insn insn2) const {
+    logic<32> insn  = insn2.raw;
+    logic<5>  op    = b5(insn, 2);
+    logic<32> imm_i = sign_extend<32>(b12(insn, 20));
+    logic<32> imm_s = cat(dup<21>(insn[31]), b6(insn, 25), b5(insn, 7));
+    logic<32> imm_u = b20(insn, 12) << 12;
+    logic<32> imm_b = cat(dup<20>(insn[31]), insn[7], b6(insn, 25), b4(insn, 8), b1(0));
+    logic<32> imm_j = cat(dup<12>(insn[31]), b8(insn, 12), insn[20], b10(insn, 21), b1(0));
+
+    logic<32> result;
+    switch(op) {
+      case RV32I::OP_LOAD:   result = imm_i; break;
+      case RV32I::OP_OPIMM:  result = imm_i; break;
+      case RV32I::OP_AUIPC:  result = imm_u; break;
+      case RV32I::OP_STORE:  result = imm_s; break;
+      case RV32I::OP_OP:     result = imm_i; break;
+      case RV32I::OP_LUI:    result = imm_u; break;
+      case RV32I::OP_BRANCH: result = imm_b; break;
+      case RV32I::OP_JALR:   result = imm_i; break;
+      case RV32I::OP_JAL:    result = imm_j; break;
+      default:               result = 0;     break;
+    }
+    return result;
+  }
+  */
 
   //----------------------------------------
 
@@ -547,6 +569,7 @@ public:
 
   /* metron_internal */ logic<32> B_pc;
   /* metron_internal */ logic<32> B_insn;
+  /* metron_internal */ rv32_insn B_insn2;
 
   /* metron_internal */ logic<32> C_pc;
   /* metron_internal */ logic<32> C_insn;

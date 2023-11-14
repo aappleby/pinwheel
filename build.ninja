@@ -103,6 +103,12 @@ build all_sv : phony $
   gen/pinwheel/soc/pinwheel_soc.sv
 
 ################################################################################
+# sv2v
+
+build gen/pinwheel/soc/pinwheel_soc.sv.2.v : sv2v gen/pinwheel/soc/pinwheel_soc.sv | all_sv
+  includes = -I. -Igen -Isymlinks/metron
+
+################################################################################
 # Verilator tests
 
 build gen/pinwheel/verilator/Vpinwheel_soc.mk gen/pinwheel/verilator/Vpinwheel_soc.h : verilator gen/pinwheel/soc/pinwheel_soc.sv | all_sv
@@ -111,10 +117,9 @@ build gen/pinwheel/verilator/Vpinwheel_soc.mk gen/pinwheel/verilator/Vpinwheel_s
 ################################################################################
 # Yosys tests
 
-#build gen/pinwheel/yosys/pinwheel_soc.json : yosys_check gen/pinwheel/soc/pinwheel_soc.sv
-#  includes = -I. -Igen -Isymlinks/metron
+#build gen/pinwheel/yosys/pinwheel_soc.json : yosys_check gen/pinwheel/soc/pinwheel_soc.sv.2.v
 
-build gen/pinwheel/yosys/pinwheel_soc.json : yosys gen/pinwheel/soc/pinwheel_soc.sv | all_sv
+build gen/pinwheel/yosys/pinwheel_soc.json : yosys gen/pinwheel/soc/pinwheel_soc.sv
   includes = -I. -Igen -Isymlinks/metron
 
 #build bin/pinwheel/yosys/pinwheel_core.asc: nextpnr-ice40 gen/pinwheel/yosys/pinwheel_core.json
@@ -127,16 +132,12 @@ build gen/pinwheel/yosys/pinwheel_soc.json : yosys gen/pinwheel/soc/pinwheel_soc
 ################################################################################
 # Icarus tests
 
-# This is really noisy and so disabled for the moment. It does pass, though
-
-#build gen/pinwheel/icarus/pinwheel.iv : iverilog gen/pinwheel/soc/pinwheel_soc.sv
-#  includes = -Igen -Isymlinks/metron
-
-include tests/firmware.ninja
-
+build gen/pinwheel/icarus/pinwheel.iv : iverilog gen/pinwheel/soc/pinwheel_soc.sv.2.v
 
 ################################################################################
 # Functional tests
+
+include tests/firmware.ninja
 
 build obj/tests/pinwheel_test.o:      compile_cpp tests/pinwheel_test.cpp
 

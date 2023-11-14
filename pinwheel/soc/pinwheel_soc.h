@@ -23,8 +23,16 @@ public:
   pinwheel_soc(
     const char* code_hexfile = "pinwheel/tools/blank.code.vh",
     const char* data_hexfile = "pinwheel/tools/blank.data.vh",
-    const char* message_hex  = "pinwheel/uart/message.hex")
-  : code_ram(code_hexfile), data_ram(data_hexfile), uart0_hello(message_hex) {
+    const char* message_hex  = "pinwheel/uart/message.hex",
+    int clk_rate = 12000000,
+    int uart_bps = 1000000
+  )
+  : code_ram(code_hexfile),
+    data_ram(data_hexfile),
+    uart0_tx(clk_rate / uart_bps),
+    uart0_rx(clk_rate / uart_bps),
+    uart0_hello(message_hex)
+  {
 
     bus_tla.a_opcode  = b3(DONTCARE);
     bus_tla.a_param   = b3(DONTCARE);
@@ -101,11 +109,11 @@ public:
   /* metron_internal */ regfile       regs;
 
 
-  /* metron_internal */ block_ram <0xF000'0000, 0x0000'0000>    code_ram;  // Code  at 0x0xxx'xxxx
-  /* metron_internal */ block_ram <0xF000'0000, 0x8000'0000>    data_ram;  // Data  at 0x8xxx'xxxx
-  /* metron_internal */ test_reg  <0xF000'0000, 0xF000'0000>    debug_reg; // Debug at 0xFxxx'xxxx
-  /* metron_internal */ uart_tx   <0xFFFF'0000, 0xB000'0000, 300> uart0_tx;  // Uart TX  0xB000'xxxx
-  /* metron_internal */ uart_rx   <0xFFFF'0000, 0xB001'0000, 300> uart0_rx;  // Uart RX  0xB001'xxxx
+  /* metron_internal */ block_ram <0xF000'0000, 0x0000'0000> code_ram;  // Code  at 0x0xxx'xxxx
+  /* metron_internal */ block_ram <0xF000'0000, 0x8000'0000> data_ram;  // Data  at 0x8xxx'xxxx
+  /* metron_internal */ test_reg  <0xF000'0000, 0xF000'0000> debug_reg; // Debug at 0xFxxx'xxxx
+  /* metron_internal */ uart_tx   <0xFFFF'0000, 0xB000'0000> uart0_tx;  // Uart TX  0xB000'xxxx
+  /* metron_internal */ uart_rx   <0xFFFF'0000, 0xB001'0000> uart0_rx;  // Uart RX  0xB001'xxxx
 
   /* metron_internal */ uart_hello<false /*repeat_msg*/>  uart0_hello;
 };
