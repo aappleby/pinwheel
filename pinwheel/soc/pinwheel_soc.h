@@ -34,62 +34,40 @@ public:
     uart0_rx(clock_rate, baud_rate),
     uart0_hello(message_hex, repeat_msg)
   {
-
-    bus_tla.a_opcode  = b3(DONTCARE);
-    bus_tla.a_param   = b3(DONTCARE);
-    bus_tla.a_size    = b3(DONTCARE);
-    bus_tla.a_source  = b1(DONTCARE);
-    bus_tla.a_address = b32(DONTCARE);
-    bus_tla.a_mask    = b4(DONTCARE);
-    bus_tla.a_data    = b32(DONTCARE);
-    bus_tla.a_valid   = b1(DONTCARE);
-    bus_tla.a_ready   = b1(DONTCARE);
-
-    bus_tld.d_opcode = b3(DONTCARE);
-    bus_tld.d_param  = b2(DONTCARE);
-    bus_tld.d_size   = b3(DONTCARE);
-    bus_tld.d_source = b1(DONTCARE);
-    bus_tld.d_sink   = b3(DONTCARE);
-    bus_tld.d_data   = b32(DONTCARE);
-    bus_tld.d_error  = b1(DONTCARE);
-    bus_tld.d_valid  = b1(DONTCARE);
-    bus_tld.d_ready  = b1(DONTCARE);
   }
 
   // FIXME why does this hang yosys if exposed?
 
-  /*metron_noconvert*/ logic<32> get_debug() { return debug_reg.get(); }
+  /*metron_noconvert*/ logic<32> get_debug() { return debug_reg.get_tld().d_data; }
 
   //logic<1> get_uart() { return uart0_tx.get_serial(); }
+
+  tilelink_d get_data_tld() {
+    tilelink_d data_tld  = data_ram.get_tld();
+    tilelink_d debug_tld = debug_reg.get_tld();
+    tilelink_d uart0_tld = uart0_rx.get_tld();
+
+    if (debug_tld.d_valid == 1) data_tld = debug_tld;
+    if (uart0_tld.d_valid == 1) data_tld = uart0_tld;
+
+    return data_tld;
+  }
 
   //----------------------------------------
   // FIXME const local variable should not become parameter
 
   void tock(logic<1> reset_in) {
-    bus_tld.d_opcode = b3(DONTCARE);
-    bus_tld.d_param  = b2(DONTCARE);
-    bus_tld.d_size   = b3(DONTCARE);
-    bus_tld.d_source = b1(DONTCARE);
-    bus_tld.d_sink   = b3(DONTCARE);
-    bus_tld.d_data   = b32(DONTCARE);
-    bus_tld.d_error  = b1(DONTCARE);
-    bus_tld.d_valid  = b1(DONTCARE);
-    bus_tld.d_ready  = b1(DONTCARE);
+    tilelink_d code_tld = code_ram.get_tld();
+    tilelink_d data_tld = get_data_tld();
 
-    if (data_ram.bus_tld.d_valid == 1)  bus_tld = data_ram.bus_tld;
-    if (debug_reg.bus_tld.d_valid == 1) bus_tld = debug_reg.bus_tld;
-    if (uart0_rx.tld.d_valid == 1)      bus_tld = uart0_rx.tld;
+    core.tock_data_bus(reset_in, regs.get_rs1(), regs.get_rs2());
+    core.tock(reset_in, code_tld, data_tld, regs.get_rs1(), regs.get_rs2());
 
-    //----------
+    uart0_rx.tock(reset_in, uart0_tx.get_serial(), core.data_tla);
 
-    bus_tla = core.tock_data_bus(reset_in, regs.get_rs1(), regs.get_rs2());
-    core.tock(reset_in, code_ram.bus_tld, bus_tld, regs.get_rs1(), regs.get_rs2());
-
-    uart0_rx.tock(reset_in, uart0_tx.get_serial(), bus_tla);
-
-    debug_reg.tock(bus_tla);
-    code_ram.tock(core.code_tla);
-    data_ram.tock(bus_tla);
+    debug_reg.tock(core.data_tla);
+    code_ram.tock_b(core.code_tla);
+    data_ram.tock_b(core.data_tla);
     regs.tock(core.reg_if);
 
     logic<1> clear_to_send = uart0_tx.get_clear_to_send();
@@ -98,20 +76,17 @@ public:
     logic<8> data = uart0_hello.get_data();
     logic<1> request = uart0_hello.get_request();
 
-    uart0_tx.tock(reset_in, data, request, bus_tla);
+    uart0_tx.tock(reset_in, data, request, core.data_tla);
     uart0_hello.tock(reset_in, clear_to_send, idle);
   }
 
   //----------------------------------------
 
-  /* metron_internal */ tilelink_a    bus_tla;
-  /* metron_internal */ tilelink_d    bus_tld;
   /* metron_internal */ pinwheel_core core;
   /* metron_internal */ regfile       regs;
 
-
-  /* metron_internal */ bus_ram <0xF000'0000, 0x0000'0000> code_ram;  // Code  at 0x0xxx'xxxx
-  /* metron_internal */ bus_ram <0xF000'0000, 0x8000'0000> data_ram;  // Data  at 0x8xxx'xxxx
+  /* metron_internal */ bus_ram   <0xF000'0000, 0x0000'0000> code_ram;  // Code  at 0x0xxx'xxxx
+  /* metron_internal */ bus_ram   <0xF000'0000, 0x8000'0000> data_ram;  // Data  at 0x8xxx'xxxx
   /* metron_internal */ test_reg  <0xF000'0000, 0xF000'0000> debug_reg; // Debug at 0xFxxx'xxxx
   /* metron_internal */ uart_tx   <0xFFFF'0000, 0xB000'0000> uart0_tx;  // Uart TX  0xB000'xxxx
   /* metron_internal */ uart_rx   <0xFFFF'0000, 0xB001'0000> uart0_rx;  // Uart RX  0xB001'xxxx

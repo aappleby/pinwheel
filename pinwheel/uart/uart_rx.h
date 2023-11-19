@@ -46,6 +46,10 @@ public:
     return checksum;
   }
 
+  tilelink_d get_tld() const {
+    return tld;
+  }
+
   // FIXME should this be happening in tick? Probably?
 
   void tock(const logic<1> reset, const logic<1> serial, const tilelink_a tla)
@@ -87,8 +91,6 @@ public:
 
     tick(reset, serial, byte_consumed);
   }
-
-  tilelink_d tld;
 
  private:
 
@@ -142,6 +144,7 @@ public:
     if (byte_consumed) data_flag = 0;
   }
 
+  tilelink_d tld;
 
   // We wait for cycles_per_bit cycles
   logic<16> bit_delay;

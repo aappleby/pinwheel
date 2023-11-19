@@ -124,14 +124,28 @@ void print_test(Console* c) {
 
 //------------------------------------------------------------------------------
 
+void loop(int hart, Console* c) {
+  c->printf("Thread %d started\n", hart);
+
+  int rep = 0;
+  while(1) {
+    c->printf("\n");
+    c->printf("Rep %d\n", rep++);
+    print_test(c);
+  }
+}
+
+//------------------------------------------------------------------------------
+
 void main0() {
   Console* c = &c1;
-  c->printf("Thread %d started\n", get_hart());
+  c->printf("Thread 0 started\n");
 
   uint32_t pc1 = (1 << 24) | uint32_t(&_start);
   uint32_t pc2 = (2 << 24) | uint32_t(&_start);
   uint32_t pc3 = (3 << 24) | uint32_t(&_start);
 
+  /*
   for (int i = 0; i < 20000; i++) {
     volatile uint32_t* data_flag = (uint32_t*)0xB0010000;
     volatile uint32_t* data_in   = (uint32_t*)0xB0010004;
@@ -142,6 +156,7 @@ void main0() {
     }
   }
   c->printf("\n");
+  */
 
   c->printf("Starting thread-swapping loop\n", get_hart());
 
@@ -153,56 +168,14 @@ void main0() {
   }
 }
 
-//----------------------------------------
-
-void main1() {
-  Console* c = &c2;
-  c->printf("Thread %d started\n", get_hart());
-
-  while(1) {
-    static int rep = 0;
-    c->printf("\n");
-    c->printf("Rep %d\n", rep++);
-    print_test(c);
-  }
-}
-
-//----------------------------------------
-
-void main2() {
-  Console* c = &c3;
-  c->printf("Thread %d started\n", get_hart());
-
-  while(1) {
-    static int rep = 0;
-    c->printf("\n");
-    c->printf("Rep %d\n", rep++);
-    print_test(c);
-  }
-}
-
-//----------------------------------------
-
-void main3() {
-  Console* c = &c4;
-  c->printf("Thread %d started\n", get_hart());
-
-  while(1) {
-    static int rep = 0;
-    c->printf("\n");
-    c->printf("Rep %d\n", rep++);
-    print_test(c);
-  }
-}
-
 //------------------------------------------------------------------------------
 
 int main(int argc, char** argv) {
   switch(get_hart()) {
     case 0: main0(); break;
-    case 1: main1(); break;
-    case 2: main2(); break;
-    case 3: main3(); break;
+    case 1: loop(1, &c2); break;
+    case 2: loop(2, &c3); break;
+    case 3: loop(3, &c4); break;
   }
   return 0;
 }

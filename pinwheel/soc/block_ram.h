@@ -8,7 +8,7 @@
 
 //------------------------------------------------------------------------------
 
-template<int width, int depth>
+template<int depth>
 class block_ram {
 public:
 
@@ -16,34 +16,37 @@ public:
 
   block_ram(const char* filename = nullptr) {
     if (filename) {
-      readmemh(filename, data);
+      readmemh(filename, ram);
     }
   }
 
-  void tock(logic<addr_bits> raddr, logic<addr_bits> waddr, logic<width> wdata, logic<1> wren) {
-    tick(raddr, waddr, wdata, wren);
+  void tock(logic<1> cs, logic<addr_bits> addr, logic<32> wdata, logic<1> wren, logic<4> mask) {
+    tick(cs, addr, wdata, wren, mask);
   }
 
-  logic<width> get_data() { return out; }
+  logic<32> rdata;
 
-  /* metron_noconvert */ uint32_t* get_data() { return (uint32_t*)data; }
-  /* metron_noconvert */ size_t data_size() const { return sizeof(data); }
-  /* metron_noconvert */ const uint32_t* get_data() const { return (uint32_t*)data; }
+  /* metron_noconvert */ const uint32_t* get_data() const { return (const uint32_t*)ram; }
+  /* metron_noconvert */ uint32_t*       get_data()       { return (uint32_t*)ram; }
+  /* metron_noconvert */ size_t          get_size() const { return sizeof(ram); }
 
 private:
 
-  void tick(logic<addr_bits> raddr, logic<addr_bits> waddr, logic<width> wdata, logic<1> wren) {
-    if (wren) {
-      out = raddr == waddr ? wdata : data[raddr];
-      data[waddr] = wdata;
-    }
-    else {
-      out = data[raddr];
+  void tick(logic<1> cs, logic<addr_bits> addr, logic<32> wdata, logic<1> wren, logic<4> mask) {
+    if (cs) {
+      if (wren) {
+        if (mask[0]) slice< 7,  0, 32>(ram[addr]) = b8(wdata,  0);
+        if (mask[1]) slice<15,  8, 32>(ram[addr]) = b8(wdata,  8);
+        if (mask[2]) slice<23, 16, 32>(ram[addr]) = b8(wdata, 16);
+        if (mask[3]) slice<31, 24, 32>(ram[addr]) = b8(wdata, 24);
+      }
+      else {
+        rdata = ram[addr];
+      }
     }
   }
 
-  logic<width> data[depth];
-  logic<width> out;
+  logic<32> ram[depth];
 };
 
 //------------------------------------------------------------------------------

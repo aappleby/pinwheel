@@ -4,9 +4,6 @@
 // We need 4 of them for the register file
 // = 28 left
 
-// Implementation note:
-// Replace the following two modules with wrappers for your SRAM cells.
-
 //------------------------------------------------------------------------------
 
 module pinwheel_regs (
@@ -55,27 +52,30 @@ endmodule
 // This configuration appears to produce a minimal number of cells in Yosys,
 // maybe because not always assigning rdata means it can use the RCLKE signal?
 
-module pinwheel_mem
-#(
-  parameter integer DEPTH = 256
-)
+module pinwheel_mem #(parameter integer DEPTH = 256)
 (
-  input  logic                    clock,
-  input  logic[$clog2(DEPTH)-1:0] addr,
-  output logic[31:0]              rdata,
-  input  logic[31:0]              wdata,
-  input  logic[3:0]               wren,
+  input  logic                clock,
+  input  logic                cs,
+  input  logic[addr_bits-1:0] addr,
+  output logic[31:0]          rdata,
+  input  logic[31:0]          wdata,
+  input  logic                wren,
+  input  logic[3:0]           mask,
 );
+  parameter integer addr_bits = $clog2(DEPTH);
+
   logic[31:0] ram[0:DEPTH-1];
 
   always @(posedge clock) begin
-    if (wren) begin
-      if (wren[0] == 0) ram[addr][ 7: 0] <= wdata[ 7: 0];
-      if (wren[1] == 0) ram[addr][15: 8] <= wdata[15: 8];
-      if (wren[2] == 0) ram[addr][23:16] <= wdata[23:16];
-      if (wren[3] == 0) ram[addr][31:24] <= wdata[31:24];
-    end else begin
-      rdata <= ram[addr];
+    if (cs) begin
+      if (wren) begin
+        if (mask[0]) ram[addr][ 7: 0] <= wdata[ 7: 0];
+        if (mask[1]) ram[addr][15: 8] <= wdata[15: 8];
+        if (mask[2]) ram[addr][23:16] <= wdata[23:16];
+        if (mask[3]) ram[addr][31:24] <= wdata[31:24];
+      end else begin
+        rdata <= ram[addr];
+      end
     end
   end
 endmodule

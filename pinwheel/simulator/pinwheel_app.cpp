@@ -17,17 +17,31 @@
 #include <elf.h>
 #include <sys/stat.h>
 
-inline static const char* tilelink_op_to_string(int op) {
+inline static const char* tla_op_to_string(int op) {
   switch(op) {
-    case TL::PutFullData: return "PutFullData";
+    case TL::PutFullData:    return "PutFullData";
     case TL::PutPartialData: return "PutPartialData";
     case TL::ArithmeticData: return "ArithmeticData";
-    case TL::LogicalData: return "LogicalData";
-    case TL::Get: return "Get";
-    case TL::Intent: return "Intent";
-    case TL::Acquire: return "Acquire";
+    case TL::LogicalData:    return "LogicalData";
+    case TL::Get:            return "Get";
+    case TL::Intent:         return "Intent";
+    case TL::Acquire:        return "Acquire";
+    case TL::Invalid:        return "<Invalid>";
   }
-  return "<invalid>";
+  return "<bad op>";
+}
+
+inline static const char* tld_op_to_string(int op) {
+  switch(op) {
+    case TL::AccessAck:      return "AccessAck";
+    case TL::AccessAckData:  return "AccessAckData";
+    case TL::HintAck:        return "HintAck";
+    case TL::Grant:          return "Grant";
+    case TL::GrantData:      return "GrantData";
+    case TL::ReleaseAck:     return "ReleaseAck";
+    case TL::Invalid:        return "<Invalid>";
+  }
+  return "<bad op>";
 }
 
 //------------------------------------------------------------------------------
@@ -71,6 +85,7 @@ void PinwheelApp::app_init(int screen_w, int screen_h) {
 
   auto& p = pinwheel_sim->states.top().soc;
 
+  p.tock(true);
   p.tock(true);
 
   sim_thread->start();
@@ -169,6 +184,32 @@ void PinwheelApp::app_update(dvec2 screen_size, double delta)  {
 
 //------------------------------------------------------------------------------
 
+void dump_tla(StringDumper& d, const char* prefix, tilelink_a tla) {
+  d("%s.a_opcode  %s\n",       prefix, tla_op_to_string(tla.a_opcode));
+  //d("%s.a_param   %d\n",       prefix, tla.a_param);
+  d("%s.a_size    %d\n",       prefix, tla.a_size);
+  //d("%s.a_source  %d\n",       prefix, tla.a_source);
+  d("%s.a_address 0x%08x\n",   prefix, tla.a_address);
+  d("%s.a_mask    %c%c%c%c\n", prefix, tla.a_mask & 0b1000 ? '1' : '0', tla.a_mask & 0b0100 ? '1' : '0', tla.a_mask & 0b0010 ? '1' : '0', tla.a_mask & 0b0001 ? '1' : '0');
+  d("%s.a_data    0x%08x\n",   prefix, tla.a_data);
+  d("%s.a_valid   %d\n",       prefix, tla.a_valid);
+  //d("%s.a_ready   %d\n",       prefix, tla.a_ready);
+}
+
+void dump_tld(StringDumper& d, const char* prefix, tilelink_d tld) {
+  d("%s.d_opcode  %s\n",     prefix, tld_op_to_string(tld.d_opcode));
+  //d("%s.d_param   %d\n",     prefix, tld.d_param);
+  d("%s.d_size    %d\n",     prefix, tld.d_size);
+  //d("%s.d_source  %d\n",     prefix, tld.d_source);
+  //d("%s.d_sink    %d\n",     prefix, tld.d_sink);
+  d("%s.d_data    0x%08x\n", prefix, tld.d_data);
+  d("%s.d_error   %d\n",     prefix, tld.d_error);
+  d("%s.d_valid   %d\n",     prefix, tld.d_valid);
+  //d("%s.d_ready   %d\n",     prefix, tld.d_ready);
+}
+
+//------------------------------------------------------------------------------
+
 void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   sim_thread->pause();
 
@@ -198,11 +239,12 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   auto thread_c_col = pinwheel.core.C_pc ? thread_c + 2 : 0;
   auto thread_d_col = pinwheel.core.D_pc ? thread_d + 2 : 0;
 
+  int cursor_x = 32;
   int cursor_y = 32;
 
   {
     d.s.push_back(1);
-    d("debug_reg     0x%08x\n", pinwheel.debug_reg.get());
+    d("debug_reg     0x%08x\n", pinwheel.debug_reg.get_tld().d_data);
     d("ticks         %lld\n",   pinwheel.core.ticks);
     d("tick rate     %f\n",     double(sim_thread->sim_steps) / sim_thread->sim_time);
     d("states        %d\n",     pinwheel_sim->states.state_count());
@@ -216,13 +258,6 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
     }
   }
 
-  {
-    d("bus op   %s\n",     tilelink_op_to_string(pinwheel.bus_tla.a_opcode));
-    d("bus addr 0x%08x\n", pinwheel.bus_tla.a_address);
-    d("bus data 0x%08x\n", pinwheel.bus_tla.a_data);
-    d("bus mask 0x%08x\n", pinwheel.bus_tla.a_mask);
-    d("\n");
-  }
 
   {
     d.s.push_back(1);
@@ -274,8 +309,45 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
     d("\n");
   }
 
-  text_painter.render_string(view, screen_size, d.s, 32, cursor_y);
-  cursor_y += 480;
+  text_painter.render_string(view, screen_size, d.s, cursor_x, cursor_y);
+
+
+  cursor_x += 256;
+  d.clear();
+  d.s.push_back(1);
+  dump_tla(d, "code_bus", pinwheel.core.code_tla);
+  d("\n");
+  dump_tld(d, "code_bus", pinwheel.code_ram.get_tld());
+  d("\n");
+
+  dump_tla(d, "data_bus", pinwheel.core.data_tla);
+  d("\n");
+  dump_tld(d, "data_bus", pinwheel.get_data_tld());
+  d("\n");
+
+  text_painter.render_string(view, screen_size, d.s, cursor_x, cursor_y);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  cursor_x = 32;
+  cursor_y += 512;
   d.clear();
 
   for (int thread = 0; thread < 4; thread++) {
@@ -294,7 +366,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
     d("r06 %08X  r14 %08X  r22 %08X  r30 %08X\n", r.get(c +  6), r.get(c + 14), r.get(c + 22), r.get(c + 30));
     d("r07 %08X  r15 %08X  r23 %08X  r31 %08X\n", r.get(c +  7), r.get(c + 15), r.get(c + 23), r.get(c + 31));
 
-    text_painter.render_string(view, screen_size, d.s, 32, cursor_y);
+    text_painter.render_string(view, screen_size, d.s, cursor_x, cursor_y);
 
     logic<24> thread_pc = b24(thread_pcs[thread]);
     d.clear();
@@ -315,7 +387,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
       d("\n");
     }
 
-    text_painter.render_string(view, screen_size, d.s, 32 + 256 + 96, cursor_y);
+    text_painter.render_string(view, screen_size, d.s, cursor_x + 256 + 96, cursor_y);
 
     cursor_y += 128;
     d.clear();
@@ -323,21 +395,24 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
 
   code_painter.highlight_x = ((b24(pinwheel.core.B_pc) & 0xFFFF) >> 2) % 16;
   code_painter.highlight_y = ((b24(pinwheel.core.B_pc) & 0xFFFF) >> 2) / 16;
+  text_painter.render_string(view, screen_size, "First 4K of code RAM", 1024, 1024 - 128 - 32 - 12);
   code_painter.dump(view, screen_size, 1024, 1024 - 128 - 32, 0.25, 0.25, 64, 64, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.code_ram.get_data());
 
   uint8_t* data_base = (uint8_t*)pinwheel.data_ram.get_data();
+  uint8_t* data_end  = data_base + pinwheel.data_ram.get_size();
 
   text_painter.render_string(view, screen_size, "First 2K of RAM", 1024, 32 - 12);
   data_painter.dump(view, screen_size, 1024, 32,  1, 1, 64, 32, vec4(0.0, 0.0, 0.0, 0.4), data_base);
 
   text_painter.render_string(view, screen_size, "Last 2K of RAM", 1024, 256 + 128 + 64 - 12);
-  data_painter.dump(view, screen_size, 1024, 256 + 128 + 64, 1, 1, 64, 32, vec4(0.0, 0.0, 0.0, 0.4), data_base + 65536 - (64*32));
+  data_painter.dump(view, screen_size, 1024, 256 + 128 + 64, 1, 1, 64, 32, vec4(0.0, 0.0, 0.0, 0.4), data_end - (64*32));
 
   console_painter.dump(view, screen_size, 32*19,  32, 1, 1, pinwheel_tb.console1.width, pinwheel_tb.console1.height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel_tb.console1.buf);
   console_painter.dump(view, screen_size, 32*19, 256, 1, 1, pinwheel_tb.console2.width, pinwheel_tb.console2.height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel_tb.console2.buf);
   console_painter.dump(view, screen_size, 32*19, 480, 1, 1, pinwheel_tb.console3.width, pinwheel_tb.console3.height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel_tb.console3.buf);
   console_painter.dump(view, screen_size, 32*19, 704, 1, 1, pinwheel_tb.console4.width, pinwheel_tb.console4.height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel_tb.console4.buf);
 
+  text_painter.render_string(view, screen_size, "UART", 1024 + 256, 704 + 128 + 32 - 12);
   console_painter.dump(view, screen_size, 1024 + 256, 704 + 128 + 32, 1, 1, pinwheel_tb.console5.width, pinwheel_tb.console5.height, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel_tb.console5.buf);
 
   sim_thread->resume();

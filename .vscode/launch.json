@@ -18,7 +18,7 @@
     },
     {
       "name": "pinwheel_app",
-      "preLaunchTask": "build_all",
+      "preLaunchTask": "build_pinwheel_app",
       "type": "cppdbg",
       "request": "launch",
       "program": "${workspaceFolder}/bin/pinwheel_app",

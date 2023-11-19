@@ -36,17 +36,7 @@ public:
     D_insn = 0;
     ticks = 0;
 
-    bus_tla.a_opcode  = b3(DONTCARE);
-    bus_tla.a_param   = b3(DONTCARE);
-    bus_tla.a_size    = b3(DONTCARE);
-    bus_tla.a_source  = b1(DONTCARE);
-    bus_tla.a_address = b32(DONTCARE);
-    bus_tla.a_mask    = b4(DONTCARE);
-    bus_tla.a_data    = b32(DONTCARE);
-    bus_tla.a_valid   = b1(DONTCARE);
-    bus_tla.a_ready   = b1(DONTCARE);
-
-    code_tla.a_opcode  = b3(DONTCARE);
+    code_tla.a_opcode  = TL::Invalid;
     code_tla.a_param   = b3(DONTCARE);
     code_tla.a_size    = b3(DONTCARE);
     code_tla.a_source  = b1(DONTCARE);
@@ -55,6 +45,16 @@ public:
     code_tla.a_data    = b32(DONTCARE);
     code_tla.a_valid   = b1(DONTCARE);
     code_tla.a_ready   = b1(DONTCARE);
+
+    data_tla.a_opcode  = TL::Invalid;
+    data_tla.a_param   = b3(DONTCARE);
+    data_tla.a_size    = b3(DONTCARE);
+    data_tla.a_source  = b1(DONTCARE);
+    data_tla.a_address = b32(DONTCARE);
+    data_tla.a_mask    = b4(DONTCARE);
+    data_tla.a_data    = b32(DONTCARE);
+    data_tla.a_valid   = b1(DONTCARE);
+    data_tla.a_ready   = b1(DONTCARE);
   }
 
   /* metron_noconvert */ logic<32> dbg_decode_imm(logic<32> insn) const { return decode_imm(insn); }
@@ -62,43 +62,54 @@ public:
   //----------------------------------------
 
   // FIXME yosys does not like this as a local variable
-private:
-  tilelink_a bus_tla;
-public:
+  tilelink_a data_tla;
+  tilelink_a code_tla;
+  regfile_if reg_if;
 
-  tilelink_a tock_data_bus(logic<1> reset_in, logic<32> reg_rdata1, logic<32> reg_rdata2) {
+  void tock_data_bus(logic<1> reset_in, logic<32> reg_rdata1, logic<32> reg_rdata2) {
 
-    //----------
-    // Decode instruction B
+    if (reset_in) {
+      data_tla.a_opcode  = TL::Invalid;
+      data_tla.a_param   = b3(DONTCARE);
+      data_tla.a_size    = b3(DONTCARE);
+      data_tla.a_source  = b1(DONTCARE);
+      data_tla.a_address = b32(DONTCARE);
+      data_tla.a_mask    = b4(DONTCARE);
+      data_tla.a_data    = b32(DONTCARE);
+      data_tla.a_valid   = b1(DONTCARE);
+      data_tla.a_ready   = b1(DONTCARE);
+    }
+    else {
+      //----------
+      // Decode instruction B
 
-    logic<32> B_reg1 = B_insn2.r.rs1 ? reg_rdata1 : b32(0);
-    logic<32> B_reg2 = B_insn2.r.rs2 ? reg_rdata2 : b32(0);
-    logic<32> B_imm  = decode_imm(B_insn);
-    logic<32> B_addr = b32(B_reg1 + B_imm);
+      logic<32> B_reg1 = B_insn2.r.rs1 ? reg_rdata1 : b32(0);
+      logic<32> B_reg2 = B_insn2.r.rs2 ? reg_rdata2 : b32(0);
+      logic<32> B_imm  = decode_imm(B_insn);
+      logic<32> B_addr = b32(B_reg1 + B_imm);
 
-    //----------
-    // Data bus read/write
+      //----------
+      // Data bus read/write
 
-    logic<3>  bus_size = b3(DONTCARE);
-    logic<4>  mask_b   = 0;
+      logic<3>  bus_size = b3(DONTCARE);
+      logic<4>  mask_b   = 0;
 
-    if (B_insn2.r.f3 == 0)    { mask_b = 0b0001; bus_size = 0; }
-    if (B_insn2.r.f3 == 1)    { mask_b = 0b0011; bus_size = 1; }
-    if (B_insn2.r.f3 == 2)    { mask_b = 0b1111; bus_size = 2; }
-    if (B_addr[0]) mask_b = mask_b << 1;
-    if (B_addr[1]) mask_b = mask_b << 2;
+      if (B_insn2.r.f3 == 0)    { mask_b = 0b0001; bus_size = 0; }
+      if (B_insn2.r.f3 == 1)    { mask_b = 0b0011; bus_size = 1; }
+      if (B_insn2.r.f3 == 2)    { mask_b = 0b1111; bus_size = 2; }
+      if (B_addr[0]) mask_b = mask_b << 1;
+      if (B_addr[1]) mask_b = mask_b << 2;
 
-    bus_tla.a_address = B_addr;
-    bus_tla.a_data    = B_reg2;
-    bus_tla.a_mask    = mask_b;
-    bus_tla.a_opcode  = (B_insn2.r.op == RV32I::OP2_STORE) ? (bus_size == 2 ? TL::PutFullData : TL::PutPartialData) : TL::Get;
-    bus_tla.a_param   = b3(DONTCARE);
-    bus_tla.a_size    = bus_size;
-    bus_tla.a_source  = b1(DONTCARE);
-    bus_tla.a_valid   = (B_insn2.r.op == RV32I::OP2_LOAD) || (B_insn2.r.op == RV32I::OP2_STORE);
-    bus_tla.a_ready   = 1;
-
-    return bus_tla;
+      data_tla.a_address = B_addr;
+      data_tla.a_data    = B_reg2;
+      data_tla.a_mask    = mask_b;
+      data_tla.a_opcode  = (B_insn2.r.op == RV32I::OP2_STORE) ? (bus_size == 2 ? TL::PutFullData : TL::PutPartialData) : TL::Get;
+      data_tla.a_param   = b3(DONTCARE);
+      data_tla.a_size    = bus_size;
+      data_tla.a_source  = b1(DONTCARE);
+      data_tla.a_valid   = (B_insn2.r.op == RV32I::OP2_LOAD) || (B_insn2.r.op == RV32I::OP2_STORE);
+      data_tla.a_ready   = 1;
+    }
   }
 
   //----------------------------------------
@@ -135,7 +146,7 @@ public:
 
   //----------------------------------------
 
-  void tock(logic<1> reset_in, tilelink_d code_tld, tilelink_d bus_tld, logic<32> reg1, logic<32> reg2) {
+  void tock(logic<1> reset_in, tilelink_d code_tld, tilelink_d data_tld, logic<32> reg1, logic<32> reg2) {
 
     //----------
     // Decode instruction A
@@ -174,6 +185,10 @@ public:
 
     logic<32> A_pc_next = next_pc(reg1, reg2);
 
+    if (reset_in) {
+      A_pc_next = 0x00400000;
+    }
+
     //----------
     // PC hackery to swap threads
 
@@ -201,7 +216,17 @@ public:
     //----------
     // Code bus read/write
 
-    {
+    if (reset_in) {
+      code_tla.a_address = b24(A_pc_next);
+      code_tla.a_data    = b32(DONTCARE);
+      code_tla.a_mask    = 0b1111;
+      code_tla.a_opcode  = TL::Get;
+      code_tla.a_param   = b3(DONTCARE);
+      code_tla.a_size    = 2;
+      code_tla.a_source  = b1(DONTCARE);
+      code_tla.a_valid   = 1;
+      code_tla.a_ready   = 1;
+    } else {
       // We can write code memory in phase C if the other thread is idle.
       logic<4> C_bus_tag = b4(C_addr, 28);
       logic<1> C_code_cs = C_bus_tag == 0x0 && b24(A_pc_next) == 0;
@@ -224,7 +249,7 @@ public:
       code_tla.a_ready   = 1;
     }
 
-    register_interface(bus_tld, reg1, reg2, D_result);
+    register_interface(data_tld, reg1, reg2, D_result);
 
     //----------
     // Writeback to core regs
@@ -241,7 +266,7 @@ public:
   //----------------------------------------
 
   /* metron_internal */
-  void register_interface(tilelink_d bus_tld, logic<32> reg1, logic<32> reg2, logic<32> D_result) {
+  void register_interface(tilelink_d data_tld, logic<32> reg1, logic<32> reg2, logic<32> D_result) {
 
     //----------
     // Decode instruction A
@@ -298,7 +323,7 @@ public:
     if (C_op == RV32I::OP_LOAD) {
       // The result of the last memory read comes from either the data bus,
       // or the regfile if we read from the memory-mapped regfile last tock.
-      logic<32> C_mem = C_regfile_cs ? reg1 : bus_tld.d_data;
+      logic<32> C_mem = C_regfile_cs ? reg1 : data_tld.d_data;
 
       if (D_result[0]) C_mem = C_mem >> 8;
       if (D_result[1]) C_mem = C_mem >> 16;
@@ -347,9 +372,6 @@ public:
 
   //----------------------------------------
 
-  tilelink_a code_tla;
-  regfile_if reg_if;
-
 private:
 
   //----------------------------------------
@@ -366,7 +388,7 @@ private:
     logic<32> B_addr = b32(B_reg1 + B_imm);
 
     if (reset_in) {
-      A_pc     = 0x00400000;
+      A_pc     = 0;
 
       B_pc     = 0;
       B_insn   = 0;
