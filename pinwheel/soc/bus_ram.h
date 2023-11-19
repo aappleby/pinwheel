@@ -10,6 +10,8 @@
 
 // FIXME we are intentionally ignoring the tilelink 'ready' signals
 
+// FIXME sb and sh tests in pinwheel_test are broken
+
 //------------------------------------------------------------------------------
 
 template <uint32_t addr_mask = 0xF0000000, uint32_t addr_tag = 0x00000000, int dwords = 256>
