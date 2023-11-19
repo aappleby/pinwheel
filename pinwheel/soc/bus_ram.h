@@ -12,9 +12,11 @@
 
 //------------------------------------------------------------------------------
 
-template <uint32_t addr_mask = 0xF0000000, uint32_t addr_tag = 0x00000000>
+template <uint32_t addr_mask = 0xF0000000, uint32_t addr_tag = 0x00000000, int dwords = 256>
 class bus_ram {
 public:
+
+  static const int addr_bits = clog2(dwords);
 
   bus_ram(const char* filename = nullptr) : ram(filename) {
     tld.d_opcode = TL::Invalid;
@@ -42,7 +44,7 @@ public:
     logic<1> cs   = tla.a_valid && ((tla.a_address & addr_mask) == addr_tag);
     logic<1> wren = (tla.a_opcode == TL::PutFullData) || (tla.a_opcode == TL::PutPartialData);
 
-    ram.tock(cs, b11(tla.a_address, 2), tla.a_data, wren, tla.a_mask);
+    ram.tock(cs, bx<addr_bits>(tla.a_address, 2), tla.a_data, wren, tla.a_mask);
 
     tick(cs, tla);
   }
@@ -89,9 +91,7 @@ public:
 private:
 
   tilelink_d tld;
-
-  // 2048 dwords, 8k bytes
-  block_ram<2048> ram;
+  block_ram<dwords> ram;
 };
 
 //------------------------------------------------------------------------------

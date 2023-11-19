@@ -41,42 +41,6 @@ namespace RV32I {
   static const int OP2_CUSTOM3 = 0b1111011;
   static const int OP2_80B     = 0b1111111;
 
-  static const int OP_LOAD    = 0b00000;
-  static const int OP_LOADFP  = 0b00001;
-  static const int OP_CUSTOM0 = 0b00010;
-  static const int OP_MISCMEM = 0b00011;
-  static const int OP_OPIMM   = 0b00100;
-  static const int OP_AUIPC   = 0b00101;
-  static const int OP_OPIMM32 = 0b00110;
-  static const int OP_48B1    = 0b00111;
-
-  static const int OP_STORE   = 0b01000;
-  static const int OP_STOREFP = 0b01001;
-  static const int OP_CUSTOM1 = 0b01010;
-  static const int OP_AMO     = 0b01011;
-  static const int OP_OP      = 0b01100;
-  static const int OP_LUI     = 0b01101;
-  static const int OP_OP32    = 0b01110;
-  static const int OP_64B     = 0b01111;
-
-  static const int OP_MADD    = 0b10000;
-  static const int OP_MSUB    = 0b10001;
-  static const int OP_NMSUB   = 0b10010;
-  static const int OP_NMADD   = 0b10011;
-  static const int OP_OPFP    = 0b10100;
-  static const int OP_RES1    = 0b10101;
-  static const int OP_CUSTOM2 = 0b10110;
-  static const int OP_48B2    = 0b10111;
-
-  static const int OP_BRANCH  = 0b11000;
-  static const int OP_JALR    = 0b11001;
-  static const int OP_RES2    = 0b11010;
-  static const int OP_JAL     = 0b11011;
-  static const int OP_SYSTEM  = 0b11100;
-  static const int OP_RES3    = 0b11101;
-  static const int OP_CUSTOM3 = 0b11110;
-  static const int OP_80B     = 0b11111;
-
   static const int F3_BEQ     = 0b000;
   static const int F3_BNE     = 0b001;
   static const int F3_BLT     = 0b100;
@@ -137,6 +101,7 @@ struct rv32_itype {
   uint32_t imm_11_0 : 12;
 };
 
+
 struct rv32_stype {
   uint32_t op : 7;
   uint32_t imm_4_0 : 5;
@@ -181,6 +146,8 @@ union rv32_insn {
   rv32_utype u;
   rv32_jtype j;
 };
+
+static_assert(sizeof(rv32_insn) == 4);
 
 // verilator lint_on unusedparam
 #endif

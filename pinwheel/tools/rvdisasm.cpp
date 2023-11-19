@@ -17,8 +17,7 @@ void print_rv(Dumper& d, uint32_t op_u32) {
     return;
   }
 
-  uint32_t opcode = b5(op, 2);
-
+  uint32_t opcode = b7(op);
   auto rd  = b5(op, 7);
   auto rs1 = b5(op, 15);
   auto rs2 = b5(op, 20);
@@ -39,7 +38,7 @@ void print_rv(Dumper& d, uint32_t op_u32) {
 
   switch (opcode) {
     // Load
-    case RV32I::OP_LOAD: {
+    case RV32I::OP2_LOAD: {
       switch(f3) {
       case 0: d("LB    "); break;
       case 1: d("LH    "); break;
@@ -55,7 +54,7 @@ void print_rv(Dumper& d, uint32_t op_u32) {
     }
 
     // Store
-    case RV32I::OP_STORE: {
+    case RV32I::OP2_STORE: {
       switch(f3) {
       case 0: d("SB    "); break;
       case 1: d("SH    "); break;
@@ -71,7 +70,7 @@ void print_rv(Dumper& d, uint32_t op_u32) {
     }
 
     // ALU
-    case RV32I::OP_OP: {
+    case RV32I::OP2_OP: {
       switch(f3) {
       case 0: b1(op,30) ? d("SUB   ") : d("ADD   "); break;
       case 1: d("SLL   "); break;
@@ -87,7 +86,7 @@ void print_rv(Dumper& d, uint32_t op_u32) {
     }
 
     // ALUI
-    case RV32I::OP_OPIMM: {
+    case RV32I::OP2_OPIMM: {
       switch(f3) {
       case 0: d("ADDI  "); break;
       case 1: d("SLLI  "); break;
@@ -103,7 +102,7 @@ void print_rv(Dumper& d, uint32_t op_u32) {
     }
 
     // Branch
-    case RV32I::OP_BRANCH: {
+    case RV32I::OP2_BRANCH: {
       switch(f3) {
       case 0: d("BEQ   "); break;
       case 1: d("BNE   "); break;
@@ -119,30 +118,30 @@ void print_rv(Dumper& d, uint32_t op_u32) {
     }
 
     // Add upper immediate to PC
-    case RV32I::OP_AUIPC: {
+    case RV32I::OP2_AUIPC: {
       d("AUIPC r%02d, 0x%08x", rd, imm_u);
       break;
     }
 
     // Load upper immediate
-    case RV32I::OP_LUI: {
+    case RV32I::OP2_LUI: {
       d("LUI   r%02d, %d", b5(op, 7), b20(op, 12));
       break;
     }
 
     // Jump relative to register and link
-    case RV32I::OP_JALR: {
+    case RV32I::OP2_JALR: {
       d("JALR  r%02d, [r%02d%c%d]", rd,  rs1, imm_i < 0 ? '-' : '+', imm_i_abs);
       break;
     }
 
     // Jump absolute and link
-    case RV32I::OP_JAL: {
+    case RV32I::OP2_JAL: {
       d("JAL   r%02d, [%c%d]", rd, imm_j < 0 ? '-' : '+', imm_j_abs);
       break;
     }
 
-    case RV32I::OP_SYSTEM: {
+    case RV32I::OP2_SYSTEM: {
       switch(f3) {
       case 0: d("???   "); break;
       case 1: d("CSRRW "); break;
@@ -157,7 +156,7 @@ void print_rv(Dumper& d, uint32_t op_u32) {
       break;
     }
 
-    case RV32I::OP_CUSTOM0: {
+    case RV32I::OP2_CUSTOM0: {
       d("CUSTOM! rd=%d rs1 = %d rs2 = %d", rd, rs1, rs2);
       break;
     }

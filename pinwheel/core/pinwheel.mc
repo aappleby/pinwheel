@@ -101,7 +101,7 @@ unpack(insn, addr, data) {
 //--------------------------------------------------------------------------------
 
 alu(insn : b32, pc : b32, reg_a : b32, reg_b : b32) {
-  op  = b5(insn, 2);
+  op  = b7(insn);
   f3  = b3(insn, 12);
   alt = b1(insn, 30);
 
@@ -143,7 +143,7 @@ alu(insn : b32, pc : b32, reg_a : b32, reg_b : b32) {
 pc_gen(pc : b32, insn : b32, active : b1, reg_a : b32, reg_b : b32) {
   if (!active) return pc;
 
-  op  = b5(insn, 2);
+  op  = b7(insn);
   eq  = reg_a == reg_b;
   slt = signed(reg_a) < signed(reg_b);
   ult = reg_a < reg_b;
@@ -176,7 +176,7 @@ pc_gen(pc : b32, insn : b32, active : b1, reg_a : b32, reg_b : b32) {
 //--------------------------------------------------------------------------------
 
 addr_gen(insn : b32, reg_a : b32) -> b32 {
-  op    = b5(insn, 2);
+  op    = b7(insn);
   imm_i = sign_extend<32>(b12(insn, 20));
   imm_s = dup<21>(insn[31]) :: b6(insn, 25) :: b5(insn, 7);
   addr  = reg_a + ((op == OP_STORE) ? imm_s : imm_i);
@@ -186,7 +186,7 @@ addr_gen(insn : b32, reg_a : b32) -> b32 {
 //--------------------------------------------------------------------------------
 
 mask_gen(insn : b32, reg_a : b32) -> l4 {
-  op    = b5(insn, 2);
+  op    = b7(insn);
   imm_i = sign_extend<32>(b12(insn, 20));
   imm_s = dup<21>(insn[31]) :: b6(insn, 25) :: b5(insn, 7);
   addr  = reg_a + ((op == OP_STORE) ? imm_s : imm_i);
@@ -232,7 +232,7 @@ tick(reset_in : b1) {
     reg_a = b5(insn, 15) ? regs.out_a : b32(0); // Mask out r0 if we read it from the regfile.
     reg_b = b5(insn, 20) ? regs.out_b : b32(0); // Mask out r0 if we read it from the regfile.
 
-    op   = b5(insn, 2);
+    op   = b7(insn);
     addr = addr_gen(insn, reg_a);
     mask = mask_gen(insn, reg_a);
 
@@ -283,7 +283,7 @@ tick(reset_in : b1) {
   }
 
   with vane2 {
-    @op = b5(insn, 2);
+    @op = b7(insn);
 
     @reg_write = {
       addr: hart :: b5(insn, 7)

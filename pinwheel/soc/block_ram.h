@@ -8,11 +8,11 @@
 
 //------------------------------------------------------------------------------
 
-template<int depth>
+template<int dwords>
 class block_ram {
 public:
 
-  static const int addr_bits = clog2(depth);
+  static const int addr_bits = clog2(dwords);
 
   block_ram(const char* filename = nullptr) {
     if (filename) {
@@ -46,7 +46,7 @@ private:
     }
   }
 
-  logic<32> ram[depth];
+  logic<32> ram[dwords];
 };
 
 //------------------------------------------------------------------------------

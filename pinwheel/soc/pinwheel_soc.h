@@ -17,6 +17,7 @@
 // verilator lint_off unusedsignal
 // verilator lint_off undriven
 
+template<int code_dwords = 1024, int data_dwords = 1024>
 class pinwheel_soc {
 public:
 
@@ -60,7 +61,7 @@ public:
     tilelink_d code_tld = code_ram.get_tld();
     tilelink_d data_tld = get_data_tld();
 
-    core.tock_data_bus(reset_in, regs.get_rs1(), regs.get_rs2());
+    core.tock_data_bus(regs.get_rs1(), regs.get_rs2());
     core.tock(reset_in, code_tld, data_tld, regs.get_rs1(), regs.get_rs2());
 
     uart0_rx.tock(reset_in, uart0_tx.get_serial(), core.data_tla);
@@ -85,8 +86,8 @@ public:
   /* metron_internal */ pinwheel_core core;
   /* metron_internal */ regfile       regs;
 
-  /* metron_internal */ bus_ram   <0xF000'0000, 0x0000'0000> code_ram;  // Code  at 0x0xxx'xxxx
-  /* metron_internal */ bus_ram   <0xF000'0000, 0x8000'0000> data_ram;  // Data  at 0x8xxx'xxxx
+  /* metron_internal */ bus_ram   <0xF000'0000, 0x0000'0000, code_dwords> code_ram;  // Code  at 0x0xxx'xxxx
+  /* metron_internal */ bus_ram   <0xF000'0000, 0x8000'0000, data_dwords> data_ram;  // Data  at 0x8xxx'xxxx
   /* metron_internal */ test_reg  <0xF000'0000, 0xF000'0000> debug_reg; // Debug at 0xFxxx'xxxx
   /* metron_internal */ uart_tx   <0xFFFF'0000, 0xB000'0000> uart0_tx;  // Uart TX  0xB000'xxxx
   /* metron_internal */ uart_rx   <0xFFFF'0000, 0xB001'0000> uart0_rx;  // Uart RX  0xB001'xxxx

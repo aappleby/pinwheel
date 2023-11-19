@@ -29,7 +29,7 @@ struct PinwheelTB {
 
   size_t size_bytes() { return sizeof(*this); }
 
-  pinwheel_soc soc;
+  pinwheel_soc<> soc;
   Console console1;
   Console console2;
   Console console3;
