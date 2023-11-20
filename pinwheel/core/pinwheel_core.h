@@ -438,17 +438,11 @@ private:
 
   //----------------------------------------
 
-  logic<32> next_pc(logic<32> reg1, logic<32> reg2) const {
+  logic<32> next_pc(logic<32> B_reg1, logic<32> B_reg2) const {
 
     logic<32> pc = 0;
 
     if (b24(B_pc)) {
-      logic<7>  B_op   = B_insn.r.op;
-      logic<3>  B_f3   = B_insn.r.f3;
-      logic<5>  B_rs1  = B_insn.r.rs1;
-      logic<5>  B_rs2  = B_insn.r.rs2;
-      logic<32> B_reg1 = B_rs1 ? reg1 : b32(0);
-      logic<32> B_reg2 = B_rs2 ? reg2 : b32(0);
       logic<32> B_imm  = decode_imm2(B_insn);
       logic<32> B_addr = b32(B_reg1 + B_imm);
 
@@ -457,7 +451,7 @@ private:
       logic<1> ult = B_reg1 < B_reg2;
       logic<1> take_branch = 0;
 
-      switch (B_f3) {
+      switch (B_insn.r.f3) {
         case 0:  take_branch =   eq; break;
         case 1:  take_branch =  !eq; break;
         case 2:  take_branch =   eq; break;
@@ -469,7 +463,7 @@ private:
         default: take_branch =    0; break;
       }
 
-      switch(B_op) {
+      switch(B_insn.r.op) {
         case RV32I::OP2_BRANCH: pc = take_branch ? B_pc + B_imm : B_pc + 4; break;
         case RV32I::OP2_JAL:    pc = B_pc + B_imm; break;
         case RV32I::OP2_JALR:   pc = B_addr; break;
