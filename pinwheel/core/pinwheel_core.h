@@ -26,10 +26,8 @@ public:
 
   pinwheel_core() {
     A_pc = 0;
-    //A_insn = 0; // signal
     A_insn.raw = 0;
     B_pc = 0;
-    //B_insn = 0;
     B_insn.raw = 0;
     C_pc = 0;
     C_insn.raw = 0;
@@ -69,13 +67,38 @@ public:
   tilelink_a code_tla;
   regfile_if reg_if;
 
-  void tock_data_bus(logic<32> reg_rdata1, logic<32> reg_rdata2) {
+  tilelink_a gen_bus(rv32_insn insn, logic<32> addr, logic<32> reg2) {
+    tilelink_a tla;
+
+    logic<3>  bus_size = b3(DONTCARE);
+    logic<4>  mask_b   = 0;
+
+    if (insn.r.f3 == 0) { mask_b = 0b0001; bus_size = 0; }
+    if (insn.r.f3 == 1) { mask_b = 0b0011; bus_size = 1; }
+    if (insn.r.f3 == 2) { mask_b = 0b1111; bus_size = 2; }
+    if (addr[0]) mask_b = mask_b << 1;
+    if (addr[1]) mask_b = mask_b << 2;
+
+    tla.a_address = addr;
+    tla.a_data    = (reg2 << ((addr & 3) * 8));
+    tla.a_mask    = mask_b;
+    tla.a_opcode  = (insn.r.op == RV32I::OP2_STORE) ? (bus_size == 2 ? TL::PutFullData : TL::PutPartialData) : TL::Get;
+    tla.a_param   = b3(DONTCARE);
+    tla.a_size    = bus_size;
+    tla.a_source  = b1(DONTCARE);
+    tla.a_valid   = (B_insn.r.op == RV32I::OP2_LOAD) || (B_insn.r.op == RV32I::OP2_STORE);
+    tla.a_ready   = 1;
+
+    return tla;
+  }
+
+  void tock_data_bus(logic<32> reg1, logic<32> reg2) {
 
     //----------
     // Decode instruction B
 
-    logic<32> B_reg1 = B_insn.r.rs1 ? reg_rdata1 : b32(0);
-    logic<32> B_reg2 = B_insn.r.rs2 ? reg_rdata2 : b32(0);
+    logic<32> B_reg1 = B_insn.r.rs1 ? reg1 : b32(0);
+    logic<32> B_reg2 = B_insn.r.rs2 ? reg2 : b32(0);
     logic<32> B_imm  = decode_imm2(B_insn);
     logic<32> B_addr = b32(B_reg1 + B_imm);
 
@@ -85,9 +108,9 @@ public:
     logic<3>  bus_size = b3(DONTCARE);
     logic<4>  mask_b   = 0;
 
-    if (B_insn.r.f3 == 0)    { mask_b = 0b0001; bus_size = 0; }
-    if (B_insn.r.f3 == 1)    { mask_b = 0b0011; bus_size = 1; }
-    if (B_insn.r.f3 == 2)    { mask_b = 0b1111; bus_size = 2; }
+    if (B_insn.r.f3 == 0) { mask_b = 0b0001; bus_size = 0; }
+    if (B_insn.r.f3 == 1) { mask_b = 0b0011; bus_size = 1; }
+    if (B_insn.r.f3 == 2) { mask_b = 0b1111; bus_size = 2; }
     if (B_addr[0]) mask_b = mask_b << 1;
     if (B_addr[1]) mask_b = mask_b << 2;
 
@@ -105,15 +128,11 @@ public:
   //----------------------------------------
 
   /* metron_internal */
-  logic<32> execute(logic<32> B_reg1, logic<32> B_reg2) const {
+  logic<32> execute(logic<32> B_reg1, logic<32> B_reg2, logic<32> B_imm, logic<32> B_addr) const {
     logic<32> result = 0;
-
-    logic<32> B_imm  = decode_imm2(B_insn);
-    logic<32> B_addr = b32(B_reg1 + B_imm);
-
     switch(B_insn.r.op) {
-      case RV32I::OP2_OPIMM:  result = execute_alu   (B_insn, B_reg1, B_reg2); break;
-      case RV32I::OP2_OP:     result = execute_alu   (B_insn, B_reg1, B_reg2); break;
+      case RV32I::OP2_OPIMM:  result = execute_alu   (B_insn, B_reg1, B_reg2, B_imm); break;
+      case RV32I::OP2_OP:     result = execute_alu   (B_insn, B_reg1, B_reg2, B_imm); break;
       case RV32I::OP2_SYSTEM: result = execute_system(B_insn, B_reg1, B_reg2); break;
       case RV32I::OP2_BRANCH: result = b32(DONTCARE); break;
       case RV32I::OP2_JAL:    result = B_pc + 4;      break;
@@ -124,7 +143,6 @@ public:
       case RV32I::OP2_STORE:  result = B_reg2;        break;
       default:                result = b32(DONTCARE); break;
     }
-
     return result;
   }
 
@@ -135,7 +153,6 @@ public:
     //----------
     // Decode instruction A
 
-    //A_insn = b24(A_pc) ? code_tld.d_data : b32(0);
     A_insn.raw = b24(A_pc) ? code_tld.d_data : b32(0);
 
     //----------
@@ -147,21 +164,14 @@ public:
     logic<32> B_addr = b32(B_reg1 + B_imm);
 
     //----------
-    // Decode instruction C
-
-    logic<7>  C_op = C_insn.r.op;
-    logic<5>  C_rd = C_insn.r.rd;
-    logic<3>  C_f3 = C_insn.r.f3;
-
-    //----------
     // Execute
 
-    logic<32> B_result = execute(B_reg1, B_reg2);
+    logic<32> B_result = execute(B_reg1, B_reg2, B_imm, B_addr);
 
     //----------
     // Next instruction selection
 
-    logic<32> A_pc_next = next_pc(reg1, reg2);
+    logic<32> A_pc_next = next_pc(B_reg1, B_reg2, B_imm, B_addr);
 
     //----------
     // PC hackery to swap threads
@@ -172,16 +182,14 @@ public:
 
     // If we write to CSR 0x800, we swap the secondary thread's PC with the
     // register value.
-    logic<12> C_csr = C_insn.c.csr;
-    if (C_op == RV32I::OP2_SYSTEM && C_f3 == RV32I::F3_CSRRW && C_csr == 0x800) {
+    if (C_insn.r.op == RV32I::OP2_SYSTEM && C_insn.r.f3 == RV32I::F3_CSRRW && C_insn.c.csr == 0x800) {
       D_result = A_pc_next;
       A_pc_next = C_result;
     }
 
     // If we write to CSR 0x801, we swap the current thread's PC with the
     // register value.
-    logic<12> B_csr  = B_insn.c.csr;
-    if (B_insn.r.op == RV32I::OP2_SYSTEM && B_insn.r.f3 == RV32I::F3_CSRRW && B_csr == 0x801) {
+    if (B_insn.r.op == RV32I::OP2_SYSTEM && B_insn.r.f3 == RV32I::F3_CSRRW && B_insn.c.csr == 0x801) {
       logic<32> temp = B_result;
       B_result = A_pc_next;
       A_pc_next = temp;
@@ -196,21 +204,28 @@ public:
       logic<1> C_code_cs = C_bus_tag == 0x0 && b24(A_pc_next) == 0;
 
       logic<4> mask = 0;
-      if (C_f3 == 0) mask = 0b0001;
-      if (C_f3 == 1) mask = 0b0011;
-      if (C_f3 == 2) mask = 0b1111;
+      if (C_insn.r.f3 == 0) mask = 0b0001;
+      if (C_insn.r.f3 == 1) mask = 0b0011;
+      if (C_insn.r.f3 == 2) mask = 0b1111;
       if (C_addr[0]) mask = mask << 1;
       if (C_addr[1]) mask = mask << 2;
 
-      code_tla.a_address = C_code_cs ? b24(C_addr) : b24(A_pc_next);
+      code_tla.a_address = b24(A_pc_next);
       code_tla.a_data    = D_result;
       code_tla.a_mask    = mask;
-      code_tla.a_opcode  = (C_op == RV32I::OP2_STORE) && C_code_cs ? TL::PutFullData : TL::Get;
+      code_tla.a_opcode  = TL::Get;
       code_tla.a_param   = b3(DONTCARE);
       code_tla.a_size    = 2;
       code_tla.a_source  = b1(DONTCARE);
       code_tla.a_valid   = 1;
       code_tla.a_ready   = 1;
+
+      if (C_code_cs) {
+        code_tla.a_address = b24(C_addr);
+        code_tla.a_opcode  = (C_insn.r.op == RV32I::OP2_STORE) ? (C_insn.r.f3 == 2 ? TL::PutFullData : TL::PutPartialData) : TL::Get;
+        code_tla.a_size    = 2;
+      }
+
     }
 
     register_interface(data_tld, reg1, reg2, D_result);
@@ -218,7 +233,7 @@ public:
     //----------
     // Writeback to core regs
 
-    tick(reset_in, code_tld.d_data, reg1, A_pc_next, B_result);
+    tick(reset_in, code_tld.d_data, B_reg1, A_pc_next, B_result, B_reg1, B_addr);
 
     // FIXME - Verilator bug?
     //If I remove this, Verilator complains about bogus latches inferred
@@ -327,11 +342,10 @@ private:
             logic<32> code_tld_data,
             logic<32> reg_rdata1,
             logic<32> A_pc_next,
-            logic<32> B_result)
+            logic<32> B_result,
+            logic<32> B_reg1,
+            logic<32> B_addr)
   {
-    logic<32> B_reg1 = B_insn.r.rs1 ? reg_rdata1 : b32(0);
-    logic<32> B_addr = b32(B_reg1 + decode_imm2(B_insn));
-
     if (reset_in) {
       A_pc     = 0x00400000;
       B_pc     = 0;
@@ -361,7 +375,6 @@ private:
 
   logic<32> decode_imm2(rv32_insn insn2) const {
     logic<32> insn  = insn2.raw;
-    logic<7>  op    = b7(insn);
     logic<32> imm_i = sign_extend<32>(b12(insn, 20));
     logic<32> imm_s = cat(dup<21>(insn[31]), b6(insn, 25), b5(insn, 7));
     logic<32> imm_u = b20(insn, 12) << 12;
@@ -369,7 +382,7 @@ private:
     logic<32> imm_j = cat(dup<12>(insn[31]), b8(insn, 12), insn[20], b10(insn, 21), b1(0));
 
     logic<32> result;
-    switch(op) {
+    switch(insn2.r.op) {
       case RV32I::OP2_LOAD:   result = imm_i; break;
       case RV32I::OP2_OPIMM:  result = imm_i; break;
       case RV32I::OP2_AUIPC:  result = imm_u; break;
@@ -386,24 +399,20 @@ private:
 
   //----------------------------------------
 
-  logic<32> execute_alu(rv32_insn insn, logic<32> reg1, logic<32> reg2) const {
-    logic<7>  op  = insn.r.op;
-    logic<3>  f3  = insn.r.f3;
-    logic<7>  f7  = insn.r.f7;
-    logic<32> imm = decode_imm2(insn);
+  logic<32> execute_alu(rv32_insn insn, logic<32> reg1, logic<32> reg2, logic<32> imm) const {
 
     logic<32> alu1 = reg1;
-    logic<32> alu2 = op == RV32I::OP2_OPIMM ? imm : reg2;
-    if (op == RV32I::OP2_OP && f3 == 0 && f7 == 32) alu2 = -alu2;
+    logic<32> alu2 = insn.r.op == RV32I::OP2_OPIMM ? imm : reg2;
+    if (insn.r.op == RV32I::OP2_OP && insn.r.f3 == 0 && insn.r.f7 == 32) alu2 = -alu2;
 
     logic<32> result;
-    switch (f3) {
+    switch (insn.r.f3) {
       case 0:  result = alu1 + alu2; break;
       case 1:  result = alu1 << b5(alu2); break;
       case 2:  result = signed(alu1) < signed(alu2); break;
       case 3:  result = alu1 < alu2; break;
       case 4:  result = alu1 ^ alu2; break;
-      case 5:  result = f7 == 32 ? signed(alu1) >> b5(alu2) : alu1 >> b5(alu2); break;
+      case 5:  result = insn.r.f7 == 32 ? signed(alu1) >> b5(alu2) : alu1 >> b5(alu2); break;
       case 6:  result = alu1 | alu2; break;
       case 7:  result = alu1 & alu2; break;
       default: result = 0; break;
@@ -413,19 +422,17 @@ private:
 
   //----------------------------------------
 
-  logic<32> execute_system(rv32_insn insn, logic<32> reg1, logic<32> reg2) const {
-    logic<3>  f3  = insn.r.f3;
-    logic<12> csr = insn.c.csr;
+  logic<32> execute_system(rv32_insn insn, logic<32> B_reg1, logic<32> B_reg2) const {
 
     // FIXME need a good error if case is missing an expression
     logic<32> result = 0;
-    switch(f3) {
+    switch(insn.r.f3) {
       case RV32I::F3_CSRRW: {
-        result = reg1;
+        result = B_reg1;
         break;
       }
       case RV32I::F3_CSRRS: {
-        if (csr == 0xF14) result = b8(B_pc, 24);
+        if (insn.c.csr == 0xF14) result = b8(B_pc, 24);
         break;
       }
       case RV32I::F3_CSRRC:  result = 0; break;
@@ -438,14 +445,11 @@ private:
 
   //----------------------------------------
 
-  logic<32> next_pc(logic<32> B_reg1, logic<32> B_reg2) const {
+  logic<32> next_pc(logic<32> B_reg1, logic<32> B_reg2, logic<32> B_imm, logic<32> B_addr) const {
 
     logic<32> pc = 0;
 
     if (b24(B_pc)) {
-      logic<32> B_imm  = decode_imm2(B_insn);
-      logic<32> B_addr = b32(B_reg1 + B_imm);
-
       logic<1> eq  = B_reg1 == B_reg2;
       logic<1> slt = signed(B_reg1) < signed(B_reg2);
       logic<1> ult = B_reg1 < B_reg2;
