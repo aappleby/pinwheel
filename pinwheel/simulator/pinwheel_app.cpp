@@ -273,10 +273,10 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
     d("fetch\n");
     d.s.push_back(thread_b_col);
     d("pc   0x%08x\n", pinwheel.core.B_pc);
-    d("op   0x%08x ",  pinwheel.core.B_insn); print_rv(d, pinwheel.core.B_insn); d("\n");
+    d("op   0x%08x ",  pinwheel.core.B_insn2.raw); print_rv(d, pinwheel.core.B_insn2.raw); d("\n");
     d("r1   0x%08x\n", pinwheel.regs.get_rs1());
     d("r2   0x%08x\n", pinwheel.regs.get_rs2());
-    const auto imm_b  = pinwheel.core.dbg_decode_imm(pinwheel.core.B_insn);
+    const auto imm_b  = pinwheel.core.dbg_decode_imm(pinwheel.core.B_insn2.raw);
     const auto addr_b = b32(pinwheel.regs.get_rs1() + imm_b);
     d("addr 0x%08x\n", addr_b);
     d("\n");

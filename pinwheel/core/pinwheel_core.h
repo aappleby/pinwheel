@@ -29,7 +29,7 @@ public:
     //A_insn = 0; // signal
     A_insn2.raw = 0;
     B_pc = 0;
-    B_insn = 0;
+    //B_insn = 0;
     B_insn2.raw = 0;
     C_pc = 0;
     C_insn = 0;
@@ -76,7 +76,7 @@ public:
 
     logic<32> B_reg1 = B_insn2.r.rs1 ? reg_rdata1 : b32(0);
     logic<32> B_reg2 = B_insn2.r.rs2 ? reg_rdata2 : b32(0);
-    logic<32> B_imm  = decode_imm(B_insn);
+    logic<32> B_imm  = decode_imm2(B_insn2);
     logic<32> B_addr = b32(B_reg1 + B_imm);
 
     //----------
@@ -108,19 +108,18 @@ public:
   logic<32> execute(logic<32> reg1, logic<32> reg2) const {
     logic<32> result = 0;
 
-    logic<7>  B_op   = b7(B_insn);
-    logic<3>  B_f3   = b3(B_insn, 12);
-    logic<5>  B_rs1  = b5(B_insn, 15);
-    logic<5>  B_rs2  = b5(B_insn, 20);
+    logic<3>  B_f3   = B_insn2.r.f3;
+    logic<5>  B_rs1  = B_insn2.r.rs1;
+    logic<5>  B_rs2  = B_insn2.r.rs2;
     logic<32> B_reg1 = B_rs1 ? reg1 : b32(0);
     logic<32> B_reg2 = B_rs2 ? reg2 : b32(0);
-    logic<32> B_imm  = decode_imm(B_insn);
+    logic<32> B_imm  = decode_imm2(B_insn2);
     logic<32> B_addr = b32(B_reg1 + B_imm);
 
     switch(B_insn2.r.op) {
-      case RV32I::OP2_OPIMM:  result = execute_alu   (B_insn, B_reg1, B_reg2); break;
-      case RV32I::OP2_OP:     result = execute_alu   (B_insn, B_reg1, B_reg2); break;
-      case RV32I::OP2_SYSTEM: result = execute_system(B_insn, B_reg1, B_reg2); break;
+      case RV32I::OP2_OPIMM:  result = execute_alu   (B_insn2.raw, B_reg1, B_reg2); break;
+      case RV32I::OP2_OP:     result = execute_alu   (B_insn2.raw, B_reg1, B_reg2); break;
+      case RV32I::OP2_SYSTEM: result = execute_system(B_insn2.raw, B_reg1, B_reg2); break;
       case RV32I::OP2_BRANCH: result = b32(DONTCARE); break;
       case RV32I::OP2_JAL:    result = B_pc + 4;      break;
       case RV32I::OP2_JALR:   result = B_pc + 4;      break;
@@ -149,13 +148,13 @@ public:
     //----------
     // Decode instruction B
 
-    logic<7>  B_op   = b7(B_insn);
-    logic<3>  B_f3   = b3(B_insn, 12);
-    logic<5>  B_rs1  = b5(B_insn, 15);
-    logic<5>  B_rs2  = b5(B_insn, 20);
+    logic<7>  B_op   = B_insn2.r.op;
+    logic<3>  B_f3   = B_insn2.r.f3;
+    logic<5>  B_rs1  = B_insn2.r.rs1;
+    logic<5>  B_rs2  = B_insn2.r.rs2;
     logic<32> B_reg1 = B_rs1 ? reg1 : b32(0);
     logic<32> B_reg2 = B_rs2 ? reg2 : b32(0);
-    logic<32> B_imm  = decode_imm(B_insn);
+    logic<32> B_imm  = decode_imm2(B_insn2);
     logic<32> B_addr = b32(B_reg1 + B_imm);
 
     //----------
@@ -192,7 +191,7 @@ public:
 
     // If we write to CSR 0x801, we swap the current thread's PC with the
     // register value.
-    logic<12> B_csr  = b12(B_insn, 20);
+    logic<12> B_csr  = B_insn2.c.csr;
     if (B_op == RV32I::OP2_SYSTEM && B_f3 == RV32I::F3_CSRRW && B_csr == 0x801) {
       logic<32> temp = B_result;
       B_result = A_pc_next;
@@ -253,12 +252,12 @@ public:
     //----------
     // Decode instruction B
 
-    logic<3>  B_f3   = b3(B_insn, 12);
-    logic<5>  B_rs1  = b5(B_insn, 15);
-    logic<5>  B_rs2  = b5(B_insn, 20);
+    logic<3>  B_f3   = B_insn2.r.f3;
+    logic<5>  B_rs1  = B_insn2.r.rs1;
+    logic<5>  B_rs2  = B_insn2.r.rs2;
     logic<32> B_reg1 = B_rs1 ? reg1 : b32(0);
     logic<32> B_reg2 = B_rs2 ? reg2 : b32(0);
-    logic<32> B_imm  = decode_imm(B_insn);
+    logic<32> B_imm  = decode_imm2(B_insn2);
     logic<32> B_addr = b32(B_reg1 + B_imm);
 
     //----------
@@ -358,16 +357,17 @@ private:
             logic<32> A_pc_next,
             logic<32> B_result)
   {
-    logic<5>  B_rs1  = b5(B_insn, 15);
+    logic<5>  B_rs1  = B_insn2.r.rs1;
     logic<32> B_reg1 = B_rs1 ? reg_rdata1 : b32(0);
-    logic<32> B_imm  = decode_imm(B_insn);
+    logic<32> B_imm  = decode_imm2(B_insn2);
     logic<32> B_addr = b32(B_reg1 + B_imm);
 
     if (reset_in) {
       A_pc     = 0x00400000;
 
       B_pc     = 0;
-      B_insn   = 0;
+      //B_insn   = 0;
+      B_insn2.raw = 0;
 
       C_pc     = 0;
       C_insn   = 0;
@@ -384,12 +384,12 @@ private:
       D_insn   = C_insn;
 
       C_pc     = B_pc;
-      C_insn   = B_insn;
+      C_insn   = B_insn2.raw;
       C_addr   = B_addr;
       C_result = B_result;
 
       B_pc     = A_pc;
-      B_insn   = A_insn;
+      //B_insn   = A_insn;
       B_insn2.raw = A_insn2.raw;
 
       A_pc     = A_pc_next;
@@ -508,13 +508,13 @@ private:
     logic<32> pc = 0;
 
     if (b24(B_pc)) {
-      logic<7>  B_op   = b7(B_insn);
-      logic<3>  B_f3   = b3(B_insn, 12);
-      logic<5>  B_rs1  = b5(B_insn, 15);
-      logic<5>  B_rs2  = b5(B_insn, 20);
+      logic<7>  B_op   = B_insn2.r.op;
+      logic<3>  B_f3   = B_insn2.r.f3;
+      logic<5>  B_rs1  = B_insn2.r.rs1;
+      logic<5>  B_rs2  = B_insn2.r.rs2;
       logic<32> B_reg1 = B_rs1 ? reg1 : b32(0);
       logic<32> B_reg2 = B_rs2 ? reg2 : b32(0);
-      logic<32> B_imm  = decode_imm(B_insn);
+      logic<32> B_imm  = decode_imm2(B_insn2);
       logic<32> B_addr = b32(B_reg1 + B_imm);
 
       logic<1> eq  = B_reg1 == B_reg2;
@@ -564,7 +564,7 @@ public:
   /* metron_internal */ rv32_insn A_insn2;
 
   /* metron_internal */ logic<32> B_pc;
-  /* metron_internal */ logic<32> B_insn;
+  ///* metron_internal */ logic<32> B_insn;
   /* metron_internal */ rv32_insn B_insn2;
 
   /* metron_internal */ logic<32> C_pc;

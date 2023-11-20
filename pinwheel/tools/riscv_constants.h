@@ -137,6 +137,14 @@ struct rv32_jtype {
   uint32_t imm_20: 1;
 };
 
+struct rv32_ctype {
+  uint32_t op  : 7;
+  uint32_t rd  : 5;
+  uint32_t f3  : 3;
+  uint32_t rs1 : 5;
+  uint32_t csr : 12;
+};
+
 union rv32_insn {
   logic<32>  raw;
   rv32_rtype r;
@@ -145,6 +153,7 @@ union rv32_insn {
   rv32_btype b;
   rv32_utype u;
   rv32_jtype j;
+  rv32_ctype c;
 };
 
 static_assert(sizeof(rv32_insn) == 4);
