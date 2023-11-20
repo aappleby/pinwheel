@@ -105,14 +105,9 @@ public:
   //----------------------------------------
 
   /* metron_internal */
-  logic<32> execute(logic<32> reg1, logic<32> reg2) const {
+  logic<32> execute(logic<32> B_reg1, logic<32> B_reg2) const {
     logic<32> result = 0;
 
-    logic<3>  B_f3   = B_insn.r.f3;
-    logic<5>  B_rs1  = B_insn.r.rs1;
-    logic<5>  B_rs2  = B_insn.r.rs2;
-    logic<32> B_reg1 = B_rs1 ? reg1 : b32(0);
-    logic<32> B_reg2 = B_rs2 ? reg2 : b32(0);
     logic<32> B_imm  = decode_imm2(B_insn);
     logic<32> B_addr = b32(B_reg1 + B_imm);
 
@@ -142,18 +137,12 @@ public:
 
     //A_insn = b24(A_pc) ? code_tld.d_data : b32(0);
     A_insn.raw = b24(A_pc) ? code_tld.d_data : b32(0);
-    logic<5>  A_rs1  = A_insn.r.rs1;
-    logic<5>  A_rs2  = A_insn.r.rs2;
 
     //----------
     // Decode instruction B
 
-    logic<7>  B_op   = B_insn.r.op;
-    logic<3>  B_f3   = B_insn.r.f3;
-    logic<5>  B_rs1  = B_insn.r.rs1;
-    logic<5>  B_rs2  = B_insn.r.rs2;
-    logic<32> B_reg1 = B_rs1 ? reg1 : b32(0);
-    logic<32> B_reg2 = B_rs2 ? reg2 : b32(0);
+    logic<32> B_reg1 = B_insn.r.rs1 ? reg1 : b32(0);
+    logic<32> B_reg2 = B_insn.r.rs2 ? reg2 : b32(0);
     logic<32> B_imm  = decode_imm2(B_insn);
     logic<32> B_addr = b32(B_reg1 + B_imm);
 
@@ -167,7 +156,7 @@ public:
     //----------
     // Execute
 
-    logic<32> B_result = execute(reg1, reg2);
+    logic<32> B_result = execute(B_reg1, B_reg2);
 
     //----------
     // Next instruction selection
@@ -192,7 +181,7 @@ public:
     // If we write to CSR 0x801, we swap the current thread's PC with the
     // register value.
     logic<12> B_csr  = B_insn.c.csr;
-    if (B_op == RV32I::OP2_SYSTEM && B_f3 == RV32I::F3_CSRRW && B_csr == 0x801) {
+    if (B_insn.r.op == RV32I::OP2_SYSTEM && B_insn.r.f3 == RV32I::F3_CSRRW && B_csr == 0x801) {
       logic<32> temp = B_result;
       B_result = A_pc_next;
       A_pc_next = temp;
@@ -233,7 +222,7 @@ public:
 
     // FIXME - Verilator bug?
     //If I remove this, Verilator complains about bogus latches inferred
-    switch(B_op) {
+    switch(B_insn.r.op) {
       case 0: break;
     }
   }
@@ -248,8 +237,7 @@ public:
 
     logic<32> B_reg1 = B_insn.r.rs1 ? reg1 : b32(0);
     logic<32> B_reg2 = B_insn.r.rs2 ? reg2 : b32(0);
-    logic<32> B_imm  = decode_imm2(B_insn);
-    logic<32> B_addr = b32(B_reg1 + B_imm);
+    logic<32> B_addr = B_reg1 + decode_imm2(B_insn);
 
     //----------
     // Regfile read/write
