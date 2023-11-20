@@ -156,6 +156,9 @@ public:
 
     logic<32> A_pc_next = next_pc(B_reg1, B_reg2, B_imm, B_addr);
 
+    // Patch in the hart index from B's PC into the _next_ A's pc
+    A_pc_next = (A_pc_next & 0x00FFFFFF) | (B_pc & 0xFF000000);
+
     //----------
     // PC hackery to swap threads
 
@@ -439,7 +442,6 @@ private:
   logic<32> next_pc(logic<32> B_reg1, logic<32> B_reg2, logic<32> B_imm, logic<32> B_addr) const {
 
     logic<32> pc = 0;
-
     if (b24(B_pc)) {
       logic<1> eq  = B_reg1 == B_reg2;
       logic<1> slt = signed(B_reg1) < signed(B_reg2);
@@ -472,8 +474,6 @@ private:
       }
     }
 
-    // Patch in the hart index from B's PC into the _next_ A's pc
-    pc = (pc & 0x00FFFFFF) | (B_pc & 0xFF000000);
     return pc;
   }
 
@@ -481,14 +481,11 @@ public:
 
   //----------------------------------------
   // Internal signals and registers
-  // metron_internal
 
   /* metron_internal */ logic<32> A_pc;
-  ///* metron_internal */ logic<32> A_insn;
   /* metron_internal */ rv32_insn A_insn;
 
   /* metron_internal */ logic<32> B_pc;
-  ///* metron_internal */ logic<32> B_insn;
   /* metron_internal */ rv32_insn B_insn;
 
   /* metron_internal */ logic<32> C_pc;
