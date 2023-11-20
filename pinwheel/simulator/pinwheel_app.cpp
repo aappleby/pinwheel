@@ -273,10 +273,10 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
     d("fetch\n");
     d.s.push_back(thread_b_col);
     d("pc   0x%08x\n", pinwheel.core.B_pc);
-    d("op   0x%08x ",  pinwheel.core.B_insn2.raw); print_rv(d, pinwheel.core.B_insn2.raw); d("\n");
+    d("op   0x%08x ",  pinwheel.core.B_insn.raw); print_rv(d, pinwheel.core.B_insn.raw); d("\n");
     d("r1   0x%08x\n", pinwheel.regs.get_rs1());
     d("r2   0x%08x\n", pinwheel.regs.get_rs2());
-    const auto imm_b  = pinwheel.core.dbg_decode_imm(pinwheel.core.B_insn2.raw);
+    const auto imm_b  = pinwheel.core.dbg_decode_imm(pinwheel.core.B_insn);
     const auto addr_b = b32(pinwheel.regs.get_rs1() + imm_b);
     d("addr 0x%08x\n", addr_b);
     d("\n");
@@ -287,7 +287,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
     d("mem/execute\n");
     d.s.push_back(thread_c_col);
     d("pc   0x%08x\n", pinwheel.core.C_pc);
-    d("op   0x%08x ",  pinwheel.core.C_insn2.raw); print_rv(d, pinwheel.core.C_insn2.raw); d("\n");
+    d("op   0x%08x ",  pinwheel.core.C_insn.raw); print_rv(d, pinwheel.core.C_insn.raw); d("\n");
     d("addr 0x%08x\n", pinwheel.core.C_addr);
     d("res  0x%08x\n", pinwheel.core.C_result);
     d("data 0x%08x\n", pinwheel.data_ram.get());
@@ -299,7 +299,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
     d("writeback\n");
     d.s.push_back(thread_d_col);
     d("pc   0x%08x\n", pinwheel.core.D_pc);
-    d("op   0x%08x ",  pinwheel.core.D_insn2.raw); print_rv(d, pinwheel.core.D_insn2.raw); d("\n");
+    d("op   0x%08x ",  pinwheel.core.D_insn.raw); print_rv(d, pinwheel.core.D_insn.raw); d("\n");
     if (pinwheel.core.reg_if.wren) {
       d("r%02d  0x%08x\n", pinwheel.core.reg_if.waddr, pinwheel.core.reg_if.wdata);
     }
