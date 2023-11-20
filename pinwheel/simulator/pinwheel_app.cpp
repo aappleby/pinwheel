@@ -287,7 +287,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
     d("mem/execute\n");
     d.s.push_back(thread_c_col);
     d("pc   0x%08x\n", pinwheel.core.C_pc);
-    d("op   0x%08x ",  pinwheel.core.C_insn); print_rv(d, pinwheel.core.C_insn); d("\n");
+    d("op   0x%08x ",  pinwheel.core.C_insn2.raw); print_rv(d, pinwheel.core.C_insn2.raw); d("\n");
     d("addr 0x%08x\n", pinwheel.core.C_addr);
     d("res  0x%08x\n", pinwheel.core.C_result);
     d("data 0x%08x\n", pinwheel.data_ram.get());
@@ -299,7 +299,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
     d("writeback\n");
     d.s.push_back(thread_d_col);
     d("pc   0x%08x\n", pinwheel.core.D_pc);
-    d("op   0x%08x ",  pinwheel.core.D_insn); print_rv(d, pinwheel.core.D_insn); d("\n");
+    d("op   0x%08x ",  pinwheel.core.D_insn2.raw); print_rv(d, pinwheel.core.D_insn2.raw); d("\n");
     if (pinwheel.core.reg_if.wren) {
       d("r%02d  0x%08x\n", pinwheel.core.reg_if.waddr, pinwheel.core.reg_if.wdata);
     }

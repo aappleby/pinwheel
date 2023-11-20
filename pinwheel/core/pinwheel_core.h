@@ -32,11 +32,11 @@ public:
     //B_insn = 0;
     B_insn2.raw = 0;
     C_pc = 0;
-    C_insn = 0;
+    C_insn2.raw = 0;
     C_addr = 0;
     C_result = 0;
     D_pc = 0;
-    D_insn = 0;
+    D_insn2.raw = 0;
     ticks = 0;
 
     code_tla.a_opcode  = TL::Invalid;
@@ -160,9 +160,9 @@ public:
     //----------
     // Decode instruction C
 
-    logic<7>  C_op = b7(C_insn);
-    logic<5>  C_rd = b5(C_insn, 7);
-    logic<3>  C_f3 = b3(C_insn, 12);
+    logic<7>  C_op = C_insn2.r.op;
+    logic<5>  C_rd = C_insn2.r.rd;
+    logic<3>  C_f3 = C_insn2.r.f3;
 
     //----------
     // Execute
@@ -183,7 +183,7 @@ public:
 
     // If we write to CSR 0x800, we swap the secondary thread's PC with the
     // register value.
-    logic<12> C_csr = b12(C_insn, 20);
+    logic<12> C_csr = C_insn2.c.csr;
     if (C_op == RV32I::OP2_SYSTEM && C_f3 == RV32I::F3_CSRRW && C_csr == 0x800) {
       D_result = A_pc_next;
       A_pc_next = C_result;
@@ -263,9 +263,9 @@ public:
     //----------
     // Decode instruction C
 
-    logic<7>  C_op = b7(C_insn);
-    logic<5>  C_rd = b5(C_insn, 7);
-    logic<3>  C_f3 = b3(C_insn, 12);
+    logic<7>  C_op = C_insn2.r.op;
+    logic<5>  C_rd = C_insn2.r.rd;
+    logic<3>  C_f3 = C_insn2.r.f3;
 
     //----------
     // Regfile read/write
@@ -370,21 +370,21 @@ private:
       B_insn2.raw = 0;
 
       C_pc     = 0;
-      C_insn   = 0;
+      C_insn2.raw   = 0;
       C_addr   = 0;
       C_result = 0;
 
       D_pc     = 0;
-      D_insn   = 0;
+      D_insn2.raw   = 0;
 
       ticks    = 0;
     }
     else {
       D_pc     = C_pc;
-      D_insn   = C_insn;
+      D_insn2.raw   = C_insn2.raw;
 
       C_pc     = B_pc;
-      C_insn   = B_insn2.raw;
+      C_insn2.raw   = B_insn2.raw;
       C_addr   = B_addr;
       C_result = B_result;
 
@@ -568,13 +568,13 @@ public:
   /* metron_internal */ rv32_insn B_insn2;
 
   /* metron_internal */ logic<32> C_pc;
-  /* metron_internal */ logic<32> C_insn;
+  /* metron_internal */ rv32_insn C_insn2;
   /* metron_internal */ logic<32> C_addr;
   /* metron_internal */ logic<32> C_result;
 
   // These two registers aren't actually needed, but they make debugging easier.
   /* metron_internal */ logic<32> D_pc;
-  /* metron_internal */ logic<32> D_insn;
+  /* metron_internal */ rv32_insn D_insn2;
 
   /* metron_internal */ logic<32> ticks;
 
