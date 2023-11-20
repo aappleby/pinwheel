@@ -67,26 +67,26 @@ public:
   tilelink_a code_tla;
   regfile_if reg_if;
 
-  tilelink_a gen_bus(rv32_insn insn, logic<32> addr, logic<32> reg2) {
+  static tilelink_a gen_bus(logic<7> op, logic<3> f3, logic<32> addr, logic<32> reg2) {
     tilelink_a tla;
 
     logic<3>  bus_size = b3(DONTCARE);
     logic<4>  mask_b   = 0;
 
-    if (insn.r.f3 == 0) { mask_b = 0b0001; bus_size = 0; }
-    if (insn.r.f3 == 1) { mask_b = 0b0011; bus_size = 1; }
-    if (insn.r.f3 == 2) { mask_b = 0b1111; bus_size = 2; }
+    if (f3 == 0) { mask_b = 0b0001; bus_size = 0; }
+    if (f3 == 1) { mask_b = 0b0011; bus_size = 1; }
+    if (f3 == 2) { mask_b = 0b1111; bus_size = 2; }
     if (addr[0]) mask_b = mask_b << 1;
     if (addr[1]) mask_b = mask_b << 2;
 
     tla.a_address = addr;
     tla.a_data    = (reg2 << ((addr & 3) * 8));
     tla.a_mask    = mask_b;
-    tla.a_opcode  = (insn.r.op == RV32I::OP2_STORE) ? (bus_size == 2 ? TL::PutFullData : TL::PutPartialData) : TL::Get;
+    tla.a_opcode  = (op == RV32I::OP2_STORE) ? (bus_size == 2 ? TL::PutFullData : TL::PutPartialData) : TL::Get;
     tla.a_param   = b3(DONTCARE);
     tla.a_size    = bus_size;
     tla.a_source  = b1(DONTCARE);
-    tla.a_valid   = (B_insn.r.op == RV32I::OP2_LOAD) || (B_insn.r.op == RV32I::OP2_STORE);
+    tla.a_valid   = (op == RV32I::OP2_LOAD) || (op == RV32I::OP2_STORE);
     tla.a_ready   = 1;
 
     return tla;
@@ -105,24 +105,7 @@ public:
     //----------
     // Data bus read/write
 
-    logic<3>  bus_size = b3(DONTCARE);
-    logic<4>  mask_b   = 0;
-
-    if (B_insn.r.f3 == 0) { mask_b = 0b0001; bus_size = 0; }
-    if (B_insn.r.f3 == 1) { mask_b = 0b0011; bus_size = 1; }
-    if (B_insn.r.f3 == 2) { mask_b = 0b1111; bus_size = 2; }
-    if (B_addr[0]) mask_b = mask_b << 1;
-    if (B_addr[1]) mask_b = mask_b << 2;
-
-    data_tla.a_address = B_addr;
-    data_tla.a_data    = (B_reg2 << ((B_addr & 3) * 8));
-    data_tla.a_mask    = mask_b;
-    data_tla.a_opcode  = (B_insn.r.op == RV32I::OP2_STORE) ? (bus_size == 2 ? TL::PutFullData : TL::PutPartialData) : TL::Get;
-    data_tla.a_param   = b3(DONTCARE);
-    data_tla.a_size    = bus_size;
-    data_tla.a_source  = b1(DONTCARE);
-    data_tla.a_valid   = (B_insn.r.op == RV32I::OP2_LOAD) || (B_insn.r.op == RV32I::OP2_STORE);
-    data_tla.a_ready   = 1;
+    data_tla = gen_bus(B_insn.r.op, B_insn.r.f3, B_addr, B_reg2);
   }
 
   //----------------------------------------
@@ -198,6 +181,21 @@ public:
     //----------
     // Code bus read/write
 
+    code_tla = gen_bus(RV32I::OP2_LOAD, 2, A_pc_next, 0);
+
+    // Code writing is broken...
+
+    /*
+    {
+      logic<4> C_bus_tag = b4(C_addr, 28);
+      logic<1> C_code_cs = C_bus_tag == 0x0 && b24(A_pc_next) == 0;
+      if (C_code_cs) {
+        printf("WAT?");
+      }
+    }
+    */
+
+    /*
     {
       // We can write code memory in phase C if the other thread is idle.
       logic<4> C_bus_tag = b4(C_addr, 28);
@@ -210,23 +208,16 @@ public:
       if (C_addr[0]) mask = mask << 1;
       if (C_addr[1]) mask = mask << 2;
 
-      code_tla.a_address = b24(A_pc_next);
-      code_tla.a_data    = D_result;
-      code_tla.a_mask    = mask;
-      code_tla.a_opcode  = TL::Get;
-      code_tla.a_param   = b3(DONTCARE);
-      code_tla.a_size    = 2;
-      code_tla.a_source  = b1(DONTCARE);
-      code_tla.a_valid   = 1;
-      code_tla.a_ready   = 1;
 
       if (C_code_cs) {
-        code_tla.a_address = b24(C_addr);
-        code_tla.a_opcode  = (C_insn.r.op == RV32I::OP2_STORE) ? (C_insn.r.f3 == 2 ? TL::PutFullData : TL::PutPartialData) : TL::Get;
-        code_tla.a_size    = 2;
+        printf("WAT?");
+        //code_tla = gen_bus(C_insn.r.op, C_insn.r.f3, C_addr, D_result);
+        //code_tla.a_valid   = 1;
+        //code_tla.a_address = b24(C_addr);
+        //code_tla.a_opcode  = (C_insn.r.op == RV32I::OP2_STORE) ? (C_insn.r.f3 == 2 ? TL::PutFullData : TL::PutPartialData) : TL::Get;
       }
-
     }
+    */
 
     register_interface(data_tld, reg1, reg2, D_result);
 
