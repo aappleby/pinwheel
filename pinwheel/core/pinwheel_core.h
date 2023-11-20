@@ -140,10 +140,10 @@ public:
     //----------
     // Decode instruction A
 
-    A_insn = b24(A_pc) ? code_tld.d_data : b32(0);
+    //A_insn = b24(A_pc) ? code_tld.d_data : b32(0);
     A_insn2.raw = b24(A_pc) ? code_tld.d_data : b32(0);
-    logic<5>  A_rs1  = b5(A_insn, 15);
-    logic<5>  A_rs2  = b5(A_insn, 20);
+    logic<5>  A_rs1  = A_insn2.r.rs1;
+    logic<5>  A_rs2  = A_insn2.r.rs2;
 
     //----------
     // Decode instruction B
@@ -246,8 +246,8 @@ public:
     //----------
     // Decode instruction A
 
-    logic<5>  A_rs1  = b5(A_insn, 15);
-    logic<5>  A_rs2  = b5(A_insn, 20);
+    logic<5>  A_rs1  = A_insn2.r.rs1;
+    logic<5>  A_rs2  = A_insn2.r.rs2;
 
     //----------
     // Decode instruction B
@@ -560,7 +560,7 @@ public:
   // metron_internal
 
   /* metron_internal */ logic<32> A_pc;
-  /* metron_internal */ logic<32> A_insn;
+  ///* metron_internal */ logic<32> A_insn;
   /* metron_internal */ rv32_insn A_insn2;
 
   /* metron_internal */ logic<32> B_pc;
