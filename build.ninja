@@ -14,6 +14,8 @@ include symlinks/metrolib/ninja/config_${target}.ninja
 includes = ${includes} -Isymlinks/metrolib
 includes = ${includes} -Isymlinks/metron
 
+include tests/firmware.ninja
+
 ################################################################################
 # Prereqs
 
@@ -56,7 +58,7 @@ build bin/pinwheel_app: c_binary $
   obj/pinwheel/tools/rvdisasm.o $
   symlinks/metrolib/bin/metrolib/libappbase.a $
   symlinks/metrolib/bin/metrolib/libcore.a $
-  bin/imgui/libimgui.a
+  bin/imgui/libimgui.a | firmware
   libraries=-lSDL2 -lubsan
 
 ################################################################################
@@ -136,8 +138,6 @@ build gen/pinwheel/icarus/pinwheel.iv : iverilog gen/pinwheel/soc/pinwheel_soc.s
 
 ################################################################################
 # Functional tests
-
-include tests/firmware.ninja
 
 build obj/tests/pinwheel_test.o:      compile_cpp tests/pinwheel_test.cpp
 

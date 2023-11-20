@@ -54,33 +54,20 @@ public:
   //----------------------------------------
 
   void tick(logic<1> cs, tilelink_a tla) {
+    tld.d_opcode = TL::Invalid;
+    tld.d_size   = tla.a_size;
+    tld.d_valid  = 0;
+
     if (cs) {
-      switch(tla.a_opcode) {
-        case TL::PutFullData:
-          tld.d_opcode = TL::AccessAck;
-          tld.d_size   = tla.a_size;
-          tld.d_valid  = 1;
-          break;
-        case TL::PutPartialData:
-          tld.d_opcode = TL::AccessAck;
-          tld.d_size   = tla.a_size;
-          tld.d_valid  = 1;
-          break;
-        case TL::Get:
-          tld.d_opcode = TL::AccessAckData;
-          tld.d_size   = tla.a_size;
-          tld.d_valid  = 1;
-          break;
-        default:
-          tld.d_opcode = b3(DONTCARE);
-          tld.d_size   = b3(DONTCARE);
-          tld.d_valid  = 0;
-          break;
+      if (tla.a_opcode == TL::PutFullData || tla.a_opcode == TL::PutPartialData) {
+        tld.d_opcode = TL::AccessAck;
+        tld.d_valid  = 1;
       }
-    }
-    else {
-      tld.d_opcode = TL::Invalid;
-      tld.d_valid  = 0;
+
+      if (tla.a_opcode == TL::Get) {
+        tld.d_opcode = TL::AccessAckData;
+        tld.d_valid  = 1;
+      }
     }
   }
 

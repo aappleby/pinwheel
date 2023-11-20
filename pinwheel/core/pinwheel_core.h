@@ -92,7 +92,7 @@ public:
     if (B_addr[1]) mask_b = mask_b << 2;
 
     data_tla.a_address = B_addr;
-    data_tla.a_data    = B_reg2;
+    data_tla.a_data    = (B_reg2 << ((B_addr & 3) * 8));
     data_tla.a_mask    = mask_b;
     data_tla.a_opcode  = (B_insn2.r.op == RV32I::OP2_STORE) ? (bus_size == 2 ? TL::PutFullData : TL::PutPartialData) : TL::Get;
     data_tla.a_param   = b3(DONTCARE);

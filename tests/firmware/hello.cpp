@@ -138,8 +138,14 @@ void loop(int hart, Console* c) {
 //------------------------------------------------------------------------------
 
 void main0() {
+  while(1) {
+    (*(volatile uint32_t*)0x80000001) = 0xDEADBEEF;
+  }
+
   Console* c = &c1;
-  c->printf("Thread 0 started\n");
+  while(1) {
+    c->printf("Thread 0 started\n");
+  }
 
   uint32_t pc1 = (1 << 24) | uint32_t(&_start);
   uint32_t pc2 = (2 << 24) | uint32_t(&_start);
