@@ -92,9 +92,10 @@ TestResults run_rv32i_tests(int reps, int max_cycles) {
 TestResults run_microtests(int reps, int max_cycles) {
   TEST_INIT("Running microtests");
 
-  const char* tests[8] = {
+  const char* tests[] = {
     "basic", "call_jalr", "get_hart", "start_thread",
-    "stepping", "write_regs", "yield", "read_regs"
+    "stepping", "write_regs", "yield", "read_regs",
+    "write_code"
   };
 
   const int test_count = sizeof(tests) / sizeof(tests[0]);
@@ -107,8 +108,6 @@ TestResults run_microtests(int reps, int max_cycles) {
     results << run_test_hex(code_filename, data_filename, reps, max_cycles);
   }
 
-  // This one is broken...?
-  //results << run_test_elf("bin/tests/firmware/write_code");
   TEST_DONE();
 }
 

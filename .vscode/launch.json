@@ -3,7 +3,7 @@
   "configurations": [
     {
       "name": "pinwheel_test",
-      "preLaunchTask": "build_all",
+      "preLaunchTask": "build_pinwheel_test",
       "type": "cppdbg",
       "request": "launch",
       "program": "${workspaceFolder}/bin/pinwheel_test",

@@ -28,5 +28,5 @@ sub sp, t1, t2
 li a0, 0
 li a1, 0
 li a2, t0
-jal zero, main
+j main
 nop

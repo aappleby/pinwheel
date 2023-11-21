@@ -2,7 +2,7 @@ rv_toolchain=riscv64-unknown-elf
 
 #rv_opts_c = ${rv_opts_c} -O0
 rv_opts_c = ${rv_opts_c} -Os
-#rv_opts_c = ${rv_opts_c} -Os
+#rv_opts_c = ${rv_opts_c} -O3
 
 rv_opts_c = ${rv_opts_c} -std=gnu++2a -mabi=ilp32 -march=rv32i -mstrict-align -g -MMD -MF ${out}.d
 

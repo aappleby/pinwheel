@@ -70,8 +70,8 @@ public:
   static tilelink_a gen_bus(logic<7> op, logic<3> f3, logic<32> addr, logic<32> reg2) {
     tilelink_a tla;
 
-    logic<3>  bus_size = b3(DONTCARE);
-    logic<4>  mask_b   = 0;
+    logic<3> bus_size = b3(DONTCARE);
+    logic<4> mask_b   = 0;
 
     if (f3 == 0) { mask_b = 0b0001; bus_size = 0; }
     if (f3 == 1) { mask_b = 0b0011; bus_size = 1; }
@@ -114,8 +114,8 @@ public:
   logic<32> execute(logic<32> B_reg1, logic<32> B_reg2, logic<32> B_imm, logic<32> B_addr) const {
     logic<32> result = 0;
     switch(B_insn.r.op) {
-      case RV32I::OP2_OPIMM:  result = execute_alu   (B_insn, B_reg1, B_reg2, B_imm); break;
-      case RV32I::OP2_OP:     result = execute_alu   (B_insn, B_reg1, B_reg2, B_imm); break;
+      case RV32I::OP2_OPIMM:  result = execute_alu   (B_insn, B_reg1, B_imm);  break;
+      case RV32I::OP2_OP:     result = execute_alu   (B_insn, B_reg1, B_reg2); break;
       case RV32I::OP2_SYSTEM: result = execute_system(B_insn, B_reg1, B_reg2); break;
       case RV32I::OP2_BRANCH: result = b32(DONTCARE); break;
       case RV32I::OP2_JAL:    result = B_pc + 4;      break;
@@ -186,41 +186,29 @@ public:
 
     code_tla = gen_bus(RV32I::OP2_LOAD, 2, A_pc_next, 0);
 
-    // Code writing is broken...
-
-    /*
-    {
-      logic<4> C_bus_tag = b4(C_addr, 28);
-      logic<1> C_code_cs = C_bus_tag == 0x0 && b24(A_pc_next) == 0;
-      if (C_code_cs) {
-        printf("WAT?");
-      }
-    }
-    */
-
-    /*
     {
       // We can write code memory in phase C if the other thread is idle.
       logic<4> C_bus_tag = b4(C_addr, 28);
-      logic<1> C_code_cs = C_bus_tag == 0x0 && b24(A_pc_next) == 0;
-
-      logic<4> mask = 0;
-      if (C_insn.r.f3 == 0) mask = 0b0001;
-      if (C_insn.r.f3 == 1) mask = 0b0011;
-      if (C_insn.r.f3 == 2) mask = 0b1111;
-      if (C_addr[0]) mask = mask << 1;
-      if (C_addr[1]) mask = mask << 2;
-
+      logic<1> C_code_cs =
+        (C_insn.r.op == RV32I::OP2_LOAD || C_insn.r.op == RV32I::OP2_STORE)
+        && C_pc
+        && C_bus_tag == 0x0
+        && b24(A_pc_next) == 0;
 
       if (C_code_cs) {
-        printf("WAT?");
-        //code_tla = gen_bus(C_insn.r.op, C_insn.r.f3, C_addr, D_result);
-        //code_tla.a_valid   = 1;
-        //code_tla.a_address = b24(C_addr);
-        //code_tla.a_opcode  = (C_insn.r.op == RV32I::OP2_STORE) ? (C_insn.r.f3 == 2 ? TL::PutFullData : TL::PutPartialData) : TL::Get;
+        logic<4> mask = 0;
+        if (C_insn.r.f3 == 0) mask = 0b0001;
+        if (C_insn.r.f3 == 1) mask = 0b0011;
+        if (C_insn.r.f3 == 2) mask = 0b1111;
+        if (C_addr[0]) mask = mask << 1;
+        if (C_addr[1]) mask = mask << 2;
+
+        code_tla = gen_bus(C_insn.r.op, C_insn.r.f3, C_addr, D_result);
+        code_tla.a_valid   = 1;
+        code_tla.a_address = b24(C_addr);
+        code_tla.a_opcode  = (C_insn.r.op == RV32I::OP2_STORE) ? (C_insn.r.f3 == 2 ? TL::PutFullData : TL::PutPartialData) : TL::Get;
       }
     }
-    */
 
     register_interface(data_tld, reg1, reg2, D_result);
 
@@ -393,10 +381,8 @@ private:
 
   //----------------------------------------
 
-  logic<32> execute_alu(rv32_insn insn, logic<32> reg1, logic<32> reg2, logic<32> imm) const {
+  logic<32> execute_alu(rv32_insn insn, logic<32> alu1, logic<32> alu2) const {
 
-    logic<32> alu1 = reg1;
-    logic<32> alu2 = insn.r.op == RV32I::OP2_OPIMM ? imm : reg2;
     if (insn.r.op == RV32I::OP2_OP && insn.r.f3 == 0 && insn.r.f7 == 32) alu2 = -alu2;
 
     logic<32> result;
