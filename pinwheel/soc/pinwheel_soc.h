@@ -61,7 +61,6 @@ public:
     tilelink_d code_tld = code_ram.get_tld();
     tilelink_d data_tld = get_data_tld();
 
-    core.tock_data_bus(regs.get_rs1(), regs.get_rs2());
     core.tock(reset_in, code_tld, data_tld, regs.get_rs1(), regs.get_rs2());
 
     uart0_rx.tock(reset_in, uart0_tx.get_serial(), core.data_tla);

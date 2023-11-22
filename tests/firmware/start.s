@@ -1,5 +1,9 @@
 
 .section .start
+
+address_zero:
+  j address_zero
+
 _start:
 .global _start
 .option push

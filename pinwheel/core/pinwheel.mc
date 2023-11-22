@@ -69,9 +69,9 @@ reset() {
   code.data #= readmemh(value_plusargs("text_file=%s"))
   data.data #= readmemh(value_plusargs("data_file=%s"))
 
-  vane0.pc #= 0x00400000;
-  vane1.pc #= 0x00400000;
-  vane2.pc #= 0x00400000;
+  vane0.pc #= 0x00000004;
+  vane1.pc #= 0x00000000;
+  vane2.pc #= 0x00000000;
 
   vane0.hart #= 0;
   vane1.hart #= 1;

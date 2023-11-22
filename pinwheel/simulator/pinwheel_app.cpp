@@ -67,6 +67,8 @@ void PinwheelApp::app_init(int screen_w, int screen_h) {
   pinwheel_sim = new PinwheelSim(
     "gen/tests/firmware/hello.code.vh",
     "gen/tests/firmware/hello.data.vh",
+    //"gen/tests/rv_tests/add.code.vh",
+    //"gen/tests/rv_tests/add.data.vh",
     "pinwheel/uart/message.hex"
   );
 
@@ -226,7 +228,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   auto thread_a = ((pinwheel.core.A_pc >> 24) & 0xF);
   auto thread_b = ((pinwheel.core.B_pc >> 24) & 0xF);
   auto thread_c = ((pinwheel.core.C_pc >> 24) & 0xF);
-  auto thread_d = ((pinwheel.core.D_pc >> 24) & 0xF);
+  auto thread_d = pinwheel.core.D_hart;
 
   uint32_t thread_pcs[16] = {0};
   if (pinwheel.core.D_pc) thread_pcs[thread_d] = pinwheel.core.D_pc;

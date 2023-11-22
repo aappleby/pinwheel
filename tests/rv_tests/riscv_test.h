@@ -8,7 +8,9 @@
 
 #define RVTEST_CODE_BEGIN		\
 	.text;				\
-	.global _start;			\
+address_zero:; \
+	j address_zero;	\
+.global _start;			\
 _start:
 
 #define RVTEST_PASS			\

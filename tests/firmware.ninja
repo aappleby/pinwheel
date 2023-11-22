@@ -145,6 +145,48 @@ build gen/tests/rv_tests/sw.code.vh        gen/tests/rv_tests/sw.data.vh        
 build gen/tests/rv_tests/xori.code.vh      gen/tests/rv_tests/xori.data.vh      : elf_to_hex gen/tests/rv_tests/xori.elf
 build gen/tests/rv_tests/xor.code.vh       gen/tests/rv_tests/xor.data.vh       : elf_to_hex gen/tests/rv_tests/xor.elf
 
+build rv32_test_firmware : phony $
+  gen/tests/rv_tests/addi.code.vh $
+  gen/tests/rv_tests/add.code.vh $
+  gen/tests/rv_tests/andi.code.vh $
+  gen/tests/rv_tests/and.code.vh $
+  gen/tests/rv_tests/auipc.code.vh $
+  gen/tests/rv_tests/benchmark.code.vh $
+  gen/tests/rv_tests/beq.code.vh $
+  gen/tests/rv_tests/bge.code.vh $
+  gen/tests/rv_tests/bgeu.code.vh $
+  gen/tests/rv_tests/blt.code.vh $
+  gen/tests/rv_tests/bltu.code.vh $
+  gen/tests/rv_tests/bne.code.vh $
+  gen/tests/rv_tests/jalr.code.vh $
+  gen/tests/rv_tests/jal.code.vh $
+  gen/tests/rv_tests/lb.code.vh $
+  gen/tests/rv_tests/lbu.code.vh $
+  gen/tests/rv_tests/lh.code.vh $
+  gen/tests/rv_tests/lhu.code.vh $
+  gen/tests/rv_tests/lui.code.vh $
+  gen/tests/rv_tests/lw.code.vh $
+  gen/tests/rv_tests/ori.code.vh $
+  gen/tests/rv_tests/or.code.vh $
+  gen/tests/rv_tests/sb.code.vh $
+  gen/tests/rv_tests/sh.code.vh $
+  gen/tests/rv_tests/simple.code.vh $
+  gen/tests/rv_tests/slli.code.vh $
+  gen/tests/rv_tests/sll.code.vh $
+  gen/tests/rv_tests/slti.code.vh $
+  gen/tests/rv_tests/sltiu.code.vh $
+  gen/tests/rv_tests/slt.code.vh $
+  gen/tests/rv_tests/sltu.code.vh $
+  gen/tests/rv_tests/srai.code.vh $
+  gen/tests/rv_tests/sra.code.vh $
+  gen/tests/rv_tests/srli.code.vh $
+  gen/tests/rv_tests/srl.code.vh $
+  gen/tests/rv_tests/sub.code.vh $
+  gen/tests/rv_tests/sw.code.vh $
+  gen/tests/rv_tests/xori.code.vh $
+  gen/tests/rv_tests/xor.code.vh
+
+
 ################################################################################
 # Pinwheel-specific test firmware
 
@@ -183,7 +225,7 @@ build gen/tests/firmware/write_code.code.vh   gen/tests/firmware/write_code.data
 build gen/tests/firmware/write_regs.code.vh   gen/tests/firmware/write_regs.data.vh   : elf_to_hex gen/tests/firmware/write_regs.elf
 build gen/tests/firmware/yield.code.vh        gen/tests/firmware/yield.data.vh        : elf_to_hex gen/tests/firmware/yield.elf
 
-build firmware : phony $
+build pinwheel_test_firmware : phony $
   gen/tests/firmware/basic.code.vh $
   gen/tests/firmware/call_jalr.code.vh $
   gen/tests/firmware/get_hart.code.vh $
@@ -194,3 +236,5 @@ build firmware : phony $
   gen/tests/firmware/write_code.code.vh $
   gen/tests/firmware/write_regs.code.vh $
   gen/tests/firmware/yield.code.vh
+
+build firmware : phony rv32_test_firmware pinwheel_test_firmware

@@ -142,8 +142,12 @@ void main0() {
   c->printf("Thread 0 started\n");
 
   uint32_t pc1 = (1 << 24) | uint32_t(&_start);
-  uint32_t pc2 = (2 << 24) | uint32_t(&_start);
-  uint32_t pc3 = (3 << 24) | uint32_t(&_start);
+  //uint32_t pc2 = (2 << 24) | uint32_t(&_start);
+  //uint32_t pc3 = (3 << 24) | uint32_t(&_start);
+
+  c->printf("pc1 0x%x\n", pc1);
+  //c->printf("pc2 0x%x\n", pc2);
+  //c->printf("pc3 0x%x\n", pc3);
 
   /*
   for (int i = 0; i < 20000; i++) {
@@ -158,14 +162,21 @@ void main0() {
   c->printf("\n");
   */
 
-  c->printf("Starting thread-swapping loop\n", get_hart());
+  //c->printf("Starting thread-swapping loop\n", get_hart());
 
+  while(1) {
+    pc1 = csr_swap_secondary_thread(pc1);
+    c->printf("pc1 0x%x\n", pc1);
+  }
+
+  /*
   csr_swap_secondary_thread(pc1);
   while(1) {
     pc1 = csr_swap_secondary_thread(pc2);
     pc2 = csr_swap_secondary_thread(pc3);
     pc3 = csr_swap_secondary_thread(pc1);
   }
+  */
 }
 
 //------------------------------------------------------------------------------
