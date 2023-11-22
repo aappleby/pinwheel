@@ -100,7 +100,7 @@ public:
 
   void tock(logic<1> reset_in, tilelink_d code_tld, tilelink_d data_tld, logic<32> reg1, logic<32> reg2) {
 
-    //----------
+    //----------------------------------------
     // Vane A receives its instruction from the code bus and issues register
     // reads.
 
@@ -109,7 +109,7 @@ public:
     reg_if.raddr1 = b8(((A_pc >> 24) << 5) | A_insn.r.rs1);
     reg_if.raddr2 = b8(((A_pc >> 24) << 5) | A_insn.r.rs2);
 
-    //----------
+    //----------------------------------------
     // Vane B receives its registers from the regfile and updates the data bus.
 
     B_reg1 = B_insn.r.rs1 ? reg1 : b32(0);
@@ -117,6 +117,7 @@ public:
 
     B_imm  = decode_imm2(B_insn);
     B_addr = b32(B_reg1 + B_imm);
+
     data_tla = gen_bus(B_insn.r.op, B_insn.r.f3, B_addr, B_reg2);
 
     // If vane A is idle, vane B uses vane A's regfile slot to do an additional
@@ -127,25 +128,8 @@ public:
       reg_if.raddr2 = b10(B_addr >> 2);
     }
 
-    //----------
-    // Vane B executes an instruction.
-
-    switch(B_insn.r.op) {
-      case RV32I::OP2_OPIMM:  B_result = execute_alu   (B_insn, B_reg1, B_imm);  break;
-      case RV32I::OP2_OP:     B_result = execute_alu   (B_insn, B_reg1, B_reg2); break;
-      case RV32I::OP2_SYSTEM: B_result = execute_system(B_insn); break;
-      case RV32I::OP2_BRANCH: B_result = b32(DONTCARE); break;
-      case RV32I::OP2_JAL:    B_result = B_pc + 4;      break;
-      case RV32I::OP2_JALR:   B_result = B_pc + 4;      break;
-      case RV32I::OP2_LUI:    B_result = B_imm;         break;
-      case RV32I::OP2_AUIPC:  B_result = B_pc + B_imm;  break;
-      case RV32I::OP2_LOAD:   B_result = B_addr;        break;
-      case RV32I::OP2_STORE:  B_result = B_reg2;        break;
-      default:                B_result = b32(DONTCARE); break;
-    }
-
-    //----------
-    // Next instruction selection
+    //----------------------------------------
+    // Vane B chooses the instruction address for the _next_ vane A.
 
     logic<24> pc = b24(B_pc);
     if (pc) {
@@ -183,87 +167,121 @@ public:
     logic<8>  A_hart_next = b8(B_pc, 24);
     logic<32> A_pc_next   = cat(A_hart_next, pc);
 
-    // If we write to CSR 0x801, we swap the current thread's PC with the
-    // register value. This has the effect of 'yielding' to the new thread.
-    if (B_insn.r.op == RV32I::OP2_SYSTEM && B_insn.r.f3 == RV32I::F3_CSRRW && B_insn.c.csr == 0x801) {
-      logic<32> temp = B_result;
-      B_result    = A_pc_next;
-      A_hart_next = b8(temp, 24);
-      A_pc_next   = temp;
+    //----------------------------------------
+    // If vane C contains a CSRRW @ 800 instruction, we override A_pc_next and
+    // store the previous value to result.
+
+    // FIXME what if both threads trigger PC swaps at once?
+
+    if (C_insn.r.op == RV32I::OP2_SYSTEM) {
+      if (C_insn.r.f3 == RV32I::F3_CSRRW) {
+        if (C_insn.c.csr == 0x800) {
+          logic<32> temp = C_result;
+          C_result    = cat(A_hart_next, b24(A_pc_next));
+          A_hart_next = b8(temp, 24);
+          A_pc_next   = temp;
+        }
+      }
     }
 
-    //----------
-    // PC hackery to swap threads
+    //----------------------------------------
+    // Vane B executes an instruction.
 
-    // FIXME what if both threads trigger these two PC swaps at once?
+    switch(B_insn.r.op) {
+      case RV32I::OP2_OPIMM:  B_result = execute_alu   (B_insn, B_reg1, B_imm);  break;
+      case RV32I::OP2_OP:     B_result = execute_alu   (B_insn, B_reg1, B_reg2); break;
+      case RV32I::OP2_SYSTEM: B_result = b32(DONTCARE); break;
+      case RV32I::OP2_BRANCH: B_result = b32(DONTCARE); break;
+      case RV32I::OP2_JAL:    B_result = B_pc + 4;      break;
+      case RV32I::OP2_JALR:   B_result = B_pc + 4;      break;
+      case RV32I::OP2_LUI:    B_result = B_imm;         break;
+      case RV32I::OP2_AUIPC:  B_result = B_pc + B_imm;  break;
+      case RV32I::OP2_LOAD:   B_result = B_addr;        break;
+      case RV32I::OP2_STORE:  B_result = B_reg2;        break;
+      default:                B_result = b32(DONTCARE); break;
+    }
 
-    // If we write to CSR 0x800, we swap the secondary thread's PC with the
-    // register value.
-    if (C_insn.r.op == RV32I::OP2_SYSTEM && C_insn.r.f3 == RV32I::F3_CSRRW && C_insn.c.csr == 0x800) {
-      logic<32> temp = C_result;
-      C_result   = A_pc_next;
-      A_hart_next = b8(C_result, 24);
-      A_pc_next   = temp;
+    if (B_insn.r.op == RV32I::OP2_SYSTEM) {
+      // FIXME need a good error if case is missing an expression
+      switch(B_insn.r.f3) {
+        case RV32I::F3_CSRRW: {
+          // If we write to CSR 0x801, we swap the current thread's PC with the
+          // register value. This has the effect of 'yielding' to the new thread.
+          if (B_insn.c.csr == 0x801) {
+            B_result    = A_pc_next;
+            A_hart_next = b8(B_reg1, 24);
+            A_pc_next   = B_reg1;
+          }
+          else {
+            // Otherwise we pass reg 1 through result so it can get to the thread swap thing below
+            B_result = B_reg1;
+          }
+          break;
+        }
+        case RV32I::F3_CSRRS: {
+          if (B_insn.c.csr == RV32I::MHARTID) B_result = b8(B_pc, 24);
+          break;
+        }
+        case RV32I::F3_CSRRC:  B_result = 0; break;
+        case RV32I::F3_CSRRWI: B_result = 0; break;
+        case RV32I::F3_CSRRSI: B_result = 0; break;
+        case RV32I::F3_CSRRCI: B_result = 0; break;
+      }
     }
 
     //--------------------------------------------------------------------------
     // Vane C unpacks the result of the memory read.
 
     if (C_insn.r.op == RV32I::OP2_LOAD) {
-      logic<32> C_mem = data_tld.d_data;
-      if (C_result[0]) C_mem = C_mem >> 8;
-      if (C_result[1]) C_mem = C_mem >> 16;
-      switch (C_insn.r.f3) {
-        case 0:  C_mem = sign_extend<32>( b8(C_mem)); break;
-        case 1:  C_mem = sign_extend<32>(b16(C_mem)); break;
-        case 4:  C_mem = zero_extend<32>( b8(C_mem)); break;
-        case 5:  C_mem = zero_extend<32>(b16(C_mem)); break;
+      if (b4(C_addr, 28) == 0xE) {
+        // A memory-mapped regfile read replaces result with reg2.
+        C_result = reg2;
       }
-
-      C_result = C_mem;
+      else {
+        // A memory read replaces result with the unpacked value on the data bus.
+        logic<32> C_mem = data_tld.d_data;
+        if (C_result[0]) C_mem = C_mem >> 8;
+        if (C_result[1]) C_mem = C_mem >> 16;
+        switch (C_insn.r.f3) {
+          case 0:  C_mem = sign_extend<32>( b8(C_mem)); break;
+          case 1:  C_mem = sign_extend<32>(b16(C_mem)); break;
+          case 4:  C_mem = zero_extend<32>( b8(C_mem)); break;
+          case 5:  C_mem = zero_extend<32>(b16(C_mem)); break;
+        }
+        C_result = C_mem;
+      }
     }
 
     //--------------------------------------------------------------------------
     // Regfile write
 
-    // Normally we write 'result' to 'rd' if rd != 0 and the thread is active.
+    // Normally we write 'result' to 'rd' if the thread is active and rd != 0.
 
-    logic<1> C_regfile_cs = (b4(C_addr, 28) == 0xE) && (C_insn.r.op == RV32I::OP2_LOAD || C_insn.r.op == RV32I::OP2_STORE);
-
-    logic<8> C_waddr = cat(b3(C_pc, 24), b5(C_insn.r.rd));
-
-    if (C_regfile_cs && C_insn.r.op == RV32I::OP2_LOAD) {
-      C_result = reg2;
-    }
-    if (C_regfile_cs && C_insn.r.op == RV32I::OP2_STORE) {
-      C_waddr = b10(C_addr >> 2);
-    }
-
-    reg_if.waddr = C_waddr;
+    reg_if.waddr = cat(b3(C_pc, 24), b5(C_insn.r.rd));
     reg_if.wdata = C_result;
-    reg_if.wren  = 1;
+    reg_if.wren  = b24(C_pc) && C_insn.r.rd && C_insn.r.op != RV32I::OP2_STORE && C_insn.r.op != RV32I::OP2_BRANCH;
 
-    if (C_insn.r.op == RV32I::OP2_STORE)  reg_if.wren  = C_regfile_cs;
-    if (C_insn.r.op == RV32I::OP2_BRANCH) reg_if.wren  = 0;
+    // A memory-mapped regfile write overrides the normal write.
+
+    if (b4(C_addr, 28) == 0xE && C_insn.r.op == RV32I::OP2_STORE) {
+      reg_if.waddr = b10(C_addr >> 2);
+      reg_if.wren  = 1;
+    }
 
     //--------------------------------------------------------------------------
     // Code bus read/write
 
-    // We can write code memory in phase C if the other thread is idle.
+    code_tla = gen_bus(RV32I::OP2_LOAD, 2, A_pc_next, 0);
+
+    // If the other thread is idle, vane C can override the code bus read to
+    // write to code memory.
     // We can _not_ read code memory here as the read would come back too late
     // to write it to the regfile.
 
-    logic<1> C_code_cs =
-      (C_insn.r.op == RV32I::OP2_STORE)
-      && C_pc
-      && b4(C_addr, 28) == 0x0
-      && b24(A_pc_next) == 0;
-
-    if (C_code_cs) {
-      code_tla = gen_bus(C_insn.r.op, C_insn.r.f3, C_addr, C_result);
-    }
-    else {
-      code_tla = gen_bus(RV32I::OP2_LOAD, 2, A_pc_next, 0);
+    if (b24(A_pc_next) == 0) {
+      if (C_pc && C_insn.r.op == RV32I::OP2_STORE && b4(C_addr, 28) == 0x0) {
+        code_tla = gen_bus(C_insn.r.op, C_insn.r.f3, C_addr, C_result);
+      }
     }
 
     //----------
@@ -352,7 +370,7 @@ private:
 
   //----------------------------------------
 
-  logic<32> execute_alu(rv32_insn insn, logic<32> alu1, logic<32> alu2) const {
+  static logic<32> execute_alu(rv32_insn insn, logic<32> alu1, logic<32> alu2) {
 
     if (insn.r.op == RV32I::OP2_OP && insn.r.f3 == 0 && insn.r.f7 == 32) alu2 = -alu2;
 
@@ -367,29 +385,6 @@ private:
       case 6:  result = alu1 | alu2; break;
       case 7:  result = alu1 & alu2; break;
       default: result = 0; break;
-    }
-    return result;
-  }
-
-  //----------------------------------------
-
-  logic<32> execute_system(rv32_insn insn) const {
-
-    // FIXME need a good error if case is missing an expression
-    logic<32> result = 0;
-    switch(insn.r.f3) {
-      case RV32I::F3_CSRRW: {
-        result = B_reg1;
-        break;
-      }
-      case RV32I::F3_CSRRS: {
-        if (insn.c.csr == 0xF14) result = b8(B_pc, 24);
-        break;
-      }
-      case RV32I::F3_CSRRC:  result = 0; break;
-      case RV32I::F3_CSRRWI: result = 0; break;
-      case RV32I::F3_CSRRSI: result = 0; break;
-      case RV32I::F3_CSRRCI: result = 0; break;
     }
     return result;
   }

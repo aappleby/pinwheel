@@ -82,6 +82,11 @@ namespace RV32I {
   static const int F3_CSRRWI  = 0b101;
   static const int F3_CSRRSI  = 0b110;
   static const int F3_CSRRCI  = 0b111;
+
+  static const int MVENDORID = 0xF11;
+  static const int MARCHID   = 0xF12;
+  static const int MIMPID    = 0xF13;
+  static const int MHARTID   = 0xF14;
 };
 
 struct rv32_rtype {
