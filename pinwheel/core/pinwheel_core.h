@@ -139,7 +139,7 @@ public:
     //----------------------------------------
     // Vane B chooses the instruction address for the _next_ vane A.
 
-    logic<24> next_pc = 0;
+    logic<24> next_pc = B_pc;
     if (B_active) {
       switch(B_insn.r.op) {
         case RV32I::OP2_BRANCH: {
