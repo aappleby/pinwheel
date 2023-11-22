@@ -175,8 +175,9 @@ public:
       }
     }
 
-    logic<8>  A_hart_next = B_hart;
-    logic<32> A_pc_next   = cat(A_hart_next, next_pc);
+    logic<8>  A_hart_next   = B_hart;
+    logic<24> A_pc_next     = next_pc;
+    logic<1>  A_active_next = A_pc_next != 0;
 
     // If vane C contains a CSRRW @ 800 instruction, we override A_pc_next and
     // store the previous value to result.
@@ -188,11 +189,14 @@ public:
         if (C_insn.c.csr == 0x800) {
           logic<32> temp = C_result;
           C_result    = cat(A_hart_next, b24(A_pc_next));
-          A_hart_next = b8(temp, 24);
-          A_pc_next   = temp;
+
+          A_active_next = b24(temp) != 0;
+          A_hart_next   = b8(temp, 24);
+          A_pc_next     = b24(temp);
         }
       }
     }
+
 
     //----------------------------------------
     // Vane B executes its instruction and stores the result in _result.
@@ -219,9 +223,11 @@ public:
             // If we write to CSR 0x801, we swap the current thread's PC with the
             // register value. This has the effect of 'yielding' to the new thread.
             if (B_insn.c.csr == 0x801) {
-              B_result    = A_pc_next;
-              A_hart_next = b8(B_reg1, 24);
-              A_pc_next   = B_reg1;
+              B_result = cat(A_hart_next, A_pc_next);
+
+              A_active_next = b24(B_reg1) != 0;
+              A_hart_next   = b8(B_reg1, 24);
+              A_pc_next     = b24(B_reg1);
             }
             else {
               // Otherwise we pass _reg1 through _result so we can use it to swap
@@ -285,7 +291,7 @@ public:
     //--------------------------------------------------------------------------
     // Code bus read/write
 
-    code_tla = gen_bus(RV32I::OP2_LOAD, 2, A_pc_next, 0);
+    code_tla = gen_bus(RV32I::OP2_LOAD, 2, b32(A_pc_next), 0);
 
     // If the other thread is idle, vane C can override the code bus read to
     // write to code memory.
@@ -300,8 +306,6 @@ public:
 
     //----------
 
-    logic<1> A_active_next = b24(A_pc_next) != 0;
-
     tick(reset_in, A_active_next, A_hart_next, A_pc_next, B_result, B_addr);
   }
 
@@ -312,7 +316,7 @@ private:
   void tick(logic<1>  reset_in,
             logic<1>  A_active_next,
             logic<8>  A_hart_next,
-            logic<32> A_pc_next,
+            logic<24> A_pc_next,
             logic<32> B_result,
             logic<32> B_addr)
   {
