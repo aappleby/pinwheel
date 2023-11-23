@@ -37,7 +37,7 @@ public:
 
     C_active = 0;
     C_hart = 0;
-    C_pc = 0;
+    //C_pc = 0;
     C_insn.raw = 0;
     C_addr = 0;
     C_result = 0;
@@ -326,7 +326,7 @@ private:
     if (reset_in) {
       A_active = 1; A_hart = 0; A_pc = 0x00000004;
       B_active = 0; B_hart = 0; B_pc = 0x00000000;
-      C_active = 0; C_hart = 0; C_pc = 0x00000000;
+      C_active = 0; C_hart = 0; //C_pc = 0x00000000;
       //D_active = 0; D_hart = 0; D_pc = 0x00000000;
       ticks = 0x00000000;
     }
@@ -339,7 +339,7 @@ private:
 
       C_active = B_active;
       C_hart   = B_hart;
-      C_pc     = B_pc;
+      //C_pc     = B_pc;
       C_insn   = B_insn;
       C_addr   = B_addr;
       C_result = B_result;
@@ -443,7 +443,7 @@ public:
 
   /* metron_internal */ logic<1>  C_active;
   /* metron_internal */ logic<8>  C_hart;
-  /* metron_internal */ logic<24> C_pc;
+  ///* metron_internal */ logic<24> C_pc;
   /* metron_internal */ rv32_insn C_insn;
   /* metron_internal */ logic<32> C_addr;
   /* metron_internal */ logic<32> C_result;
