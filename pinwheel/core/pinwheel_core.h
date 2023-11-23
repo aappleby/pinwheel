@@ -42,10 +42,10 @@ public:
     C_addr = 0;
     C_result = 0;
 
-    D_active = 0;
-    D_hart = 0;
-    D_pc = 0;
-    D_insn.raw = 0;
+    //D_active = 0;
+    //D_hart = 0;
+    //D_pc = 0;
+    //D_insn.raw = 0;
 
     ticks = 0;
 
@@ -139,9 +139,9 @@ public:
     //----------------------------------------
     // Vane B chooses the instruction address for the _next_ vane A.
 
-    logic<1>  A_active_next = B_active;
-    logic<8>  A_hart_next   = B_hart;
-    logic<24> A_pc_next     = B_pc;
+    A_active_next = B_active;
+    A_hart_next   = B_hart;
+    A_pc_next     = B_pc;
 
     if (B_active) {
       switch(B_insn.r.op) {
@@ -314,33 +314,28 @@ public:
 
     //----------
 
-    tick(reset_in, A_active_next, A_hart_next, A_pc_next, B_result, B_addr);
+    tick(reset_in);
   }
 
   //----------------------------------------------------------------------------
 
 private:
 
-  void tick(logic<1>  reset_in,
-            logic<1>  A_active_next,
-            logic<8>  A_hart_next,
-            logic<24> A_pc_next,
-            logic<32> B_result,
-            logic<32> B_addr)
+  void tick(logic<1> reset_in)
   {
     if (reset_in) {
       A_active = 1; A_hart = 0; A_pc = 0x00000004;
       B_active = 0; B_hart = 0; B_pc = 0x00000000;
       C_active = 0; C_hart = 0; C_pc = 0x00000000;
-      D_active = 0; D_hart = 0; D_pc = 0x00000000;
+      //D_active = 0; D_hart = 0; D_pc = 0x00000000;
       ticks = 0x00000000;
     }
     else {
-      D_active = C_active;
-      D_hart   = C_hart;
-      D_pc     = C_pc;
-      D_insn   = C_insn;
-      D_result = C_result;
+      //D_active = C_active;
+      //D_hart   = C_hart;
+      //D_pc     = C_pc;
+      //D_insn   = C_insn;
+      //D_result = C_result;
 
       C_active = B_active;
       C_hart   = B_hart;
@@ -427,6 +422,10 @@ public:
   //----------------------------------------
   // Internal signals and registers
 
+  /* metron_internal */ logic<1>  A_active_next;
+  /* metron_internal */ logic<8>  A_hart_next;
+  /* metron_internal */ logic<24> A_pc_next;
+
   /* metron_internal */ logic<1>  A_active;
   /* metron_internal */ logic<8>  A_hart;
   /* metron_internal */ logic<24> A_pc;
@@ -450,11 +449,11 @@ public:
   /* metron_internal */ logic<32> C_result;
 
   // These registers aren't actually needed, but they make debugging easier.
-  /* metron_internal */ logic<1>  D_active;
-  /* metron_internal */ logic<8>  D_hart;
-  /* metron_internal */ logic<24> D_pc;
-  /* metron_internal */ rv32_insn D_insn;
-  /* metron_internal */ logic<32> D_result;
+  ///* metron_internal */ logic<1>  D_active;
+  ///* metron_internal */ logic<8>  D_hart;
+  ///* metron_internal */ logic<24> D_pc;
+  ///* metron_internal */ rv32_insn D_insn;
+  ///* metron_internal */ logic<32> D_result;
 
   /* metron_internal */ logic<32> ticks;
 

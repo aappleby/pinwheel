@@ -1,0 +1,218 @@
+digraph G {
+bgcolor = "#CCCCCC"
+rankdir = "LR"
+ranksep = 1
+
+//------------------------------------------------------------------------------
+
+subgraph {
+    rank = same;
+    A_pc_old;
+    B_pc_old;
+    C_pc_old;
+
+    B_insn_old;
+    C_insn_old;
+
+    C_addr_old;
+    C_result_old;
+
+    data_bus_old;
+    code_bus_old;
+    regfile_old;
+}
+
+//----------
+
+regfile_old [shape=record, label="regfile|{{<raddr1>raddr1|<raddr2>raddr2|<waddr>waddr|<wdata>wdata|<wren>wren}|{<rdata1>rdata1|<rdata2>rdata2}}"]
+regfile_old:rdata1:e -> r0_eq_0_1:rdata:w
+regfile_old:rdata2:e -> r0_eq_0_2:rdata:w
+
+//----------
+
+code_bus_old [shape=record, label="code bus|{{<addr>addr|<wdata>wdata|<wren>wren}|<rdata>rdata}"];
+code_bus_old:rdata:e -> A_insn:w
+
+//----------
+
+data_bus_old [shape=record, label="data bus|{{<addr>addr|<wdata>wdata|<wren>wren}|<rdata>rdata}"];
+data_bus_old:rdata:e -> unpack:data:w;
+
+//----------
+
+A_pc_old [shape=record, label="<top>A_pc|{|{<active>active|<hart>hart|<pc>pc}}"]
+A_pc_old:top:e -> B_pc_new:top:w;
+A_pc_old:top:e -> regfile_new:wdata:w
+
+//----------
+
+B_pc_old [shape=record, label="<top>B_pc|{|{<active>active|<hart>hart|<pc>pc}}"]
+B_pc_old:pc:e -> A_pc_new_mux:a:w
+B_pc_old:pc:e -> C_pc_new:w;
+B_pc_old:pc:e -> execute:pc:w
+
+B_insn_old [shape=record, label="<top>B_insn|{|{<op>op|<f3>f3|<f7>f7|<rs1>rs1|<rs2>rs2|<rd>rd}}"]
+B_insn_old:top:e  -> decode_imm:insn:w
+B_insn_old:top:e  -> new_pc:w
+B_insn_old:op:e   -> data_bus_new:wren:w
+B_insn_old:rs1:e  -> r0_eq_0_1:raddr:w
+B_insn_old:rs2:e  -> r0_eq_0_2:raddr:w
+B_insn_old:insn:e -> execute:insn:w
+
+//----------
+
+C_insn_old [shape=record, label="<top>C_insn|{|{<op>op|<f3>f3|<f7>f7|<rs1>rs1|<rs2>rs2|<rd>rd}}"]
+C_insn_old:top:e -> writeback:w;
+C_insn_old:f3:e  -> unpack:f3:w;
+C_insn_old:rd:e  -> regfile_new:waddr:w
+C_insn_old:op:e  -> regfile_new:wren:w
+
+C_pc_old [shape=record, label="<top>C_pc|{|{<active>active|<hart>hart|<pc>pc}}"]
+
+C_addr_old [shape=record, label="<top>C_addr|{<d>d|{<q>q}}"]
+C_addr_old:q:e -> regfile_new:waddr:w
+C_addr_old:q:e -> unpack:addr:w;
+
+C_result_old [shape=record, label="C_result|{<d>d|{<q>q}}"]
+C_result_old:q:e -> A_pc_new_mux:c
+
+//------------------------------------------------------------------------------
+
+
+
+
+
+
+//----------
+
+r0_eq_0_1 [shape=record, label="r0 eq 0|{{<raddr>raddr|<rdata>rdata}|<out>out}"]
+r0_eq_0_1:out:e -> B_reg1:w
+
+//----------
+
+r0_eq_0_2 [shape=record, label="r0 eq 0|{{<raddr>raddr|<rdata>rdata}|<out>out}"]
+r0_eq_0_2:out:e -> B_reg2:w
+
+//----------
+
+B_reg1 [shape=hexagon]
+B_reg1:e -> A_pc_new_mux:b:w
+B_reg1:e -> execute:reg1:w
+B_reg1:e -> addr_add:addr:w
+B_reg1:e -> new_pc:w
+
+//----------
+
+B_reg2 [shape=hexagon]
+B_reg2:e -> execute:reg2:w
+B_reg2:e -> new_pc:w
+B_reg2:e -> data_bus_new:wdata:w
+
+//----------
+
+B_result [shape=hexagon]
+B_result:e -> C_result_new:d:w
+
+//----------
+
+execute [shape=record, label="execute|{{<pc>pc|<insn>insn|<reg1>reg1|<reg2>reg2|<imm>imm}|<result>result}"];
+execute:result:e -> B_result:w
+
+//----------
+
+decode_imm  [shape=record, label="decode_imm|{<insn>insn|<imm>imm}"]
+decode_imm:imm:e -> B_imm:w
+
+//----------
+
+B_imm [shape=hexagon]
+B_imm:e -> addr_add:imm:w
+B_imm:e -> execute:imm:w
+
+//----------
+
+A_pc_new_mux [shape=record, label="pc mux|{{<a>a|<b>b|<c>c}|<pc>pc}"];
+A_pc_new_mux:pc -> code_bus_new:addr:w;
+A_pc_new_mux:pc -> A_pc_new:d:w;
+
+//----------
+
+addr_add [shape=record, label="adder|{{<addr>addr|<imm>imm}|<addr>addr}"]
+addr_add:e -> B_addr:w
+
+//----------
+
+B_addr [shape=ellipse]
+B_addr:e -> raddr2_mux:b:w
+B_addr:e -> C_addr_new:d:w
+B_addr:e -> data_bus_new:addr:w
+
+//----------
+
+new_pc [shape=record, label="new_pc|{{<a>a|<b>b|<c>c}|<pc>pc}"];
+new_pc:pc:e -> A_pc_new_mux:c:w
+
+//----------
+
+raddr2_mux [shape=record, label="mux|{{<sel>sel|<a>a|<b>b}|<out>out}"]
+raddr2_mux:e -> regfile_new:raddr2:w
+
+//----------
+
+writeback [shape=hexagon]
+writeback:e -> regfile_new:wdata:w
+
+//----------
+
+unpack [shape=record, label="unpack|{{<data>data|<addr>addr|<f3>f3}|<out>out}"]
+unpack:out:e         -> writeback:w;
+
+//----------
+
+A_insn [shape=record, label="<insn>A_insn|{|{<op>op|<f3>f3|<f7>f7|<rs1>rs1|<rs2>rs2|<rd>rd}}"]
+A_insn:insn:e -> B_insn_new:insn:w
+A_insn:rs1:e    -> regfile_new:raddr1:w
+A_insn:rs2:e -> raddr2_mux:w
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//------------------------------------------------------------------------------
+
+subgraph {
+    rank = same;
+    regfile_new  [shape=record, label="regfile|{{<raddr1>raddr1|<raddr2>raddr2|<waddr>waddr|<wdata>wdata|<wren>wren}|{<rdata1>rdata1|<rdata2>rdata2}}"];
+    code_bus_new [shape=record, label="code bus|{{<addr>addr|<wdata>wdata|<wren>wren}|<rdata>rdata}"];
+    data_bus_new [shape=record, label="data bus|{{<addr>addr|<wdata>wdata|<wren>wren}|<rdata>rdata}"];
+    A_pc_new     [shape=record, label="<top>A_pc|{<d>d|{<active>active|<hart>hart|<pc>pc}}"]
+    B_pc_new     [shape=record, label="<top>B_pc|{<d>d|{<active>active|<hart>hart|<pc>pc}}"]
+    B_insn_new   [shape=record, label="<top>B_insn|{|{<op>op|<f3>f3|<f7>f7|<rs1>rs1|<rs2>rs2|<rd>rd}}"]
+    C_pc_new     [shape=record, label="<top>C_pc|{<d>d|{<active>active|<hart>hart|<pc>pc}}"]
+    C_addr_new   [shape=record, label="<top>C_addr|{<d>d|{<q>q}}"]
+    C_result_new [shape=record, label="C_result|{<d>d|{<q>q}}"]
+    C_insn_new   [shape=record, label="<top>C_insn|{|{<op>op|<f3>f3|<f7>f7|<rs1>rs1|<rs2>rs2|<rd>rd}}"]
+}
+
+//------------------------------------------------------------------------------
+
+}
+
+
