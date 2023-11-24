@@ -232,13 +232,13 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
 
   uint32_t thread_pcs[16] = {0};
   //if (pinwheel.core.D_pc) thread_pcs[thread_d] = pinwheel.core.D_pc;
-  if (pinwheel.core.C_pc) thread_pcs[thread_c] = pinwheel.core.C_pc;
+  //if (pinwheel.core.C_pc) thread_pcs[thread_c] = pinwheel.core.C_pc;
   if (pinwheel.core.B_pc) thread_pcs[thread_b] = pinwheel.core.B_pc;
   if (pinwheel.core.A_pc) thread_pcs[thread_a] = pinwheel.core.A_pc;
 
   auto thread_a_col = pinwheel.core.A_pc ? thread_a + 2 : 0;
   auto thread_b_col = pinwheel.core.B_pc ? thread_b + 2 : 0;
-  auto thread_c_col = pinwheel.core.C_pc ? thread_c + 2 : 0;
+  //auto thread_c_col = pinwheel.core.C_pc ? thread_c + 2 : 0;
   //auto thread_d_col = pinwheel.core.D_pc ? thread_d + 2 : 0;
 
   int cursor_x = 32;
@@ -287,8 +287,8 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   {
     d.s.push_back(1);
     d("mem/execute\n");
-    d.s.push_back(thread_c_col);
-    d("pc   0x%08x\n", pinwheel.core.C_pc);
+    //d.s.push_back(thread_c_col);
+    //d("pc   0x%08x\n", pinwheel.core.C_pc);
     d("op   0x%08x ",  pinwheel.core.C_insn.raw); print_rv(d, pinwheel.core.C_insn.raw); d("\n");
     d("addr 0x%08x\n", pinwheel.core.C_addr);
     d("res  0x%08x\n", pinwheel.core.C_result);

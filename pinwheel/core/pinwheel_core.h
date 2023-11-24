@@ -114,8 +114,6 @@ public:
 
     A_insn.raw = A_active ? code_tld.d_data : b32(0);
 
-    reg_if.raddr1 = cat(A_hart, b5(A_insn.r.rs1));
-    reg_if.raddr2 = cat(A_hart, b5(A_insn.r.rs2));
 
     //----------------------------------------
     // Vane B receives its registers from the regfile and updates the data bus.
@@ -124,69 +122,54 @@ public:
     B_reg2 = B_insn.r.rs2 ? reg2 : b32(0);
 
     B_imm  = decode_imm2(B_insn);
-    B_addr = b32(B_reg1 + B_imm);
 
-    data_tla = gen_bus(B_insn.r.op, B_insn.r.f3, B_addr, B_reg2);
+    B_addr = b32(DONTCARE);
 
-    // If vane A is idle, vane B uses vane A's regfile slot to do an additional
-    // regfile read. This is used for memory-mapped regfile reading.
-
-    if (!A_active) {
-      reg_if.raddr1 = b10(DONTCARE);
-      reg_if.raddr2 = b10(B_addr >> 2);
+    if (B_active) {
+      if (B_insn.r.op == RV32I::OP2_SYSTEM) {
+        if (B_insn.r.f3 == RV32I::F3_CSRRW && B_insn.c.csr == 0x801) {
+          B_addr = cat(B_hart, B_pc);
+        }
+      } else {
+        B_addr = b32(B_reg1 + B_imm);
+      }
     }
 
     //----------------------------------------
     // Vane B chooses the instruction address for the _next_ vane A.
 
-    A_active_next = B_active;
-    A_hart_next   = B_hart;
-    A_pc_next     = B_pc;
+    // If vane C contains a CSRRW @ 800 instruction, we override A_pc_next and
+    // store the previous value to result.
 
-    if (B_active) {
-      switch(B_insn.r.op) {
-        case RV32I::OP2_BRANCH: {
-          logic<1> eq  = B_reg1 == B_reg2;
-          logic<1> slt = signed(B_reg1) < signed(B_reg2);
-          logic<1> ult = B_reg1 < B_reg2;
-          logic<1> take_branch = 0;
+    // FIXME what if both threads trigger PC swaps at once?
+    // - The C one fires first, swapping the other thread.
 
-          switch (B_insn.r.f3) {
-            case 0:  take_branch =   eq; break;
-            case 1:  take_branch =  !eq; break;
-            case 2:  take_branch =   eq; break;
-            case 3:  take_branch =  !eq; break;
-            case 4:  take_branch =  slt; break;
-            case 5:  take_branch = !slt; break;
-            case 6:  take_branch =  ult; break;
-            case 7:  take_branch = !ult; break;
-            default: take_branch =    0; break;
-          }
-
-          A_pc_next = take_branch ? B_pc + B_imm : B_pc + 4;
-          break;
-        }
-        case RV32I::OP2_JAL:    A_pc_next = B_pc + B_imm; break;
-        case RV32I::OP2_JALR:   A_pc_next = B_addr; break;
-        case RV32I::OP2_LUI:    A_pc_next = B_pc + 4; break;
-        case RV32I::OP2_AUIPC:  A_pc_next = B_pc + 4; break;
-        case RV32I::OP2_LOAD:   A_pc_next = B_pc + 4; break;
-        case RV32I::OP2_STORE:  A_pc_next = B_pc + 4; break;
-        case RV32I::OP2_SYSTEM: A_pc_next = B_pc + 4; break;
-        case RV32I::OP2_OPIMM:  A_pc_next = B_pc + 4; break;
-        case RV32I::OP2_OP:     A_pc_next = B_pc + 4; break;
-      }
+    if (C_active && C_insn.r.op == RV32I::OP2_SYSTEM && C_insn.r.f3 == RV32I::F3_CSRRW && C_insn.c.csr == 0x800) {
+      A_active_next = b24(C_result) != 0;
+      A_hart_next   = b8 (C_result, 24);
+      A_pc_next     = b24(C_result);
     }
+    else if (B_active && B_insn.r.op == RV32I::OP2_SYSTEM && B_insn.r.f3 == RV32I::F3_CSRRW && B_insn.c.csr == 0x801) {
+      A_active_next = b24(B_reg1) != 0;
+      A_hart_next   = b8 (B_reg1, 24);
+      A_pc_next     = b24(B_reg1);
+    }
+    else {
+      A_active_next = B_active;
+      A_hart_next   = B_hart;
+      A_pc_next     = next_pc(B_active, B_pc, B_insn, B_reg1, B_reg2, B_addr, B_imm);
+    }
+
 
     //----------------------------------------
     // Vane B executes its instruction and stores the result in _result.
 
+    B_result = b32(DONTCARE);
     if (B_active) {
-      B_result = b32(DONTCARE);
       switch(B_insn.r.op) {
         case RV32I::OP2_OPIMM:  B_result = execute_alu(B_insn, B_reg1, B_imm);  break;
         case RV32I::OP2_OP:     B_result = execute_alu(B_insn, B_reg1, B_reg2); break;
-        case RV32I::OP2_SYSTEM: B_result = b32(DONTCARE);     break;
+        case RV32I::OP2_SYSTEM: B_result = execute_system(B_hart, B_pc, B_insn, B_reg1); break;
         case RV32I::OP2_BRANCH: B_result = b32(DONTCARE);     break;
         case RV32I::OP2_JAL:    B_result = b24(B_pc) + 4;     break;
         case RV32I::OP2_JALR:   B_result = b24(B_pc) + 4;     break;
@@ -196,29 +179,10 @@ public:
         case RV32I::OP2_STORE:  B_result = B_reg2;            break;
         default:                B_result = b32(DONTCARE);     break;
       }
-
-      if (B_insn.r.op == RV32I::OP2_SYSTEM) {
-        // FIXME need a good error if case is missing an expression
-        switch(B_insn.r.f3) {
-          case RV32I::F3_CSRRW: {
-            if (B_insn.c.csr == 0x800)          B_result = B_reg1;
-            if (B_insn.c.csr == 0x801)          B_result = cat(B_hart, B_pc);
-            if (B_insn.c.csr == RV32I::MHARTID) B_result = B_hart;
-            break;
-          }
-          case RV32I::F3_CSRRS: {
-            if (B_insn.c.csr == RV32I::MHARTID) B_result = B_hart;
-            break;
-          }
-          case RV32I::F3_CSRRC:  B_result = b32(DONTCARE); break;
-          case RV32I::F3_CSRRWI: B_result = b32(DONTCARE); break;
-          case RV32I::F3_CSRRSI: B_result = b32(DONTCARE); break;
-          case RV32I::F3_CSRRCI: B_result = b32(DONTCARE); break;
-        }
-      }
     }
 
     //--------------------------------------------------------------------------
+    // Regfile write
 
     if (C_active) {
       logic<32> writeback = C_result;
@@ -270,34 +234,22 @@ public:
     }
 
     //--------------------------------------------------------------------------
+    // Regfile read
+
+    // If vane A is idle, vane B uses vane A's regfile slot to do an additional
+    // regfile read. This is used for memory-mapped regfile reading.
+
+    if (!A_active) {
+      reg_if.raddr1 = b10(DONTCARE);
+      reg_if.raddr2 = b10(B_addr >> 2);
+    }
+    else {
+      reg_if.raddr1 = cat(A_hart, b5(A_insn.r.rs1));
+      reg_if.raddr2 = cat(A_hart, b5(A_insn.r.rs2));
+    }
+
+    //--------------------------------------------------------------------------
     // Code bus read/write
-
-    // If vane C contains a CSRRW @ 800 instruction, we override A_pc_next and
-    // store the previous value to result.
-
-    // FIXME what if both threads trigger PC swaps at once?
-
-    if (C_active) {
-      if (C_insn.r.op == RV32I::OP2_SYSTEM) {
-        if (C_insn.r.f3 == RV32I::F3_CSRRW) {
-          if (C_insn.c.csr == 0x800) {
-            A_active_next = b24(C_result) != 0;
-            A_hart_next   = b8(C_result, 24);
-            A_pc_next     = b24(C_result);
-          }
-        }
-      }
-    }
-
-    if (B_active && B_insn.r.op == RV32I::OP2_SYSTEM) {
-      if (B_insn.r.f3 == RV32I::F3_CSRRW) {
-        if (B_insn.c.csr == 0x801) {
-          A_active_next = b24(B_reg1) != 0;
-          A_hart_next   = b8(B_reg1, 24);
-          A_pc_next     = b24(B_reg1);
-        }
-      }
-    }
 
     code_tla = gen_bus(RV32I::OP2_LOAD, 2, b32(A_pc_next), 0);
 
@@ -312,6 +264,9 @@ public:
       }
     }
 
+
+    data_tla = gen_bus(B_insn.r.op, B_insn.r.f3, B_addr, B_reg2);
+
     //----------
 
     tick(reset_in);
@@ -320,6 +275,69 @@ public:
   //----------------------------------------------------------------------------
 
 private:
+
+  static logic<32> execute_system(logic<8> B_hart, logic<24> B_pc, rv32_insn B_insn, logic<32> B_reg1) {
+    // FIXME need a good error if case is missing an expression
+    logic<32> B_result = b32(DONTCARE);
+    switch(B_insn.r.f3) {
+      case RV32I::F3_CSRRW: {
+        if (B_insn.c.csr == 0x800)          B_result = B_reg1;
+        if (B_insn.c.csr == 0x801)          B_result = cat(B_hart, B_pc);
+        if (B_insn.c.csr == RV32I::MHARTID) B_result = B_hart;
+        break;
+      }
+      case RV32I::F3_CSRRS: {
+        if (B_insn.c.csr == RV32I::MHARTID) B_result = B_hart;
+        break;
+      }
+      case RV32I::F3_CSRRC:  B_result = b32(DONTCARE); break;
+      case RV32I::F3_CSRRWI: B_result = b32(DONTCARE); break;
+      case RV32I::F3_CSRRSI: B_result = b32(DONTCARE); break;
+      case RV32I::F3_CSRRCI: B_result = b32(DONTCARE); break;
+    }
+    return B_result;
+  }
+
+  static logic<24> next_pc(logic<1> B_active, logic<24> B_pc, rv32_insn B_insn, logic<32> B_reg1, logic<32> B_reg2, logic<32> B_addr, logic<32> B_imm) {
+    logic<24> result = B_pc;
+    if (B_active) {
+      switch(B_insn.r.op) {
+        case RV32I::OP2_BRANCH: result = branch_pc(B_pc, B_insn, B_reg1, B_reg2, B_imm); break;
+        case RV32I::OP2_JAL:    result = B_pc + B_imm; break;
+        case RV32I::OP2_JALR:   result = B_addr; break;
+        case RV32I::OP2_LUI:    result = B_pc + 4; break;
+        case RV32I::OP2_AUIPC:  result = B_pc + 4; break;
+        case RV32I::OP2_LOAD:   result = B_pc + 4; break;
+        case RV32I::OP2_STORE:  result = B_pc + 4; break;
+        case RV32I::OP2_SYSTEM: result = B_pc + 4; break;
+        case RV32I::OP2_OPIMM:  result = B_pc + 4; break;
+        case RV32I::OP2_OP:     result = B_pc + 4; break;
+      }
+    }
+    return result;
+  }
+
+  static logic<32> branch_pc(logic<24> B_pc, rv32_insn B_insn, logic<32> B_reg1, logic<32> B_reg2, logic<32> B_imm) {
+    logic<1> eq  = B_reg1 == B_reg2;
+    logic<1> slt = signed(B_reg1) < signed(B_reg2);
+    logic<1> ult = B_reg1 < B_reg2;
+    logic<1> take_branch = 0;
+
+    switch (B_insn.r.f3) {
+      case 0:  take_branch =   eq; break;
+      case 1:  take_branch =  !eq; break;
+      case 2:  take_branch =   eq; break;
+      case 3:  take_branch =  !eq; break;
+      case 4:  take_branch =  slt; break;
+      case 5:  take_branch = !slt; break;
+      case 6:  take_branch =  ult; break;
+      case 7:  take_branch = !ult; break;
+      default: take_branch =    0; break;
+    }
+
+    return take_branch ? B_pc + B_imm : B_pc + 4;
+  }
+
 
   void tick(logic<1> reset_in)
   {
