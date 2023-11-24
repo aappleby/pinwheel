@@ -184,12 +184,24 @@ public:
     //--------------------------------------------------------------------------
     // Regfile write
 
+    logic<32> writeback = b32(DONTCARE);
     if (C_active) {
-      logic<32> writeback = C_result;
+      writeback = C_result;
+
+      if (C_insn.r.op == RV32I::OP2_LOAD) {
+        if (b4(C_addr, 28) == 0xE) {
+          // A memory-mapped regfile read replaces _result with reg2.
+          writeback = reg2;
+        }
+        else {
+          // A memory read replaces _result with the unpacked value on the data bus.
+          writeback = unpack_mem(C_insn, C_addr, data_tld.d_data);
+        }
+      }
 
       // If we're switching secondary threads, we write the previous secondary
       // thread back to the primary thread's regfile.
-      if (C_insn.r.op == RV32I::OP2_SYSTEM) {
+      else if (C_insn.r.op == RV32I::OP2_SYSTEM) {
         if (C_insn.r.f3 == RV32I::F3_CSRRW) {
           if (C_insn.c.csr == 0x800) {
             writeback = cat(A_hart_next, A_pc_next);
@@ -197,39 +209,24 @@ public:
         }
       }
 
-      if (C_insn.r.op == RV32I::OP2_LOAD) {
-
-        // A memory-mapped regfile read replaces _result with reg2.
-        if (b4(C_addr, 28) == 0xE) {
-          writeback = reg2;
-        }
-
-        // A memory read replaces _result with the unpacked value on the data bus.
-        else {
-          logic<32> mem = data_tld.d_data;
-          if (C_addr[0]) mem = mem >> 8;
-          if (C_addr[1]) mem = mem >> 16;
-          switch (C_insn.r.f3) {
-            case 0: mem = sign_extend<32>( b8(mem)); break;
-            case 1: mem = sign_extend<32>(b16(mem)); break;
-            case 4: mem = zero_extend<32>( b8(mem)); break;
-            case 5: mem = zero_extend<32>(b16(mem)); break;
-          }
-          writeback = mem;
-        }
+      else {
+        writeback = C_result;
       }
 
-      // Vane C writes _result to _rd if the thread is active and _rd != 0.
+    }
 
-      reg_if.waddr = cat(C_hart, b5(C_insn.r.rd));
-      reg_if.wdata = writeback;
-      reg_if.wren  = C_insn.r.rd && C_insn.r.op != RV32I::OP2_STORE && C_insn.r.op != RV32I::OP2_BRANCH;
-
-      // A memory-mapped regfile write overrides the normal write.
-
+    if (C_active) {
       if (b4(C_addr, 28) == 0xE && C_insn.r.op == RV32I::OP2_STORE) {
+        // A memory-mapped regfile write overrides the normal write.
         reg_if.waddr = b8(C_addr >> 2);
+        reg_if.wdata = writeback;
         reg_if.wren  = 1;
+      }
+      else {
+        // Vane C writes _result to _rd if the thread is active and _rd != 0.
+        reg_if.waddr = cat(C_hart, b5(C_insn.r.rd));
+        reg_if.wdata = writeback;
+        reg_if.wren  = C_insn.r.rd && C_insn.r.op != RV32I::OP2_STORE && C_insn.r.op != RV32I::OP2_BRANCH;
       }
     }
 
@@ -251,17 +248,16 @@ public:
     //--------------------------------------------------------------------------
     // Code bus read/write
 
-    code_tla = gen_bus(RV32I::OP2_LOAD, 2, b32(A_pc_next), 0);
-
     // If the other thread is idle, vane C can override the code bus read to
     // write to code memory.
     // We can _not_ read code memory here as the read would come back too late
     // to write it to the regfile.
 
-    if (b24(A_pc_next) == 0) {
-      if (C_active && C_insn.r.op == RV32I::OP2_STORE && b4(C_addr, 28) == 0x0) {
-        code_tla = gen_bus(C_insn.r.op, C_insn.r.f3, C_addr, C_result);
-      }
+    if (!A_active_next && C_active && C_insn.r.op == RV32I::OP2_STORE && b4(C_addr, 28) == 0x0) {
+      code_tla = gen_bus(C_insn.r.op, C_insn.r.f3, C_addr, C_result);
+    }
+    else {
+      code_tla = gen_bus(RV32I::OP2_LOAD, 2, b32(A_pc_next), 0);
     }
 
 
@@ -275,6 +271,18 @@ public:
   //----------------------------------------------------------------------------
 
 private:
+
+  static logic<32> unpack_mem(rv32_insn C_insn, logic<32> C_addr, logic<32> mem) {
+    if (C_addr[0]) mem = mem >> 8;
+    if (C_addr[1]) mem = mem >> 16;
+    switch (C_insn.r.f3) {
+      case 0: mem = sign_extend<32>( b8(mem)); break;
+      case 1: mem = sign_extend<32>(b16(mem)); break;
+      case 4: mem = zero_extend<32>( b8(mem)); break;
+      case 5: mem = zero_extend<32>(b16(mem)); break;
+    }
+    return mem;
+  }
 
   static logic<32> execute_system(logic<8> B_hart, logic<24> B_pc, rv32_insn B_insn, logic<32> B_reg1) {
     // FIXME need a good error if case is missing an expression
