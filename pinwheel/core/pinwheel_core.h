@@ -123,8 +123,6 @@ public:
 
     B_imm  = decode_imm2(B_insn);
 
-    B_addr = b32(DONTCARE);
-
     if (B_active) {
       if (B_insn.r.op == RV32I::OP2_SYSTEM) {
         if (B_insn.r.f3 == RV32I::F3_CSRRW && B_insn.c.csr == 0x801) {
@@ -133,6 +131,9 @@ public:
       } else {
         B_addr = b32(B_reg1 + B_imm);
       }
+    }
+    else {
+      B_addr = b32(DONTCARE);
     }
 
     //----------------------------------------
