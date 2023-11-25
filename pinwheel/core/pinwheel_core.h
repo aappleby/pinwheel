@@ -136,6 +136,8 @@ public:
       B_addr = b32(DONTCARE);
     }
 
+    data_tla = gen_bus(B_insn.r.op, B_insn.r.f3, B_addr, B_reg2);
+
     //----------------------------------------
     // Vane B chooses the instruction address for the _next_ vane A.
 
@@ -185,18 +187,57 @@ public:
     //--------------------------------------------------------------------------
     // Regfile write
 
+    logic<32> writeback = choose_writeback(
+      A_hart_next, A_pc_next,
+      C_active, C_insn, C_addr, C_result,
+      reg2,
+      data_tld.d_data);
+
+    //--------------------------------------------------------------------------
+    // Regfile write
+
+    reg_if = reg_bus(
+      A_active, A_insn, A_hart,
+      B_active, B_insn, B_hart, B_addr,
+      C_active, C_insn, C_hart, C_addr,
+      writeback);
+
+
+    //--------------------------------------------------------------------------
+    // Code bus read/write
+
+    code_tla = code_bus(
+      A_active_next, A_pc_next,
+      C_active, C_insn, C_addr, C_result);
+
+    //----------
+
+    tick(reset_in);
+  }
+
+  //----------------------------------------------------------------------------
+
+private:
+
+  //--------------------------------------------------------------------------
+
+  static logic<32> choose_writeback(
+    logic<8> A_hart_next, logic<24> A_pc_next,
+    logic<1> C_active, rv32_insn C_insn, logic<32> C_addr, logic<32> C_result,
+    logic<32> raw_reg2,
+    logic<32> mem)
+  {
     logic<32> writeback = b32(DONTCARE);
     if (C_active) {
       writeback = C_result;
-
       if (C_insn.r.op == RV32I::OP2_LOAD) {
         if (b4(C_addr, 28) == 0xE) {
           // A memory-mapped regfile read replaces _result with reg2.
-          writeback = reg2;
+          writeback = raw_reg2;
         }
         else {
           // A memory read replaces _result with the unpacked value on the data bus.
-          writeback = unpack_mem(C_insn, C_addr, data_tld.d_data);
+          writeback = unpack_mem(C_insn, C_addr, mem);
         }
       }
 
@@ -213,65 +254,76 @@ public:
       else {
         writeback = C_result;
       }
+    }
+    return writeback;
+  }
 
+
+  //--------------------------------------------------------------------------
+
+  static regfile_if reg_bus(
+    logic<1> A_active, rv32_insn A_insn, logic<8> A_hart,
+    logic<1> B_active, rv32_insn B_insn, logic<8> B_hart, logic<32> B_addr,
+    logic<1> C_active, rv32_insn C_insn, logic<8> C_hart, logic<32> C_addr,
+    logic<32> writeback)
+  {
+    regfile_if reg_if = {};
+
+    if (C_active && b4(C_addr, 28) == 0xE && C_insn.r.op == RV32I::OP2_STORE) {
+      // A memory-mapped regfile write overrides the normal write.
+      reg_if.waddr = b8(C_addr >> 2);
+      reg_if.wdata = writeback;
+      reg_if.wren  = 1;
+    } else if (C_active) {
+      // Vane C writes _result to _rd if the thread is active and _rd != 0.
+      reg_if.waddr = cat(C_hart, b5(C_insn.r.rd));
+      reg_if.wdata = writeback;
+      reg_if.wren  = C_insn.r.rd && C_insn.r.op != RV32I::OP2_STORE && C_insn.r.op != RV32I::OP2_BRANCH;
+    }
+    else {
+      reg_if.waddr = b13(DONTCARE);
+      reg_if.wdata = b32(DONTCARE);
+      reg_if.wren  = 0;
     }
 
-    if (C_active) {
-      if (b4(C_addr, 28) == 0xE && C_insn.r.op == RV32I::OP2_STORE) {
-        // A memory-mapped regfile write overrides the normal write.
-        reg_if.waddr = b8(C_addr >> 2);
-        reg_if.wdata = writeback;
-        reg_if.wren  = 1;
-      }
-      else {
-        // Vane C writes _result to _rd if the thread is active and _rd != 0.
-        reg_if.waddr = cat(C_hart, b5(C_insn.r.rd));
-        reg_if.wdata = writeback;
-        reg_if.wren  = C_insn.r.rd && C_insn.r.op != RV32I::OP2_STORE && C_insn.r.op != RV32I::OP2_BRANCH;
-      }
-    }
-
-    //--------------------------------------------------------------------------
-    // Regfile read
 
     // If vane A is idle, vane B uses vane A's regfile slot to do an additional
     // regfile read. This is used for memory-mapped regfile reading.
 
-    if (!A_active) {
-      reg_if.raddr1 = b10(DONTCARE);
-      reg_if.raddr2 = b10(B_addr >> 2);
-    }
-    else {
+    if (A_active) {
       reg_if.raddr1 = cat(A_hart, b5(A_insn.r.rs1));
       reg_if.raddr2 = cat(A_hart, b5(A_insn.r.rs2));
     }
-
-    //--------------------------------------------------------------------------
-    // Code bus read/write
-
-    // If the other thread is idle, vane C can override the code bus read to
-    // write to code memory.
-    // We can _not_ read code memory here as the read would come back too late
-    // to write it to the regfile.
-
-    if (!A_active_next && C_active && C_insn.r.op == RV32I::OP2_STORE && b4(C_addr, 28) == 0x0) {
-      code_tla = gen_bus(C_insn.r.op, C_insn.r.f3, C_addr, C_result);
+    else if (B_active && B_insn.r.op == RV32I::OP2_LOAD && b4(B_addr, 28) == 0xE) {
+      reg_if.raddr1 = b13(DONTCARE);
+      reg_if.raddr2 = b13(B_addr >> 2);
     }
     else {
-      code_tla = gen_bus(RV32I::OP2_LOAD, 2, b32(A_pc_next), 0);
+      reg_if.raddr1 = b13(DONTCARE);
+      reg_if.raddr2 = b13(DONTCARE);
     }
 
-
-    data_tla = gen_bus(B_insn.r.op, B_insn.r.f3, B_addr, B_reg2);
-
-    //----------
-
-    tick(reset_in);
+    return reg_if;
   }
 
   //----------------------------------------------------------------------------
+  // If the other thread is idle, vane C can override the code bus read to
+  // write to code memory.
+  // We can _not_ read code memory here as the read would come back too late
+  // to write it to the regfile.
 
-private:
+  static tilelink_a code_bus(logic<1> A_active_next, logic<24> A_pc_next, logic<1> C_active, rv32_insn C_insn, logic<32> C_addr, logic<32> C_result) {
+    tilelink_a tla;
+    if (!A_active_next && C_active && C_insn.r.op == RV32I::OP2_STORE && b4(C_addr, 28) == 0x0) {
+      tla = gen_bus(C_insn.r.op, C_insn.r.f3, C_addr, C_result);
+    }
+    else {
+      tla = gen_bus(RV32I::OP2_LOAD, 2, b32(A_pc_next), 0);
+    }
+    return tla;
+  }
+
+  //----------------------------------------------------------------------------
 
   static logic<32> unpack_mem(rv32_insn C_insn, logic<32> C_addr, logic<32> mem) {
     if (C_addr[0]) mem = mem >> 8;
@@ -284,6 +336,8 @@ private:
     }
     return mem;
   }
+
+  //----------------------------------------------------------------------------
 
   static logic<32> execute_system(logic<8> B_hart, logic<24> B_pc, rv32_insn B_insn, logic<32> B_reg1) {
     // FIXME need a good error if case is missing an expression
@@ -307,6 +361,8 @@ private:
     return B_result;
   }
 
+  //----------------------------------------------------------------------------
+
   static logic<24> next_pc(logic<1> B_active, logic<24> B_pc, rv32_insn B_insn, logic<32> B_reg1, logic<32> B_reg2, logic<32> B_addr, logic<32> B_imm) {
     logic<24> result = B_pc;
     if (B_active) {
@@ -325,6 +381,8 @@ private:
     }
     return result;
   }
+
+  //----------------------------------------------------------------------------
 
   static logic<32> branch_pc(logic<24> B_pc, rv32_insn B_insn, logic<32> B_reg1, logic<32> B_reg2, logic<32> B_imm) {
     logic<1> eq  = B_reg1 == B_reg2;
@@ -347,44 +405,7 @@ private:
     return take_branch ? B_pc + B_imm : B_pc + 4;
   }
 
-
-  void tick(logic<1> reset_in)
-  {
-    if (reset_in) {
-      A_active = 1; A_hart = 0; A_pc = 0x00000004;
-      B_active = 0; B_hart = 0; B_pc = 0x00000000;
-      C_active = 0; C_hart = 0; //C_pc = 0x00000000;
-      //D_active = 0; D_hart = 0; D_pc = 0x00000000;
-      ticks = 0x00000000;
-    }
-    else {
-      //D_active = C_active;
-      //D_hart   = C_hart;
-      //D_pc     = C_pc;
-      //D_insn   = C_insn;
-      //D_result = C_result;
-
-      C_active = B_active;
-      C_hart   = B_hart;
-      //C_pc     = B_pc;
-      C_insn   = B_insn;
-      C_addr   = B_addr;
-      C_result = B_result;
-
-      B_active = A_active;
-      B_hart   = A_hart;
-      B_pc     = A_pc;
-      B_insn   = A_insn;
-
-      A_active = A_active_next;
-      A_hart   = A_hart_next;
-      A_pc     = A_pc_next;
-
-      ticks    = ticks + 1;
-    }
-  }
-
-  //----------------------------------------
+  //----------------------------------------------------------------------------
 
   static logic<32> decode_imm2(rv32_insn insn2) {
     logic<32> imm_i = sign_extend<32>(b12(insn2.i.imm_11_0));
@@ -423,7 +444,7 @@ private:
     return result;
   }
 
-  //----------------------------------------
+  //----------------------------------------------------------------------------
 
   static logic<32> execute_alu(rv32_insn insn, logic<32> alu1, logic<32> alu2) {
 
@@ -442,6 +463,44 @@ private:
       default: result = 0; break;
     }
     return result;
+  }
+
+  //----------------------------------------------------------------------------
+
+  void tick(logic<1> reset_in)
+  {
+    if (reset_in) {
+      A_active = 1; A_hart = 0; A_pc = 0x00000004;
+      B_active = 0; B_hart = 0; B_pc = 0x00000000;
+      C_active = 0; C_hart = 0; //C_pc = 0x00000000;
+      //D_active = 0; D_hart = 0; D_pc = 0x00000000;
+      ticks = 0x00000000;
+    }
+    else {
+      //D_active = C_active;
+      //D_hart   = C_hart;
+      //D_pc     = C_pc;
+      //D_insn   = C_insn;
+      //D_result = C_result;
+
+      C_active = B_active;
+      C_hart   = B_hart;
+      //C_pc     = B_pc;
+      C_insn   = B_insn;
+      C_addr   = B_addr;
+      C_result = B_result;
+
+      B_active = A_active;
+      B_hart   = A_hart;
+      B_pc     = A_pc;
+      B_insn   = A_insn;
+
+      A_active = A_active_next;
+      A_hart   = A_hart_next;
+      A_pc     = A_pc_next;
+
+      ticks    = ticks + 1;
+    }
   }
 
 public:
