@@ -164,7 +164,14 @@ public:
     logic<24> B_pc_next = B_pc + 4;
     logic<24> B_pc_addr = b24(B_addr);
 
-    logic<24> next_pc = B_active ? gen_pc(B_insn.r.op, B_take_branch, B_pc, B_addr, B_imm) : B_pc;
+    logic<24> next_pc;
+
+    if (B_active) {
+      next_pc = gen_pc(B_insn.r.op, B_take_branch, B_pc, B_addr, B_imm);
+    }
+    else {
+      next_pc = b24(DONTCARE);
+    }
 
     if (C_swap_pc) {
       A_active_next = b24(C_result) != 0;
