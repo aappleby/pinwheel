@@ -25,19 +25,13 @@ class pinwheel_core {
 public:
 
   pinwheel_core() {
-    A_active = 0;
-    A_hart = 0;
-    A_pc = 0;
+    A_hpc = 0;
     A_insn.raw = 0;
 
-    B_active = 0;
-    B_hart = 0;
-    B_pc = 0;
+    B_hpc = 0;
     B_insn.raw = 0;
 
-    C_active = 0;
-    C_hart = 0;
-    //C_pc = 0;
+    C_hpc = 0;
     C_insn.raw = 0;
     C_addr = 0;
     C_result = 0;
@@ -103,6 +97,18 @@ public:
 
   void tock(logic<1> reset_in, tilelink_d code_tld, tilelink_d data_tld, logic<32> reg1, logic<32> reg2) {
 
+    logic<8> A_hart = b8(A_hpc, 24);
+    logic<8> B_hart = b8(B_hpc, 24);
+    logic<8> C_hart = b8(C_hpc, 24);
+
+    logic<24> A_pc = b24(A_hpc);
+    logic<24> B_pc = b24(B_hpc);
+    logic<24> C_pc = b24(C_hpc);
+
+    logic<1> A_active = A_pc != 0;
+    logic<1> B_active = B_pc != 0;
+    logic<1> C_active = C_pc != 0;
+
     logic<1> B_swap_pc = B_active && B_insn.r.op == RV32I::OP_SYSTEM && B_insn.r.f3 == RV32I::F3_CSRRW && B_insn.c.csr == 0x801;
     logic<1> C_swap_pc = C_active && C_insn.r.op == RV32I::OP_SYSTEM && C_insn.r.f3 == RV32I::F3_CSRRW && C_insn.c.csr == 0x800;
 
@@ -118,18 +124,8 @@ public:
 
     B_reg1 = B_insn.r.rs1 ? reg1 : b32(0);
     B_reg2 = B_insn.r.rs2 ? reg2 : b32(0);
-
     B_imm  = decode_imm(B_insn);
-
-    if (B_swap_pc) {
-      B_addr = cat(B_hart, B_pc);
-    }
-    else if (B_active) {
-      B_addr = b32(B_reg1 + B_imm);
-    }
-    else {
-      B_addr = b32(DONTCARE);
-    }
+    B_addr = b32(B_reg1 + B_imm);
 
     //----------------------------------------
     // Vane B chooses the instruction address for the _next_ vane A.
@@ -144,14 +140,13 @@ public:
 
     logic<32> B_pc_jump = B_pc + B_imm;
     logic<32> B_pc_next = B_pc + 4;
-    logic<32> B_pc_addr = B_addr;
 
     logic<24> B_next_pc;
 
     switch(B_insn.r.op) {
       case RV32I::OP_BRANCH: B_next_pc = B_take_branch ? B_pc_jump : B_pc_next; break;
       case RV32I::OP_JAL:    B_next_pc = B_pc_jump; break;
-      case RV32I::OP_JALR:   B_next_pc = B_pc_addr; break;
+      case RV32I::OP_JALR:   B_next_pc = B_addr;    break;
       case RV32I::OP_LUI:    B_next_pc = B_pc_next; break;
       case RV32I::OP_AUIPC:  B_next_pc = B_pc_next; break;
       case RV32I::OP_LOAD:   B_next_pc = B_pc_next; break;
@@ -165,22 +160,16 @@ public:
     //----------------------------------------
 
     if (C_swap_pc) {
-      A_active_next = b24(C_result) != 0;
-      A_hart_next   = b8 (C_result, 24);
-      A_pc_next     = b24(C_result);
+      A_hpc_next = C_result;
     }
     else if (B_swap_pc) {
-      A_active_next = b24(B_reg1) != 0;
-      A_hart_next   = b8 (B_reg1, 24);
-      A_pc_next     = b24(B_reg1);
+      A_hpc_next = B_reg1;
     }
     else {
-      A_active_next = B_active;
-      A_hart_next   = B_hart;
-      A_pc_next     = B_next_pc;
+      A_hpc_next = cat(B_hart, B_next_pc);
     }
 
-    logic<32> A_hpc_next = cat(A_hart_next, A_pc_next);
+    logic<1> A_active_next = b24(A_hpc_next) != 0;
 
     //----------------------------------------
 
@@ -196,25 +185,19 @@ public:
 
     //B_result = B_active ? execute(B_active, B_hart, B_pc, B_insn, B_reg1, B_reg2, B_imm) : b32(DONTCARE);
 
-    if (B_active) {
-      switch(B_insn.r.op) {
-        case RV32I::OP_OPIMM:  B_result = execute_alu(B_insn, B_reg1, B_imm); break;
-        case RV32I::OP_OP:     B_result = execute_alu(B_insn, B_reg1, B_reg2); break;
-        case RV32I::OP_SYSTEM: B_result = execute_system(B_hart, B_pc, B_insn, B_reg1); break;
-        case RV32I::OP_BRANCH: B_result = b32(DONTCARE); break;
-        case RV32I::OP_JAL:    B_result = B_pc_next; break;
-        case RV32I::OP_JALR:   B_result = B_pc_next; break;
-        case RV32I::OP_LUI:    B_result = B_imm; break;
-        case RV32I::OP_AUIPC:  B_result = B_pc + B_imm; break;
-        case RV32I::OP_LOAD:   B_result = b32(DONTCARE); break;
-        case RV32I::OP_STORE:  B_result = B_reg2; break;
-        default:               B_result = b32(DONTCARE); break;
-      }
+    switch(B_insn.r.op) {
+      case RV32I::OP_OPIMM:  B_result = execute_alu(B_insn, B_reg1, B_imm); break;
+      case RV32I::OP_OP:     B_result = execute_alu(B_insn, B_reg1, B_reg2); break;
+      case RV32I::OP_SYSTEM: B_result = execute_system(B_hart, B_pc, B_insn, B_reg1); break;
+      case RV32I::OP_BRANCH: B_result = b32(DONTCARE); break;
+      case RV32I::OP_JAL:    B_result = B_pc_next; break;
+      case RV32I::OP_JALR:   B_result = B_pc_next; break;
+      case RV32I::OP_LUI:    B_result = B_imm; break;
+      case RV32I::OP_AUIPC:  B_result = B_pc + B_imm; break;
+      case RV32I::OP_LOAD:   B_result = b32(DONTCARE); break;
+      case RV32I::OP_STORE:  B_result = B_reg2; break;
+      default:               B_result = b32(DONTCARE); break;
     }
-    else {
-      B_result = b32(DONTCARE);
-    }
-
 
     //--------------------------------------------------------------------------
     // Regfile write
@@ -292,7 +275,7 @@ public:
       code_tla = gen_bus(C_insn.r.op, C_insn.r.f3, C_addr, C_result);
     }
     else {
-      code_tla = gen_bus(RV32I::OP_LOAD, 2, b32(A_pc_next), 0);
+      code_tla = gen_bus(RV32I::OP_LOAD, 2, b32(b24(A_hpc_next)), 0);
     }
 
     data_tla = gen_bus(B_insn.r.op, B_insn.r.f3, B_addr, B_reg2);
@@ -501,34 +484,26 @@ private:
   void tick(logic<1> reset_in)
   {
     if (reset_in) {
-      A_active = 1; A_hart = 0; A_pc = 0x00000004;
-      B_active = 0; B_hart = 0; B_pc = 0x00000000;
-      C_active = 0; C_hart = 0; //C_pc = 0x00000000;
-      //D_active = 0; D_hart = 0; D_pc = 0x00000000;
+      A_hpc = 0x00000004;
+      B_hpc = 0x00000000;
+      C_hpc = 0x00000000;
+      //D_hpc = 0x00000000;
       ticks = 0x00000000;
     }
     else {
-      //D_active = C_active;
-      //D_hart   = C_hart;
-      //D_pc     = C_pc;
+      //D_hpc    = C_hpc;
       //D_insn   = C_insn;
       //D_result = C_result;
 
-      C_active = B_active;
-      C_hart   = B_hart;
-      //C_pc     = B_pc;
+      C_hpc    = B_hpc;
       C_insn   = B_insn;
       C_addr   = B_addr;
       C_result = B_result;
 
-      B_active = A_active;
-      B_hart   = A_hart;
-      B_pc     = A_pc;
+      B_hpc    = A_hpc;
       B_insn   = A_insn;
 
-      A_active = A_active_next;
-      A_hart   = A_hart_next;
-      A_pc     = A_pc_next;
+      A_hpc    = A_hpc_next;
 
       ticks    = ticks + 1;
     }
@@ -539,18 +514,12 @@ public:
   //----------------------------------------
   // Internal signals and registers
 
-  /* metron_internal */ logic<1>  A_active_next;
-  /* metron_internal */ logic<8>  A_hart_next;
-  /* metron_internal */ logic<24> A_pc_next;
+  /* metron_internal */ logic<32> A_hpc_next;
 
-  /* metron_internal */ logic<1>  A_active;
-  /* metron_internal */ logic<8>  A_hart;
-  /* metron_internal */ logic<24> A_pc;
+  /* metron_internal */ logic<32> A_hpc;
   /* metron_internal */ rv32_insn A_insn;
 
-  /* metron_internal */ logic<1>  B_active;
-  /* metron_internal */ logic<8>  B_hart;
-  /* metron_internal */ logic<24> B_pc;
+  /* metron_internal */ logic<32> B_hpc;
   /* metron_internal */ rv32_insn B_insn;
   /* metron_internal */ logic<32> B_reg1; // not essential
   /* metron_internal */ logic<32> B_reg2; // not essential
@@ -558,9 +527,7 @@ public:
   /* metron_internal */ logic<32> B_addr;
   /* metron_internal */ logic<32> B_result;
 
-  /* metron_internal */ logic<1>  C_active;
-  /* metron_internal */ logic<8>  C_hart;
-  ///* metron_internal */ logic<24> C_pc;
+  /* metron_internal */ logic<32> C_hpc;
   /* metron_internal */ rv32_insn C_insn;
   /* metron_internal */ logic<32> C_addr;
   /* metron_internal */ logic<32> C_result;
