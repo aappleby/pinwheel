@@ -1,9 +1,6 @@
 #ifndef PINWHEEL_RTL_PINWHEEL_CORE_H
 #define PINWHEEL_RTL_PINWHEEL_CORE_H
 
-// FIXME need to do struct/union thing for rv32 instructions so we don't have
-// so much duplicate decoding crap
-
 #include "metron/metron_tools.h"
 #include "pinwheel/tools/regfile_if.h"
 #include "pinwheel/tools/tilelink.h"
@@ -12,11 +9,16 @@
 #include <assert.h>
 
 // CSR 0x800 - swap secondary thread
-// CSR 0x801 - swap current thread
+// CSR 0x801 - yield primary thread
 
 // 0xE0000000 - mapped regfile base address
 
-// FIXME where does the old PC go when we swap the current thread?
+// AB - Read registers
+// BC - Execute n stuff
+// CD - Memory read/write (todo)
+// DA - Register writeback
+
+// TODO - Move mem ops to CD so we can read code and still make the writeback
 
 //------------------------------------------------------------------------------
 /* verilator lint_off UNUSEDSIGNAL */
@@ -37,8 +39,6 @@ public:
     C_result = 0;
 
     D_hpc = 0;
-    //D_insn.raw = 0;
-    //D_writeback = 0;
     D_waddr = 0;
     D_wdata = 0;
     D_wren = 0;
@@ -100,10 +100,12 @@ public:
     logic<1> B_swap = B_active && B_insn.r.op == RV32I::OP_SYSTEM && B_insn.r.f3 == RV32I::F3_CSRRW && B_insn.c.csr == 0x800;
     logic<1> C_swap = C_active && C_insn.r.op == RV32I::OP_SYSTEM && C_insn.r.f3 == RV32I::F3_CSRRW && C_insn.c.csr == 0x800;
 
-    logic<1> C_read_regfile  = C_active && C_insn.r.op == RV32I::OP_LOAD  && b4(C_addr, 28) == 0xE;
-    logic<1> C_read_mem      = C_active && C_insn.r.op == RV32I::OP_LOAD;
+    logic<1> C_read_code     = C_active && C_insn.r.op == RV32I::OP_LOAD && b4(C_addr, 28) == 0x0;
+    logic<1> C_read_regfile  = C_active && C_insn.r.op == RV32I::OP_LOAD && b4(C_addr, 28) == 0xE;
+    logic<1> C_read_mem      = C_active && C_insn.r.op == RV32I::OP_LOAD && b4(C_addr, 28) == 0x8;
 
     logic<1> C_write_code    = C_active && C_insn.r.op == RV32I::OP_STORE && b4(C_addr, 28) == 0x0;
+    logic<1> C_write_mem     = C_active && C_insn.r.op == RV32I::OP_STORE && b4(C_addr, 28) == 0x8;
     logic<1> C_write_regfile = C_active && C_insn.r.op == RV32I::OP_STORE && b4(C_addr, 28) == 0xE;
 
     //----------------------------------------
@@ -111,7 +113,6 @@ public:
     // reads.
 
     A_insn.raw = A_active ? code_tld.d_data : b32(0);
-
 
     //----------------------------------------
     // Forward stores from phase D to phase B
@@ -171,11 +172,12 @@ public:
     // so we can write it to the regfile in phase C.
     if (B_yield) B_result = B_hpc_next;
 
-    // If we're going to swap secondary threads in phase C, we need to stash
-    // reg1 in B_result so we can use it above.
+    // If we're going to swap secondary threads in phase C, our target hpc is
+    // coming from reg1. We need to stash it in B_result so we can use it next
+    // phase from C_result below.
     if (B_swap)  B_result = B_reg1;
 
-    //----------------------------------------
+    //--------------------------------------------------------------------------
     // If both threads trigger PC swaps at once, the C one fires first.
 
     logic<32> A_hpc_next;
@@ -275,16 +277,15 @@ public:
 
     // If the other thread is idle, vane C can override the code bus read to
     // write to code memory.
-    // We can _not_ read code memory here as the read would come back too late
-    // to write it to the regfile.
 
-    if (C_write_code && !A_active_next) {
+    if ((C_read_code || C_write_code) && !A_active_next) {
       code_tla = gen_bus(C_insn.r.op, C_insn.r.f3, C_addr, C_result);
     }
     else {
       code_tla = gen_bus(RV32I::OP_LOAD, 2, b32(b24(A_hpc_next)), 0);
     }
 
+    // FIXME move to phase C
     data_tla = gen_bus(B_insn.r.op, B_insn.r.f3, B_addr, B_reg2);
 
     reg_if.waddr  = D_waddr;
