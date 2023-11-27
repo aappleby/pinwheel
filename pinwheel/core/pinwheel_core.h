@@ -70,7 +70,7 @@ public:
     data_tla.a_ready   = b1(DONTCARE);
   }
 
-  /* metron_noconvert */ logic<32> dbg_decode_imm(rv32_insn insn) const { return decode_imm2(insn); }
+  /* metron_noconvert */ logic<32> dbg_decode_imm(rv32_insn insn) const { return decode_imm(insn); }
 
   //----------------------------------------
 
@@ -94,11 +94,11 @@ public:
     tla.a_address = addr;
     tla.a_data    = (reg2 << ((addr & 3) * 8));
     tla.a_mask    = mask_b;
-    tla.a_opcode  = (op == RV32I::OP2_STORE) ? (bus_size == 2 ? TL::PutFullData : TL::PutPartialData) : TL::Get;
+    tla.a_opcode  = (op == RV32I::OP_STORE) ? (bus_size == 2 ? TL::PutFullData : TL::PutPartialData) : TL::Get;
     tla.a_param   = b3(DONTCARE);
     tla.a_size    = bus_size;
     tla.a_source  = b1(DONTCARE);
-    tla.a_valid   = (op == RV32I::OP2_LOAD) || (op == RV32I::OP2_STORE);
+    tla.a_valid   = (op == RV32I::OP_LOAD) || (op == RV32I::OP_STORE);
     tla.a_ready   = 1;
 
     return tla;
@@ -128,8 +128,8 @@ public:
 
   void tock(logic<1> reset_in, tilelink_d code_tld, tilelink_d data_tld, logic<32> reg1, logic<32> reg2) {
 
-    logic<1> B_swap_pc = B_active && B_insn.r.op == RV32I::OP2_SYSTEM && B_insn.r.f3 == RV32I::F3_CSRRW && B_insn.c.csr == 0x801;
-    logic<1> C_swap_pc = C_active && C_insn.r.op == RV32I::OP2_SYSTEM && C_insn.r.f3 == RV32I::F3_CSRRW && C_insn.c.csr == 0x800;
+    logic<1> B_swap_pc = B_active && B_insn.r.op == RV32I::OP_SYSTEM && B_insn.r.f3 == RV32I::F3_CSRRW && B_insn.c.csr == 0x801;
+    logic<1> C_swap_pc = C_active && C_insn.r.op == RV32I::OP_SYSTEM && C_insn.r.f3 == RV32I::F3_CSRRW && C_insn.c.csr == 0x800;
 
     //----------------------------------------
     // Vane A receives its instruction from the code bus and issues register
@@ -144,7 +144,7 @@ public:
     B_reg1 = B_insn.r.rs1 ? reg1 : b32(0);
     B_reg2 = B_insn.r.rs2 ? reg2 : b32(0);
 
-    B_imm  = decode_imm2(B_insn);
+    B_imm  = decode_imm(B_insn);
     B_addr = gen_address(B_swap_pc, B_active, B_hart, B_pc, B_insn, B_reg1, B_imm);
 
     data_tla = gen_bus(B_insn.r.op, B_insn.r.f3, B_addr, B_reg2);
@@ -161,7 +161,7 @@ public:
     logic<1> B_take_branch = take_branch(B_insn.r.f3, B_reg1, B_reg2);
 
 
-    logic<24> next_pc = B_active ? gen_pc(B_take_branch, B_active, B_pc, B_insn, B_reg1, B_reg2, B_addr, B_imm) : B_pc;
+    logic<24> next_pc = B_active ? gen_pc(B_insn.r.op, B_take_branch, B_pc, B_addr, B_imm) : B_pc;
 
 
     if (C_swap_pc) {
@@ -184,12 +184,12 @@ public:
 
     //----------------------------------------
 
-    logic<1> C_write_code    = !A_active_next && C_active && C_insn.r.op == RV32I::OP2_STORE && b4(C_addr, 28) == 0x0;
-    logic<1> C_read_regfile  = C_active && C_insn.r.op == RV32I::OP2_LOAD && b4(C_addr, 28) == 0xE;
-    logic<1> C_write_regfile = C_active && C_insn.r.op == RV32I::OP2_STORE && b4(C_addr, 28) == 0xE;
-    logic<1> B_read_regfile  = B_active && B_insn.r.op == RV32I::OP2_LOAD  && b4(B_addr, 28) == 0xE;
+    logic<1> C_write_code    = !A_active_next && C_active && C_insn.r.op == RV32I::OP_STORE && b4(C_addr, 28) == 0x0;
+    logic<1> C_read_regfile  = C_active && C_insn.r.op == RV32I::OP_LOAD && b4(C_addr, 28) == 0xE;
+    logic<1> C_write_regfile = C_active && C_insn.r.op == RV32I::OP_STORE && b4(C_addr, 28) == 0xE;
+    logic<1> B_read_regfile  = B_active && B_insn.r.op == RV32I::OP_LOAD  && b4(B_addr, 28) == 0xE;
 
-    logic<1> C_read_mem      = C_active && C_insn.r.op == RV32I::OP2_LOAD;
+    logic<1> C_read_mem      = C_active && C_insn.r.op == RV32I::OP_LOAD;
 
     //----------------------------------------
     // Vane B executes its instruction and stores the result in _result.
@@ -288,16 +288,16 @@ private:
     logic<32> B_result = b32(DONTCARE);
     if (B_active) {
       switch(B_insn.r.op) {
-        case RV32I::OP2_OPIMM:  B_result = execute_alu(B_insn, B_reg1, B_imm);  break;
-        case RV32I::OP2_OP:     B_result = execute_alu(B_insn, B_reg1, B_reg2); break;
-        case RV32I::OP2_SYSTEM: B_result = execute_system(B_hart, B_pc, B_insn, B_reg1); break;
-        case RV32I::OP2_BRANCH: B_result = b32(DONTCARE);     break;
-        case RV32I::OP2_JAL:    B_result = b24(B_pc) + 4;     break;
-        case RV32I::OP2_JALR:   B_result = b24(B_pc) + 4;     break;
-        case RV32I::OP2_LUI:    B_result = B_imm;             break;
-        case RV32I::OP2_AUIPC:  B_result = b24(B_pc) + B_imm; break;
-        case RV32I::OP2_LOAD:   B_result = b32(DONTCARE);     break;
-        case RV32I::OP2_STORE:  B_result = B_reg2;            break;
+        case RV32I::OP_OPIMM:  B_result = execute_alu(B_insn, B_reg1, B_imm);  break;
+        case RV32I::OP_OP:     B_result = execute_alu(B_insn, B_reg1, B_reg2); break;
+        case RV32I::OP_SYSTEM: B_result = execute_system(B_hart, B_pc, B_insn, B_reg1); break;
+        case RV32I::OP_BRANCH: B_result = b32(DONTCARE);     break;
+        case RV32I::OP_JAL:    B_result = b24(B_pc) + 4;     break;
+        case RV32I::OP_JALR:   B_result = b24(B_pc) + 4;     break;
+        case RV32I::OP_LUI:    B_result = B_imm;             break;
+        case RV32I::OP_AUIPC:  B_result = b24(B_pc) + B_imm; break;
+        case RV32I::OP_LOAD:   B_result = b32(DONTCARE);     break;
+        case RV32I::OP_STORE:  B_result = B_reg2;            break;
         default:                B_result = b32(DONTCARE);     break;
       }
     }
@@ -357,7 +357,7 @@ private:
       // Vane C writes _result to _rd if the thread is active and _rd != 0.
       reg_if.waddr = cat(C_hart, b5(C_insn.r.rd));
       reg_if.wdata = writeback;
-      reg_if.wren  = C_insn.r.rd && C_insn.r.op != RV32I::OP2_STORE && C_insn.r.op != RV32I::OP2_BRANCH;
+      reg_if.wren  = C_insn.r.rd && C_insn.r.op != RV32I::OP_STORE && C_insn.r.op != RV32I::OP_BRANCH;
     }
     else {
       reg_if.waddr = b13(DONTCARE);
@@ -397,7 +397,7 @@ private:
       tla = gen_bus(C_insn.r.op, C_insn.r.f3, C_addr, C_result);
     }
     else {
-      tla = gen_bus(RV32I::OP2_LOAD, 2, b32(A_pc_next), 0);
+      tla = gen_bus(RV32I::OP_LOAD, 2, b32(A_pc_next), 0);
     }
     return tla;
   }
@@ -408,10 +408,14 @@ private:
     if (addr[0]) mem = mem >> 8;
     if (addr[1]) mem = mem >> 16;
     switch (f3) {
-      case 0: mem = sign_extend<32>( b8(mem)); break;
-      case 1: mem = sign_extend<32>(b16(mem)); break;
-      case 4: mem = zero_extend<32>( b8(mem)); break;
-      case 5: mem = zero_extend<32>(b16(mem)); break;
+      case RV32I::F3_LB:  mem = sign_extend<32>( b8(mem)); break;
+      case RV32I::F3_LH:  mem = sign_extend<32>(b16(mem)); break;
+      case RV32I::F3_LW:  mem = mem; break;
+      case RV32I::F3_LD:  mem = mem; break;
+      case RV32I::F3_LBU: mem = zero_extend<32>( b8(mem)); break;
+      case RV32I::F3_LHU: mem = zero_extend<32>(b16(mem)); break;
+      case RV32I::F3_LWU: mem = mem; break;
+      case RV32I::F3_LDU: mem = mem; break;
     }
     return mem;
   }
@@ -442,29 +446,23 @@ private:
 
   //----------------------------------------------------------------------------
 
-  static logic<24> gen_pc(
-    logic<1> B_take_branch,
-    logic<1> B_active, logic<24> B_pc, rv32_insn B_insn,
-    logic<32> B_reg1, logic<32> B_reg2, logic<32> B_addr, logic<32> B_imm)
-  {
-    logic<24> pc_jump = B_pc + B_imm;
-    logic<24> pc_next = B_pc + 4;
-    logic<24> pc_addr = b24(B_addr);
-
-    logic<1> branch = take_branch(B_insn.r.f3, B_reg1, B_reg2);
+  static logic<24> gen_pc(logic<7> op, logic<1> take_branch, logic<24> pc, logic<32> addr, logic<32> imm) {
+    logic<24> pc_jump = pc + imm;
+    logic<24> pc_next = pc + 4;
+    logic<24> pc_addr = b24(addr);
 
     logic<24> result = b24(DONTCARE);
-    switch(B_insn.r.op) {
-      case RV32I::OP2_BRANCH: return branch ? pc_jump : pc_next; break;
-      case RV32I::OP2_JAL:    return pc_jump; break;
-      case RV32I::OP2_JALR:   return pc_addr; break;
-      case RV32I::OP2_LUI:    return pc_next; break;
-      case RV32I::OP2_AUIPC:  return pc_next; break;
-      case RV32I::OP2_LOAD:   return pc_next; break;
-      case RV32I::OP2_STORE:  return pc_next; break;
-      case RV32I::OP2_SYSTEM: return pc_next; break;
-      case RV32I::OP2_OPIMM:  return pc_next; break;
-      case RV32I::OP2_OP:     return pc_next; break;
+    switch(op) {
+      case RV32I::OP_BRANCH: result = take_branch ? pc_jump : pc_next; break;
+      case RV32I::OP_JAL:    result = pc_jump; break;
+      case RV32I::OP_JALR:   result = pc_addr; break;
+      case RV32I::OP_LUI:    result = pc_next; break;
+      case RV32I::OP_AUIPC:  result = pc_next; break;
+      case RV32I::OP_LOAD:   result = pc_next; break;
+      case RV32I::OP_STORE:  result = pc_next; break;
+      case RV32I::OP_SYSTEM: result = pc_next; break;
+      case RV32I::OP_OPIMM:  result = pc_next; break;
+      case RV32I::OP_OP:     result = pc_next; break;
     }
     return result;
   }
@@ -494,7 +492,7 @@ private:
 
   //----------------------------------------------------------------------------
 
-  static logic<32> decode_imm2(rv32_insn insn2) {
+  static logic<32> decode_imm(rv32_insn insn2) {
     logic<32> imm_i = sign_extend<32>(b12(insn2.i.imm_11_0));
     logic<32> imm_s = sign_extend<32>(cat(b7(insn2.s.imm_11_5), b5(insn2.s.imm_4_0)));
     logic<32> imm_u = cat(b20(insn2.u.imm_31_12), b12(0));
@@ -517,15 +515,15 @@ private:
 
     logic<32> result;
     switch(insn2.r.op) {
-      case RV32I::OP2_LOAD:   result = imm_i; break;
-      case RV32I::OP2_OPIMM:  result = imm_i; break;
-      case RV32I::OP2_AUIPC:  result = imm_u; break;
-      case RV32I::OP2_STORE:  result = imm_s; break;
-      case RV32I::OP2_OP:     result = imm_i; break;
-      case RV32I::OP2_LUI:    result = imm_u; break;
-      case RV32I::OP2_BRANCH: result = imm_b; break;
-      case RV32I::OP2_JALR:   result = imm_i; break;
-      case RV32I::OP2_JAL:    result = imm_j; break;
+      case RV32I::OP_LOAD:   result = imm_i; break;
+      case RV32I::OP_OPIMM:  result = imm_i; break;
+      case RV32I::OP_AUIPC:  result = imm_u; break;
+      case RV32I::OP_STORE:  result = imm_s; break;
+      case RV32I::OP_OP:     result = imm_i; break;
+      case RV32I::OP_LUI:    result = imm_u; break;
+      case RV32I::OP_BRANCH: result = imm_b; break;
+      case RV32I::OP_JALR:   result = imm_i; break;
+      case RV32I::OP_JAL:    result = imm_j; break;
       default:                result = 0;     break;
     }
     return result;
@@ -535,19 +533,17 @@ private:
 
   static logic<32> execute_alu(rv32_insn insn, logic<32> alu1, logic<32> alu2) {
 
-    if (insn.r.op == RV32I::OP2_OP && insn.r.f3 == 0 && insn.r.f7 == 32) alu2 = -alu2;
-
     logic<32> result;
     switch (insn.r.f3) {
-      case 0:  result = alu1 + alu2; break;
-      case 1:  result = alu1 << b5(alu2); break;
-      case 2:  result = signed(alu1) < signed(alu2); break;
-      case 3:  result = alu1 < alu2; break;
-      case 4:  result = alu1 ^ alu2; break;
-      case 5:  result = insn.r.f7 == 32 ? signed(alu1) >> b5(alu2) : alu1 >> b5(alu2); break;
-      case 6:  result = alu1 | alu2; break;
-      case 7:  result = alu1 & alu2; break;
-      default: result = 0; break;
+      case RV32I::F3_ADDSUB: result = (insn.r.op == RV32I::OP_OP && insn.r.f7 == 32) ? alu1 - alu2 : alu1 + alu2; break;
+      case RV32I::F3_SL:     result = alu1 << b5(alu2); break;
+      case RV32I::F3_SLT:    result = signed(alu1) < signed(alu2); break;
+      case RV32I::F3_SLTU:   result = alu1 < alu2; break;
+      case RV32I::F3_XOR:    result = alu1 ^ alu2; break;
+      case RV32I::F3_SR:     result = insn.r.f7 == 32 ? signed(alu1) >> b5(alu2) : alu1 >> b5(alu2); break;
+      case RV32I::F3_OR:     result = alu1 | alu2; break;
+      case RV32I::F3_AND:    result = alu1 & alu2; break;
+      default:               result = 0; break;
     }
     return result;
   }
