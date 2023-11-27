@@ -526,20 +526,17 @@ private:
   //----------------------------------------------------------------------------
 
   static logic<32> execute_alu(rv32_insn insn, logic<32> alu1, logic<32> alu2) {
-
-    logic<32> result;
     switch (insn.r.f3) {
-      case RV32I::F3_ADDSUB: result = (insn.r.op == RV32I::OP_OP && insn.r.f7 == 32) ? alu1 - alu2 : alu1 + alu2; break;
-      case RV32I::F3_SL:     result = alu1 << b5(alu2); break;
-      case RV32I::F3_SLT:    result = signed(alu1) < signed(alu2); break;
-      case RV32I::F3_SLTU:   result = alu1 < alu2; break;
-      case RV32I::F3_XOR:    result = alu1 ^ alu2; break;
-      case RV32I::F3_SR:     result = insn.r.f7 == 32 ? signed(alu1) >> b5(alu2) : alu1 >> b5(alu2); break;
-      case RV32I::F3_OR:     result = alu1 | alu2; break;
-      case RV32I::F3_AND:    result = alu1 & alu2; break;
-      default:               result = 0; break;
+      case RV32I::F3_ADDSUB: return (insn.r.op == RV32I::OP_OP && insn.r.f7 == 32) ? alu1 - alu2 : alu1 + alu2;
+      case RV32I::F3_SL:     return alu1 << b5(alu2);
+      case RV32I::F3_SLT:    return signed(alu1) < signed(alu2);
+      case RV32I::F3_SLTU:   return alu1 < alu2;
+      case RV32I::F3_XOR:    return alu1 ^ alu2;
+      case RV32I::F3_SR:     return insn.r.f7 == 32 ? signed(alu1) >> b5(alu2) : alu1 >> b5(alu2);
+      case RV32I::F3_OR:     return alu1 | alu2;
+      case RV32I::F3_AND:    return alu1 & alu2;
+      default:               return b32(DONTCARE);
     }
-    return result;
   }
 
   //----------------------------------------------------------------------------
