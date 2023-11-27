@@ -160,9 +160,9 @@ public:
 
     logic<1> B_take_branch = take_branch(B_insn.r.f3, B_reg1, B_reg2);
 
-    logic<24> B_pc_jump = B_pc + B_imm;
-    logic<24> B_pc_next = B_pc + 4;
-    logic<24> B_pc_addr = b24(B_addr);
+    logic<32> B_pc_jump = B_pc + B_imm;
+    logic<32> B_pc_next = B_pc + 4;
+    logic<32> B_pc_addr = B_addr;
 
     logic<24> next_pc;
 
