@@ -265,10 +265,12 @@ public:
     //--------------------------------------------------------------------------
     // Code bus read/write
 
-    code_tla = code_bus(
-      C_write_code,
-      A_active_next, A_pc_next,
-      C_active, C_insn, C_addr, C_result);
+    if (C_write_code) {
+      code_tla = gen_bus(C_insn.r.op, C_insn.r.f3, C_addr, C_result);
+    }
+    else {
+      code_tla = gen_bus(RV32I::OP_LOAD, 2, b32(A_pc_next), 0);
+    }
 
     //----------
 
@@ -376,17 +378,6 @@ private:
   // write to code memory.
   // We can _not_ read code memory here as the read would come back too late
   // to write it to the regfile.
-
-  static tilelink_a code_bus(logic<1> C_write_code, logic<1> A_active_next, logic<24> A_pc_next, logic<1> C_active, rv32_insn C_insn, logic<32> C_addr, logic<32> C_result) {
-    tilelink_a tla;
-    if (C_write_code) {
-      tla = gen_bus(C_insn.r.op, C_insn.r.f3, C_addr, C_result);
-    }
-    else {
-      tla = gen_bus(RV32I::OP_LOAD, 2, b32(A_pc_next), 0);
-    }
-    return tla;
-  }
 
   //----------------------------------------------------------------------------
 
