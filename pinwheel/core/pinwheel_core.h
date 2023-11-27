@@ -295,10 +295,10 @@ private:
 
   //--------------------------------------------------------------------------
 
-  static logic<32> gen_address(logic<1> swap_b, logic<1> B_active, logic<8> B_hart, logic<24> B_pc, rv32_insn B_insn, logic<32> B_reg1, logic<32> B_imm) {
+  static logic<32> gen_address(logic<1> B_swap_pc, logic<1> B_active, logic<8> B_hart, logic<24> B_pc, rv32_insn B_insn, logic<32> B_reg1, logic<32> B_imm) {
     logic<32> B_addr;
 
-    if (swap_b) {
+    if (B_swap_pc) {
       B_addr = cat(B_hart, B_pc);
     }
     else if (B_active) {
