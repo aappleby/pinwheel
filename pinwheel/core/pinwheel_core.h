@@ -37,8 +37,11 @@ public:
     C_result = 0;
 
     D_hpc = 0;
-    D_insn.raw = 0;
-    D_writeback = 0;
+    //D_insn.raw = 0;
+    //D_writeback = 0;
+    D_waddr = 0;
+    D_wdata = 0;
+    D_wren = 0;
 
     ticks = 0;
 
@@ -217,22 +220,30 @@ public:
     //--------------------------------------------------------------------------
     // Regfile write
 
+    logic<13> C_waddr;
+    logic<32> C_wdata;
+    logic<1>  C_wren;
+
     if (C_write_regfile) {
       // A memory-mapped regfile write overrides the normal write.
-      reg_if.waddr = b8(C_addr >> 2);
-      reg_if.wdata = C_writeback;
-      reg_if.wren  = 1;
+      C_waddr = b8(C_addr >> 2);
+      C_wdata = C_writeback;
+      C_wren  = 1;
     } else if (C_active) {
       // Vane C writes _result to _rd if the thread is active and _rd != 0.
-      reg_if.waddr = cat(C_hart, b5(C_insn.r.rd));
-      reg_if.wdata = C_writeback;
-      reg_if.wren  = C_insn.r.rd && C_insn.r.op != RV32I::OP_STORE && C_insn.r.op != RV32I::OP_BRANCH;
+      C_waddr = cat(C_hart, b5(C_insn.r.rd));
+      C_wdata = C_writeback;
+      C_wren  = C_insn.r.rd && C_insn.r.op != RV32I::OP_STORE && C_insn.r.op != RV32I::OP_BRANCH;
     }
     else {
-      reg_if.waddr = b13(DONTCARE);
-      reg_if.wdata = b32(DONTCARE);
-      reg_if.wren  = 0;
+      C_waddr = b13(DONTCARE);
+      C_wdata = b32(DONTCARE);
+      C_wren  = 0;
     }
+
+    reg_if.waddr = C_waddr;
+    reg_if.wdata = C_wdata;
+    reg_if.wren  = C_wren;
 
     //--------------------------------------------------------------------------
     // Regfile read
@@ -240,18 +251,24 @@ public:
     // If vane A is idle, vane B uses vane A's regfile slot to do an additional
     // regfile read. This is used for memory-mapped regfile reading.
 
+    logic<13> A_raddr1;
+    logic<13> A_raddr2;
+
     if (A_active) {
-      reg_if.raddr1 = cat(A_hart, b5(A_insn.r.rs1));
-      reg_if.raddr2 = cat(A_hart, b5(A_insn.r.rs2));
+      A_raddr1 = cat(A_hart, b5(A_insn.r.rs1));
+      A_raddr2 = cat(A_hart, b5(A_insn.r.rs2));
     }
     else if (B_read_regfile) {
-      reg_if.raddr1 = b13(DONTCARE);
-      reg_if.raddr2 = b13(B_addr >> 2);
+      A_raddr1 = b13(DONTCARE);
+      A_raddr2 = b13(B_addr >> 2);
     }
     else {
-      reg_if.raddr1 = b13(DONTCARE);
-      reg_if.raddr2 = b13(DONTCARE);
+      A_raddr1 = b13(DONTCARE);
+      A_raddr2 = b13(DONTCARE);
     }
+
+    reg_if.raddr1 = A_raddr1;
+    reg_if.raddr2 = A_raddr2;
 
     //--------------------------------------------------------------------------
     // Code bus read/write
@@ -272,7 +289,7 @@ public:
 
     //----------
 
-    tick(reset_in, A_hpc_next, B_addr, B_result, C_writeback);
+    tick(reset_in, A_hpc_next, B_addr, B_result, C_waddr, C_wdata, C_wren);
   }
 
   //----------------------------------------------------------------------------
@@ -420,7 +437,7 @@ private:
 
   //----------------------------------------------------------------------------
 
-  void tick(logic<1> reset_in, logic<32> A_hpc_next, logic<32> B_addr, logic<32> B_result, logic<32> C_writeback)
+  void tick(logic<1> reset_in, logic<32> A_hpc_next, logic<32> B_addr, logic<32> B_result, logic<13> C_waddr, logic<32> C_wdata, logic<1> C_wren)
   {
     if (reset_in) {
       A_hpc = 0x00000004;
@@ -430,9 +447,10 @@ private:
       ticks = 0x00000000;
     }
     else {
-      D_hpc       = C_hpc;
-      D_insn      = C_insn;
-      D_writeback = C_writeback;
+      D_hpc   = C_hpc;
+      D_waddr = C_waddr;
+      D_wdata = C_wdata;
+      D_wren  = C_wren;
 
       C_hpc    = B_hpc;
       C_insn   = B_insn;
@@ -465,8 +483,9 @@ public:
   /* metron_internal */ logic<32> C_result;
 
   /* metron_internal */ logic<32> D_hpc;
-  /* metron_internal */ rv32_insn D_insn;
-  /* metron_internal */ logic<32> D_writeback;
+  /* metron_internal */ logic<13> D_waddr;
+  /* metron_internal */ logic<32> D_wdata;
+  /* metron_internal */ logic<1>  D_wren;
 
   // These registers aren't actually needed, but they make debugging easier.
   ///* metron_internal */ logic<1>  D_active;
