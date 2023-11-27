@@ -122,19 +122,7 @@ public:
     B_reg2 = B_insn.r.rs2 ? reg2 : b32(0);
 
     B_imm  = decode_imm2(B_insn);
-
-    if (B_active) {
-      if (B_insn.r.op == RV32I::OP2_SYSTEM) {
-        if (B_insn.r.f3 == RV32I::F3_CSRRW && B_insn.c.csr == 0x801) {
-          B_addr = cat(B_hart, B_pc);
-        }
-      } else {
-        B_addr = b32(B_reg1 + B_imm);
-      }
-    }
-    else {
-      B_addr = b32(DONTCARE);
-    }
+    B_addr = gen_address(B_active, B_hart, B_pc, B_insn, B_reg1, B_imm);
 
     data_tla = gen_bus(B_insn.r.op, B_insn.r.f3, B_addr, B_reg2);
 
@@ -146,6 +134,9 @@ public:
 
     // FIXME what if both threads trigger PC swaps at once?
     // - The C one fires first, swapping the other thread.
+
+    logic<24> next_pc_maybe = next_pc(B_active, B_pc, B_insn, B_reg1, B_reg2, B_addr, B_imm);
+
 
     if (C_active && C_insn.r.op == RV32I::OP2_SYSTEM && C_insn.r.f3 == RV32I::F3_CSRRW && C_insn.c.csr == 0x800) {
       A_active_next = b24(C_result) != 0;
@@ -160,29 +151,14 @@ public:
     else {
       A_active_next = B_active;
       A_hart_next   = B_hart;
-      A_pc_next     = next_pc(B_active, B_pc, B_insn, B_reg1, B_reg2, B_addr, B_imm);
+      A_pc_next     = next_pc_maybe;
     }
 
 
     //----------------------------------------
     // Vane B executes its instruction and stores the result in _result.
 
-    B_result = b32(DONTCARE);
-    if (B_active) {
-      switch(B_insn.r.op) {
-        case RV32I::OP2_OPIMM:  B_result = execute_alu(B_insn, B_reg1, B_imm);  break;
-        case RV32I::OP2_OP:     B_result = execute_alu(B_insn, B_reg1, B_reg2); break;
-        case RV32I::OP2_SYSTEM: B_result = execute_system(B_hart, B_pc, B_insn, B_reg1); break;
-        case RV32I::OP2_BRANCH: B_result = b32(DONTCARE);     break;
-        case RV32I::OP2_JAL:    B_result = b24(B_pc) + 4;     break;
-        case RV32I::OP2_JALR:   B_result = b24(B_pc) + 4;     break;
-        case RV32I::OP2_LUI:    B_result = B_imm;             break;
-        case RV32I::OP2_AUIPC:  B_result = b24(B_pc) + B_imm; break;
-        case RV32I::OP2_LOAD:   B_result = b32(DONTCARE);     break;
-        case RV32I::OP2_STORE:  B_result = B_reg2;            break;
-        default:                B_result = b32(DONTCARE);     break;
-      }
-    }
+    B_result = execute(B_active, B_hart, B_pc, B_insn, B_reg1, B_reg2, B_imm);
 
     //--------------------------------------------------------------------------
     // Regfile write
@@ -218,6 +194,43 @@ public:
   //----------------------------------------------------------------------------
 
 private:
+
+  static logic<32> gen_address(logic<1> B_active, logic<8> B_hart, logic<24> B_pc, rv32_insn B_insn, logic<32> B_reg1, logic<32> B_imm) {
+    logic<32> B_addr;
+    if (B_active) {
+      if (B_insn.r.op == RV32I::OP2_SYSTEM) {
+        if (B_insn.r.f3 == RV32I::F3_CSRRW && B_insn.c.csr == 0x801) {
+          B_addr = cat(B_hart, B_pc);
+        }
+      } else {
+        B_addr = b32(B_reg1 + B_imm);
+      }
+    }
+    else {
+      B_addr = b32(DONTCARE);
+    }
+    return B_addr;
+  }
+
+  static logic<32> execute(logic<1> B_active, logic<8> B_hart, logic<24> B_pc, rv32_insn B_insn, logic<32> B_reg1, logic<32> B_reg2, logic<32> B_imm) {
+    logic<32> B_result = b32(DONTCARE);
+    if (B_active) {
+      switch(B_insn.r.op) {
+        case RV32I::OP2_OPIMM:  B_result = execute_alu(B_insn, B_reg1, B_imm);  break;
+        case RV32I::OP2_OP:     B_result = execute_alu(B_insn, B_reg1, B_reg2); break;
+        case RV32I::OP2_SYSTEM: B_result = execute_system(B_hart, B_pc, B_insn, B_reg1); break;
+        case RV32I::OP2_BRANCH: B_result = b32(DONTCARE);     break;
+        case RV32I::OP2_JAL:    B_result = b24(B_pc) + 4;     break;
+        case RV32I::OP2_JALR:   B_result = b24(B_pc) + 4;     break;
+        case RV32I::OP2_LUI:    B_result = B_imm;             break;
+        case RV32I::OP2_AUIPC:  B_result = b24(B_pc) + B_imm; break;
+        case RV32I::OP2_LOAD:   B_result = b32(DONTCARE);     break;
+        case RV32I::OP2_STORE:  B_result = B_reg2;            break;
+        default:                B_result = b32(DONTCARE);     break;
+      }
+    }
+    return B_result;
+  }
 
   //--------------------------------------------------------------------------
 
