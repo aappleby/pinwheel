@@ -145,7 +145,18 @@ public:
     B_reg2 = B_insn.r.rs2 ? reg2 : b32(0);
 
     B_imm  = decode_imm(B_insn);
-    B_addr = gen_address(B_swap_pc, B_active, B_hart, B_pc, B_insn, B_reg1, B_imm);
+    //B_addr = gen_address(B_swap_pc, B_active, B_hart, B_pc, B_insn, B_reg1, B_imm);
+
+    if (B_swap_pc) {
+      B_addr = cat(B_hart, B_pc);
+    }
+    else if (B_active) {
+      B_addr = b32(B_reg1 + B_imm);
+    }
+    else {
+      B_addr = b32(DONTCARE);
+    }
+
 
     data_tla = gen_bus(B_insn.r.op, B_insn.r.f3, B_addr, B_reg2);
 
@@ -253,17 +264,49 @@ public:
     //--------------------------------------------------------------------------
     // Regfile write
 
-    reg_if = reg_bus(
-      B_read_regfile,
-      C_write_regfile,
-      A_active, A_insn, A_hart,
-      B_active, B_insn, B_hart, B_addr,
-      C_active, C_insn, C_hart, C_addr,
-      writeback);
+    if (C_write_regfile) {
+      // A memory-mapped regfile write overrides the normal write.
+      reg_if.waddr = b8(C_addr >> 2);
+      reg_if.wdata = writeback;
+      reg_if.wren  = 1;
+    } else if (C_active) {
+      // Vane C writes _result to _rd if the thread is active and _rd != 0.
+      reg_if.waddr = cat(C_hart, b5(C_insn.r.rd));
+      reg_if.wdata = writeback;
+      reg_if.wren  = C_insn.r.rd && C_insn.r.op != RV32I::OP_STORE && C_insn.r.op != RV32I::OP_BRANCH;
+    }
+    else {
+      reg_if.waddr = b13(DONTCARE);
+      reg_if.wdata = b32(DONTCARE);
+      reg_if.wren  = 0;
+    }
 
+    //--------------------------------------------------------------------------
+    // Regfile read
+
+    // If vane A is idle, vane B uses vane A's regfile slot to do an additional
+    // regfile read. This is used for memory-mapped regfile reading.
+
+    if (A_active) {
+      reg_if.raddr1 = cat(A_hart, b5(A_insn.r.rs1));
+      reg_if.raddr2 = cat(A_hart, b5(A_insn.r.rs2));
+    }
+    else if (B_read_regfile) {
+      reg_if.raddr1 = b13(DONTCARE);
+      reg_if.raddr2 = b13(B_addr >> 2);
+    }
+    else {
+      reg_if.raddr1 = b13(DONTCARE);
+      reg_if.raddr2 = b13(DONTCARE);
+    }
 
     //--------------------------------------------------------------------------
     // Code bus read/write
+
+    // If the other thread is idle, vane C can override the code bus read to
+    // write to code memory.
+    // We can _not_ read code memory here as the read would come back too late
+    // to write it to the regfile.
 
     if (C_write_code) {
       code_tla = gen_bus(C_insn.r.op, C_insn.r.f3, C_addr, C_result);
@@ -305,79 +348,6 @@ public:
 
 
 private:
-
-  //--------------------------------------------------------------------------
-
-  static logic<32> gen_address(logic<1> B_swap_pc, logic<1> B_active, logic<8> B_hart, logic<24> B_pc, rv32_insn B_insn, logic<32> B_reg1, logic<32> B_imm) {
-    logic<32> B_addr;
-
-    if (B_swap_pc) {
-      B_addr = cat(B_hart, B_pc);
-    }
-    else if (B_active) {
-      B_addr = b32(B_reg1 + B_imm);
-    }
-    else {
-      B_addr = b32(DONTCARE);
-    }
-
-    return B_addr;
-  }
-
-  //--------------------------------------------------------------------------
-
-  static regfile_if reg_bus(
-    logic<1> B_read_regfile,
-    logic<1> C_write_regfile,
-    logic<1> A_active, rv32_insn A_insn, logic<8> A_hart,
-    logic<1> B_active, rv32_insn B_insn, logic<8> B_hart, logic<32> B_addr,
-    logic<1> C_active, rv32_insn C_insn, logic<8> C_hart, logic<32> C_addr,
-    logic<32> writeback)
-  {
-    regfile_if reg_if = {};
-
-    if (C_write_regfile) {
-      // A memory-mapped regfile write overrides the normal write.
-      reg_if.waddr = b8(C_addr >> 2);
-      reg_if.wdata = writeback;
-      reg_if.wren  = 1;
-    } else if (C_active) {
-      // Vane C writes _result to _rd if the thread is active and _rd != 0.
-      reg_if.waddr = cat(C_hart, b5(C_insn.r.rd));
-      reg_if.wdata = writeback;
-      reg_if.wren  = C_insn.r.rd && C_insn.r.op != RV32I::OP_STORE && C_insn.r.op != RV32I::OP_BRANCH;
-    }
-    else {
-      reg_if.waddr = b13(DONTCARE);
-      reg_if.wdata = b32(DONTCARE);
-      reg_if.wren  = 0;
-    }
-
-
-    // If vane A is idle, vane B uses vane A's regfile slot to do an additional
-    // regfile read. This is used for memory-mapped regfile reading.
-
-    if (A_active) {
-      reg_if.raddr1 = cat(A_hart, b5(A_insn.r.rs1));
-      reg_if.raddr2 = cat(A_hart, b5(A_insn.r.rs2));
-    }
-    else if (B_read_regfile) {
-      reg_if.raddr1 = b13(DONTCARE);
-      reg_if.raddr2 = b13(B_addr >> 2);
-    }
-    else {
-      reg_if.raddr1 = b13(DONTCARE);
-      reg_if.raddr2 = b13(DONTCARE);
-    }
-
-    return reg_if;
-  }
-
-  //----------------------------------------------------------------------------
-  // If the other thread is idle, vane C can override the code bus read to
-  // write to code memory.
-  // We can _not_ read code memory here as the read would come back too late
-  // to write it to the regfile.
 
   //----------------------------------------------------------------------------
 
