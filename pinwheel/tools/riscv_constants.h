@@ -43,6 +43,8 @@ namespace RV32I {
 
   static const int F3_BEQ     = 0b000;
   static const int F3_BNE     = 0b001;
+  static const int F3_BEQU    = 0b010;
+  static const int F3_BNEU    = 0b011;
   static const int F3_BLT     = 0b100;
   static const int F3_BGE     = 0b101;
   static const int F3_BLTU    = 0b110;

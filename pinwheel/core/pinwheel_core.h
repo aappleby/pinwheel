@@ -451,20 +451,19 @@ private:
     logic<24> pc_next = pc + 4;
     logic<24> pc_addr = b24(addr);
 
-    logic<24> result = b24(DONTCARE);
     switch(op) {
-      case RV32I::OP_BRANCH: result = take_branch ? pc_jump : pc_next; break;
-      case RV32I::OP_JAL:    result = pc_jump; break;
-      case RV32I::OP_JALR:   result = pc_addr; break;
-      case RV32I::OP_LUI:    result = pc_next; break;
-      case RV32I::OP_AUIPC:  result = pc_next; break;
-      case RV32I::OP_LOAD:   result = pc_next; break;
-      case RV32I::OP_STORE:  result = pc_next; break;
-      case RV32I::OP_SYSTEM: result = pc_next; break;
-      case RV32I::OP_OPIMM:  result = pc_next; break;
-      case RV32I::OP_OP:     result = pc_next; break;
+      case RV32I::OP_BRANCH: return take_branch ? pc_jump : pc_next;
+      case RV32I::OP_JAL:    return pc_jump;
+      case RV32I::OP_JALR:   return pc_addr;
+      case RV32I::OP_LUI:    return pc_next;
+      case RV32I::OP_AUIPC:  return pc_next;
+      case RV32I::OP_LOAD:   return pc_next;
+      case RV32I::OP_STORE:  return pc_next;
+      case RV32I::OP_SYSTEM: return pc_next;
+      case RV32I::OP_OPIMM:  return pc_next;
+      case RV32I::OP_OP:     return pc_next;
+      default:               return b24(DONTCARE);
     }
-    return result;
   }
 
   //----------------------------------------------------------------------------
@@ -473,21 +472,18 @@ private:
     logic<1> eq  = reg1 == reg2;
     logic<1> slt = signed(reg1) < signed(reg2);
     logic<1> ult = reg1 < reg2;
-    logic<1> take_branch = 0;
 
     switch (f3) {
-      case 0:  take_branch =   eq; break;
-      case 1:  take_branch =  !eq; break;
-      case 2:  take_branch =   eq; break;
-      case 3:  take_branch =  !eq; break;
-      case 4:  take_branch =  slt; break;
-      case 5:  take_branch = !slt; break;
-      case 6:  take_branch =  ult; break;
-      case 7:  take_branch = !ult; break;
-      default: take_branch =    0; break;
+      case RV32I::F3_BEQ:  return   eq;
+      case RV32I::F3_BNE:  return  !eq;
+      case RV32I::F3_BEQU: return   eq;
+      case RV32I::F3_BNEU: return  !eq;
+      case RV32I::F3_BLT:  return  slt;
+      case RV32I::F3_BGE:  return !slt;
+      case RV32I::F3_BLTU: return  ult;
+      case RV32I::F3_BGEU: return !ult;
+      default:             return    0;
     }
-
-    return take_branch;
   }
 
   //----------------------------------------------------------------------------
@@ -513,20 +509,18 @@ private:
       b1 (0)
     ));
 
-    logic<32> result;
     switch(insn2.r.op) {
-      case RV32I::OP_LOAD:   result = imm_i; break;
-      case RV32I::OP_OPIMM:  result = imm_i; break;
-      case RV32I::OP_AUIPC:  result = imm_u; break;
-      case RV32I::OP_STORE:  result = imm_s; break;
-      case RV32I::OP_OP:     result = imm_i; break;
-      case RV32I::OP_LUI:    result = imm_u; break;
-      case RV32I::OP_BRANCH: result = imm_b; break;
-      case RV32I::OP_JALR:   result = imm_i; break;
-      case RV32I::OP_JAL:    result = imm_j; break;
-      default:                result = 0;     break;
+      case RV32I::OP_LOAD:   return imm_i;
+      case RV32I::OP_OPIMM:  return imm_i;
+      case RV32I::OP_AUIPC:  return imm_u;
+      case RV32I::OP_STORE:  return imm_s;
+      case RV32I::OP_OP:     return imm_i;
+      case RV32I::OP_LUI:    return imm_u;
+      case RV32I::OP_BRANCH: return imm_b;
+      case RV32I::OP_JALR:   return imm_i;
+      case RV32I::OP_JAL:    return imm_j;
+      default:               return b32(DONTCARE);
     }
-    return result;
   }
 
   //----------------------------------------------------------------------------
