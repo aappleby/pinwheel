@@ -36,10 +36,9 @@ public:
     C_addr = 0;
     C_result = 0;
 
-    //D_active = 0;
-    //D_hart = 0;
-    //D_pc = 0;
-    //D_insn.raw = 0;
+    D_hpc = 0;
+    D_insn.raw = 0;
+    D_writeback = 0;
 
     ticks = 0;
 
@@ -75,45 +74,34 @@ public:
 
   //----------------------------------------------------------------------------
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   void tock(logic<1> reset_in, tilelink_d code_tld, tilelink_d data_tld, logic<32> reg1, logic<32> reg2) {
 
     logic<8> A_hart = b8(A_hpc, 24);
     logic<8> B_hart = b8(B_hpc, 24);
     logic<8> C_hart = b8(C_hpc, 24);
+    logic<8> D_hart = b8(D_hpc, 24);
 
     logic<24> A_pc = b24(A_hpc);
     logic<24> B_pc = b24(B_hpc);
     logic<24> C_pc = b24(C_hpc);
+    logic<24> D_pc = b24(D_hpc);
 
     logic<1> A_active = A_pc != 0;
     logic<1> B_active = B_pc != 0;
     logic<1> C_active = C_pc != 0;
+    logic<1> D_active = D_pc != 0;
 
     logic<1> B_yield = B_active && B_insn.r.op == RV32I::OP_SYSTEM && B_insn.r.f3 == RV32I::F3_CSRRW && B_insn.c.csr == 0x801;
     logic<1> C_yield = C_active && C_insn.r.op == RV32I::OP_SYSTEM && C_insn.r.f3 == RV32I::F3_CSRRW && C_insn.c.csr == 0x801;
 
     logic<1> B_swap = B_active && B_insn.r.op == RV32I::OP_SYSTEM && B_insn.r.f3 == RV32I::F3_CSRRW && B_insn.c.csr == 0x800;
     logic<1> C_swap = C_active && C_insn.r.op == RV32I::OP_SYSTEM && C_insn.r.f3 == RV32I::F3_CSRRW && C_insn.c.csr == 0x800;
+
+    logic<1> C_read_regfile  = C_active && C_insn.r.op == RV32I::OP_LOAD  && b4(C_addr, 28) == 0xE;
+    logic<1> C_read_mem      = C_active && C_insn.r.op == RV32I::OP_LOAD;
+
+    logic<1> C_write_code    = C_active && C_insn.r.op == RV32I::OP_STORE && b4(C_addr, 28) == 0x0;
+    logic<1> C_write_regfile = C_active && C_insn.r.op == RV32I::OP_STORE && b4(C_addr, 28) == 0xE;
 
     //----------------------------------------
     // Vane A receives its instruction from the code bus and issues register
@@ -128,6 +116,8 @@ public:
     logic<32> B_reg2 = B_insn.r.rs2 ? reg2 : b32(0);
     logic<32> B_imm  = decode_imm(B_insn);
     logic<32> B_addr = b32(B_reg1 + B_imm);
+
+    logic<1> B_read_regfile  = B_active && B_insn.r.op == RV32I::OP_LOAD  && b4(B_addr, 28) == 0xE;
 
     //----------------------------------------
 
@@ -153,34 +143,9 @@ public:
     logic<32> B_hpc_next = cat(B_hart, B_next_pc);
 
     //----------------------------------------
-    // If both threads trigger PC swaps at once, the C one fires first.
-
-    logic<32> A_hpc_next;
-
-    if (C_swap) {
-      A_hpc_next = C_result;
-    }
-    else if (B_yield) {
-      A_hpc_next = B_reg1;
-    }
-    else {
-      A_hpc_next = B_hpc_next;
-    }
-
-    logic<1> A_active_next = b24(A_hpc_next) != 0;
-
-    //----------------------------------------
-
-    logic<1> B_read_regfile  = B_active && B_insn.r.op == RV32I::OP_LOAD  && b4(B_addr, 28) == 0xE;
-    logic<1> C_read_regfile  = C_active && C_insn.r.op == RV32I::OP_LOAD  && b4(C_addr, 28) == 0xE;
-    logic<1> C_read_mem      = C_active && C_insn.r.op == RV32I::OP_LOAD;
-
-    logic<1> C_write_code    = C_active && C_insn.r.op == RV32I::OP_STORE && b4(C_addr, 28) == 0x0 && !A_active_next;
-    logic<1> C_write_regfile = C_active && C_insn.r.op == RV32I::OP_STORE && b4(C_addr, 28) == 0xE;
-
-    //----------------------------------------
     // Vane B executes its instruction and stores the result in _result.
 
+    logic<32> B_result;
     switch(B_insn.r.op) {
       case RV32I::OP_OPIMM:  B_result = execute_alu(B_insn, B_reg1, B_imm); break;
       case RV32I::OP_OP:     B_result = execute_alu(B_insn, B_reg1, B_reg2); break;
@@ -203,33 +168,50 @@ public:
     // reg1 in B_result so we can use it above.
     if (B_swap)  B_result = B_reg1;
 
+    //----------------------------------------
+    // If both threads trigger PC swaps at once, the C one fires first.
+
+    logic<32> A_hpc_next;
+
+    if (C_swap) {
+      A_hpc_next = C_result;
+    }
+    else if (B_yield) {
+      A_hpc_next = B_reg1;
+    }
+    else {
+      A_hpc_next = B_hpc_next;
+    }
+
+    logic<1> A_active_next = b24(A_hpc_next) != 0;
+
     //--------------------------------------------------------------------------
     // Regfile write
 
     logic<32> C_mem = unpack_mem(C_insn.r.f3, C_addr, data_tld.d_data);
 
-    logic<32> writeback;
+    logic<32> C_writeback;
 
     if (C_yield) {
-      writeback = C_result;
+      C_writeback = C_result;
     }
     else if (C_swap) {
       // If we're switching secondary threads, we write the previous secondary
       // thread back to the primary thread's regfile.
-      writeback = B_hpc_next;
+      C_writeback = B_hpc_next;
     }
     else if (C_read_regfile) {
-      writeback = reg2;
+      C_writeback = reg2;
     }
     else if (C_read_mem) {
       // A memory read replaces _result with the unpacked value on the data bus.
-      writeback = C_mem;
+      C_writeback = C_mem;
     }
     else if (C_active) {
-      writeback = C_result;
+      C_writeback = C_result;
     }
     else {
-      writeback = b32(DONTCARE);
+      C_writeback = b32(DONTCARE);
     }
 
     //--------------------------------------------------------------------------
@@ -238,12 +220,12 @@ public:
     if (C_write_regfile) {
       // A memory-mapped regfile write overrides the normal write.
       reg_if.waddr = b8(C_addr >> 2);
-      reg_if.wdata = writeback;
+      reg_if.wdata = C_writeback;
       reg_if.wren  = 1;
     } else if (C_active) {
       // Vane C writes _result to _rd if the thread is active and _rd != 0.
       reg_if.waddr = cat(C_hart, b5(C_insn.r.rd));
-      reg_if.wdata = writeback;
+      reg_if.wdata = C_writeback;
       reg_if.wren  = C_insn.r.rd && C_insn.r.op != RV32I::OP_STORE && C_insn.r.op != RV32I::OP_BRANCH;
     }
     else {
@@ -279,7 +261,7 @@ public:
     // We can _not_ read code memory here as the read would come back too late
     // to write it to the regfile.
 
-    if (C_write_code) {
+    if (C_write_code && !A_active_next) {
       code_tla = gen_bus(C_insn.r.op, C_insn.r.f3, C_addr, C_result);
     }
     else {
@@ -290,35 +272,10 @@ public:
 
     //----------
 
-    tick(reset_in, A_hpc_next, B_addr);
+    tick(reset_in, A_hpc_next, B_addr, B_result, C_writeback);
   }
 
   //----------------------------------------------------------------------------
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 private:
 
@@ -342,29 +299,6 @@ private:
       default:               return b32(DONTCARE);
     }
   }
-
-  //----------------------------------------------------------------------------
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   //----------------------------------------------------------------------------
 
@@ -486,19 +420,19 @@ private:
 
   //----------------------------------------------------------------------------
 
-  void tick(logic<1> reset_in, logic<32> A_hpc_next, logic<32> B_addr)
+  void tick(logic<1> reset_in, logic<32> A_hpc_next, logic<32> B_addr, logic<32> B_result, logic<32> C_writeback)
   {
     if (reset_in) {
       A_hpc = 0x00000004;
       B_hpc = 0x00000000;
       C_hpc = 0x00000000;
-      //D_hpc = 0x00000000;
+      D_hpc = 0x00000000;
       ticks = 0x00000000;
     }
     else {
-      //D_hpc    = C_hpc;
-      //D_insn   = C_insn;
-      //D_result = C_result;
+      D_hpc       = C_hpc;
+      D_insn      = C_insn;
+      D_writeback = C_writeback;
 
       C_hpc    = B_hpc;
       C_insn   = B_insn;
@@ -524,12 +458,15 @@ public:
 
   /* metron_internal */ logic<32> B_hpc;
   /* metron_internal */ rv32_insn B_insn;
-  /* metron_internal */ logic<32> B_result;
 
   /* metron_internal */ logic<32> C_hpc;
   /* metron_internal */ rv32_insn C_insn;
   /* metron_internal */ logic<32> C_addr;
   /* metron_internal */ logic<32> C_result;
+
+  /* metron_internal */ logic<32> D_hpc;
+  /* metron_internal */ rv32_insn D_insn;
+  /* metron_internal */ logic<32> D_writeback;
 
   // These registers aren't actually needed, but they make debugging easier.
   ///* metron_internal */ logic<1>  D_active;
