@@ -106,6 +106,26 @@ public:
 
   //----------------------------------------------------------------------------
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   void tock(logic<1> reset_in, tilelink_d code_tld, tilelink_d data_tld, logic<32> reg1, logic<32> reg2) {
 
     //----------------------------------------
@@ -135,7 +155,7 @@ public:
     // FIXME what if both threads trigger PC swaps at once?
     // - The C one fires first, swapping the other thread.
 
-    logic<24> next_pc_maybe = next_pc(B_active, B_pc, B_insn, B_reg1, B_reg2, B_addr, B_imm);
+    logic<24> next_pc = gen_pc(B_active, B_pc, B_insn, B_reg1, B_reg2, B_addr, B_imm);
 
 
     if (C_active && C_insn.r.op == RV32I::OP2_SYSTEM && C_insn.r.f3 == RV32I::F3_CSRRW && C_insn.c.csr == 0x800) {
@@ -151,9 +171,10 @@ public:
     else {
       A_active_next = B_active;
       A_hart_next   = B_hart;
-      A_pc_next     = next_pc_maybe;
+      A_pc_next     = next_pc;
     }
 
+    logic<32> src_pc = cat(A_hart_next, A_pc_next);
 
     //----------------------------------------
     // Vane B executes its instruction and stores the result in _result.
@@ -164,7 +185,7 @@ public:
     // Regfile write
 
     logic<32> writeback = choose_writeback(
-      A_hart_next, A_pc_next,
+      src_pc,
       C_active, C_insn, C_addr, C_result,
       reg2,
       data_tld.d_data);
@@ -192,6 +213,31 @@ public:
   }
 
   //----------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 private:
 
@@ -235,7 +281,7 @@ private:
   //--------------------------------------------------------------------------
 
   static logic<32> choose_writeback(
-    logic<8> A_hart_next, logic<24> A_pc_next,
+    logic<32> src_pc,
     logic<1> C_active, rv32_insn C_insn, logic<32> C_addr, logic<32> C_result,
     logic<32> raw_reg2,
     logic<32> mem)
@@ -259,7 +305,7 @@ private:
       else if (C_insn.r.op == RV32I::OP2_SYSTEM) {
         if (C_insn.r.f3 == RV32I::F3_CSRRW) {
           if (C_insn.c.csr == 0x800) {
-            writeback = cat(A_hart_next, A_pc_next);
+            writeback = src_pc;
           }
         }
       }
@@ -376,7 +422,7 @@ private:
 
   //----------------------------------------------------------------------------
 
-  static logic<24> next_pc(logic<1> B_active, logic<24> B_pc, rv32_insn B_insn, logic<32> B_reg1, logic<32> B_reg2, logic<32> B_addr, logic<32> B_imm) {
+  static logic<24> gen_pc(logic<1> B_active, logic<24> B_pc, rv32_insn B_insn, logic<32> B_reg1, logic<32> B_reg2, logic<32> B_addr, logic<32> B_imm) {
     logic<24> result = B_pc;
     if (B_active) {
       switch(B_insn.r.op) {
