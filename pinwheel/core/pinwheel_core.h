@@ -109,8 +109,11 @@ public:
     logic<1> B_active = B_pc != 0;
     logic<1> C_active = C_pc != 0;
 
-    logic<1> B_swap_pc = B_active && B_insn.r.op == RV32I::OP_SYSTEM && B_insn.r.f3 == RV32I::F3_CSRRW && B_insn.c.csr == 0x801;
-    logic<1> C_swap_pc = C_active && C_insn.r.op == RV32I::OP_SYSTEM && C_insn.r.f3 == RV32I::F3_CSRRW && C_insn.c.csr == 0x800;
+    logic<1> B_yield = B_active && B_insn.r.op == RV32I::OP_SYSTEM && B_insn.r.f3 == RV32I::F3_CSRRW && B_insn.c.csr == 0x801;
+    logic<1> C_yield = C_active && C_insn.r.op == RV32I::OP_SYSTEM && C_insn.r.f3 == RV32I::F3_CSRRW && C_insn.c.csr == 0x801;
+
+    logic<1> B_swap = B_active && B_insn.r.op == RV32I::OP_SYSTEM && B_insn.r.f3 == RV32I::F3_CSRRW && B_insn.c.csr == 0x800;
+    logic<1> C_swap = C_active && C_insn.r.op == RV32I::OP_SYSTEM && C_insn.r.f3 == RV32I::F3_CSRRW && C_insn.c.csr == 0x800;
 
     //----------------------------------------
     // Vane A receives its instruction from the code bus and issues register
@@ -121,10 +124,10 @@ public:
 
     //----------------------------------------
 
-    B_reg1 = B_insn.r.rs1 ? reg1 : b32(0);
-    B_reg2 = B_insn.r.rs2 ? reg2 : b32(0);
-    B_imm  = decode_imm(B_insn);
-    B_addr = b32(B_reg1 + B_imm);
+    logic<32> B_reg1 = B_insn.r.rs1 ? reg1 : b32(0);
+    logic<32> B_reg2 = B_insn.r.rs2 ? reg2 : b32(0);
+    logic<32> B_imm  = decode_imm(B_insn);
+    logic<32> B_addr = b32(B_reg1 + B_imm);
 
     //----------------------------------------
 
@@ -147,17 +150,21 @@ public:
       default:               B_next_pc = b24(DONTCARE); break;
     }
 
+    logic<32> B_hpc_next = cat(B_hart, B_next_pc);
+
     //----------------------------------------
     // If both threads trigger PC swaps at once, the C one fires first.
 
-    if (C_swap_pc) {
+    logic<32> A_hpc_next;
+
+    if (C_swap) {
       A_hpc_next = C_result;
     }
-    else if (B_swap_pc) {
+    else if (B_yield) {
       A_hpc_next = B_reg1;
     }
     else {
-      A_hpc_next = cat(B_hart, B_next_pc);
+      A_hpc_next = B_hpc_next;
     }
 
     logic<1> A_active_next = b24(A_hpc_next) != 0;
@@ -165,21 +172,19 @@ public:
     //----------------------------------------
 
     logic<1> B_read_regfile  = B_active && B_insn.r.op == RV32I::OP_LOAD  && b4(B_addr, 28) == 0xE;
+    logic<1> C_read_regfile  = C_active && C_insn.r.op == RV32I::OP_LOAD  && b4(C_addr, 28) == 0xE;
+    logic<1> C_read_mem      = C_active && C_insn.r.op == RV32I::OP_LOAD;
 
     logic<1> C_write_code    = C_active && C_insn.r.op == RV32I::OP_STORE && b4(C_addr, 28) == 0x0 && !A_active_next;
-    logic<1> C_read_regfile  = C_active && C_insn.r.op == RV32I::OP_LOAD  && b4(C_addr, 28) == 0xE;
     logic<1> C_write_regfile = C_active && C_insn.r.op == RV32I::OP_STORE && b4(C_addr, 28) == 0xE;
-    logic<1> C_read_mem      = C_active && C_insn.r.op == RV32I::OP_LOAD;
 
     //----------------------------------------
     // Vane B executes its instruction and stores the result in _result.
 
-    //B_result = B_active ? execute(B_active, B_hart, B_pc, B_insn, B_reg1, B_reg2, B_imm) : b32(DONTCARE);
-
     switch(B_insn.r.op) {
       case RV32I::OP_OPIMM:  B_result = execute_alu(B_insn, B_reg1, B_imm); break;
       case RV32I::OP_OP:     B_result = execute_alu(B_insn, B_reg1, B_reg2); break;
-      case RV32I::OP_SYSTEM: B_result = execute_system(B_hart, B_pc, B_insn, B_reg1); break;
+      case RV32I::OP_SYSTEM: B_result = execute_system(B_hart, B_insn, B_reg1); break;
       case RV32I::OP_BRANCH: B_result = b32(DONTCARE); break;
       case RV32I::OP_JAL:    B_result = B_pc_next; break;
       case RV32I::OP_JALR:   B_result = B_pc_next; break;
@@ -190,16 +195,28 @@ public:
       default:               B_result = b32(DONTCARE); break;
     }
 
+    // If this thread is yielding, we store where it _would've_ gone in B_result
+    // so we can write it to the regfile in phase C.
+    if (B_yield) B_result = B_hpc_next;
+
+    // If we're going to swap secondary threads in phase C, we need to stash
+    // reg1 in B_result so we can use it above.
+    if (B_swap)  B_result = B_reg1;
+
     //--------------------------------------------------------------------------
     // Regfile write
 
     logic<32> C_mem = unpack_mem(C_insn.r.f3, C_addr, data_tld.d_data);
 
     logic<32> writeback;
-    if (C_swap_pc) {
+
+    if (C_yield) {
+      writeback = C_result;
+    }
+    else if (C_swap) {
       // If we're switching secondary threads, we write the previous secondary
       // thread back to the primary thread's regfile.
-      writeback = A_hpc_next;
+      writeback = B_hpc_next;
     }
     else if (C_read_regfile) {
       writeback = reg2;
@@ -273,7 +290,7 @@ public:
 
     //----------
 
-    tick(reset_in);
+    tick(reset_in, A_hpc_next, B_addr);
   }
 
   //----------------------------------------------------------------------------
@@ -307,26 +324,23 @@ private:
 
   //----------------------------------------------------------------------------
 
-  static logic<32> execute_system(logic<8> B_hart, logic<24> B_pc, rv32_insn B_insn, logic<32> B_reg1) {
+  static logic<32> execute_system(logic<8> hart, rv32_insn insn, logic<32> B_reg1) {
     // FIXME need a good error if case is missing an expression
-    logic<32> B_result = b32(DONTCARE);
-    switch(B_insn.r.f3) {
+    switch(insn.r.f3) {
       case RV32I::F3_CSRRW: {
-        if (B_insn.c.csr == 0x800)          B_result = B_reg1;
-        if (B_insn.c.csr == 0x801)          B_result = cat(B_hart, B_pc);
-        if (B_insn.c.csr == RV32I::MHARTID) B_result = B_hart;
-        break;
+        if (insn.c.csr == RV32I::MHARTID) return b32(hart);
+        return b32(DONTCARE);
       }
       case RV32I::F3_CSRRS: {
-        if (B_insn.c.csr == RV32I::MHARTID) B_result = B_hart;
-        break;
+        if (insn.c.csr == RV32I::MHARTID) return b32(hart);
+        return b32(DONTCARE);
       }
-      case RV32I::F3_CSRRC:  B_result = b32(DONTCARE); break;
-      case RV32I::F3_CSRRWI: B_result = b32(DONTCARE); break;
-      case RV32I::F3_CSRRSI: B_result = b32(DONTCARE); break;
-      case RV32I::F3_CSRRCI: B_result = b32(DONTCARE); break;
+      case RV32I::F3_CSRRC:  return b32(DONTCARE);
+      case RV32I::F3_CSRRWI: return b32(DONTCARE);
+      case RV32I::F3_CSRRSI: return b32(DONTCARE);
+      case RV32I::F3_CSRRCI: return b32(DONTCARE);
+      default:               return b32(DONTCARE);
     }
-    return B_result;
   }
 
   //----------------------------------------------------------------------------
@@ -472,7 +486,7 @@ private:
 
   //----------------------------------------------------------------------------
 
-  void tick(logic<1> reset_in)
+  void tick(logic<1> reset_in, logic<32> A_hpc_next, logic<32> B_addr)
   {
     if (reset_in) {
       A_hpc = 0x00000004;
@@ -505,17 +519,11 @@ public:
   //----------------------------------------
   // Internal signals and registers
 
-  /* metron_internal */ logic<32> A_hpc_next;
-
   /* metron_internal */ logic<32> A_hpc;
   /* metron_internal */ rv32_insn A_insn;
 
   /* metron_internal */ logic<32> B_hpc;
   /* metron_internal */ rv32_insn B_insn;
-  /* metron_internal */ logic<32> B_reg1; // not essential
-  /* metron_internal */ logic<32> B_reg2; // not essential
-  /* metron_internal */ logic<32> B_imm;  // not essential
-  /* metron_internal */ logic<32> B_addr;
   /* metron_internal */ logic<32> B_result;
 
   /* metron_internal */ logic<32> C_hpc;
