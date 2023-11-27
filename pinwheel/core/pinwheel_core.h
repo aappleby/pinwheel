@@ -79,31 +79,6 @@ public:
   tilelink_a code_tla;
   regfile_if reg_if;
 
-  static tilelink_a gen_bus(logic<7> op, logic<3> f3, logic<32> addr, logic<32> reg2) {
-    tilelink_a tla;
-
-    logic<3> bus_size = b3(DONTCARE);
-    logic<4> mask_b   = 0;
-
-    if (f3 == 0) { mask_b = 0b0001; bus_size = 0; }
-    if (f3 == 1) { mask_b = 0b0011; bus_size = 1; }
-    if (f3 == 2) { mask_b = 0b1111; bus_size = 2; }
-    if (addr[0]) mask_b = mask_b << 1;
-    if (addr[1]) mask_b = mask_b << 2;
-
-    tla.a_address = addr;
-    tla.a_data    = (reg2 << ((addr & 3) * 8));
-    tla.a_mask    = mask_b;
-    tla.a_opcode  = (op == RV32I::OP_STORE) ? (bus_size == 2 ? TL::PutFullData : TL::PutPartialData) : TL::Get;
-    tla.a_param   = b3(DONTCARE);
-    tla.a_size    = bus_size;
-    tla.a_source  = b1(DONTCARE);
-    tla.a_valid   = (op == RV32I::OP_LOAD) || (op == RV32I::OP_STORE);
-    tla.a_ready   = 1;
-
-    return tla;
-  }
-
   //----------------------------------------------------------------------------
 
 
@@ -145,7 +120,6 @@ public:
     B_reg2 = B_insn.r.rs2 ? reg2 : b32(0);
 
     B_imm  = decode_imm(B_insn);
-    //B_addr = gen_address(B_swap_pc, B_active, B_hart, B_pc, B_insn, B_reg1, B_imm);
 
     if (B_swap_pc) {
       B_addr = cat(B_hart, B_pc);
@@ -156,9 +130,6 @@ public:
     else {
       B_addr = b32(DONTCARE);
     }
-
-
-    data_tla = gen_bus(B_insn.r.op, B_insn.r.f3, B_addr, B_reg2);
 
     //----------------------------------------
     // Vane B chooses the instruction address for the _next_ vane A.
@@ -175,14 +146,23 @@ public:
     logic<32> B_pc_next = B_pc + 4;
     logic<32> B_pc_addr = B_addr;
 
-    logic<24> next_pc;
+    logic<24> B_next_pc;
 
-    if (B_active) {
-      next_pc = gen_pc(B_insn.r.op, B_take_branch, B_pc, B_addr, B_imm);
+    switch(B_insn.r.op) {
+      case RV32I::OP_BRANCH: B_next_pc = B_take_branch ? B_pc_jump : B_pc_next; break;
+      case RV32I::OP_JAL:    B_next_pc = B_pc_jump; break;
+      case RV32I::OP_JALR:   B_next_pc = B_pc_addr; break;
+      case RV32I::OP_LUI:    B_next_pc = B_pc_next; break;
+      case RV32I::OP_AUIPC:  B_next_pc = B_pc_next; break;
+      case RV32I::OP_LOAD:   B_next_pc = B_pc_next; break;
+      case RV32I::OP_STORE:  B_next_pc = B_pc_next; break;
+      case RV32I::OP_SYSTEM: B_next_pc = B_pc_next; break;
+      case RV32I::OP_OPIMM:  B_next_pc = B_pc_next; break;
+      case RV32I::OP_OP:     B_next_pc = B_pc_next; break;
+      default:               B_next_pc = b24(DONTCARE); break;
     }
-    else {
-      next_pc = b24(DONTCARE);
-    }
+
+    //----------------------------------------
 
     if (C_swap_pc) {
       A_active_next = b24(C_result) != 0;
@@ -197,7 +177,7 @@ public:
     else {
       A_active_next = B_active;
       A_hart_next   = B_hart;
-      A_pc_next     = next_pc;
+      A_pc_next     = B_next_pc;
     }
 
     logic<32> A_hpc_next = cat(A_hart_next, A_pc_next);
@@ -315,6 +295,8 @@ public:
       code_tla = gen_bus(RV32I::OP_LOAD, 2, b32(A_pc_next), 0);
     }
 
+    data_tla = gen_bus(B_insn.r.op, B_insn.r.f3, B_addr, B_reg2);
+
     //----------
 
     tick(reset_in);
@@ -375,40 +357,53 @@ private:
 
   //----------------------------------------------------------------------------
 
-  static logic<24> gen_pc(logic<7> op, logic<1> take_branch, logic<24> pc, logic<32> addr, logic<32> imm) {
-    logic<24> pc_next = pc + 4;
-    logic<24> pc_jump = pc + imm;
-    logic<24> pc_addr = b24(addr);
 
-    switch(op) {
-      case RV32I::OP_BRANCH: return take_branch ? pc_jump : pc_next;
-      case RV32I::OP_JAL:    return pc_jump;
-      case RV32I::OP_JALR:   return pc_addr;
-      case RV32I::OP_LUI:    return pc_next;
-      case RV32I::OP_AUIPC:  return pc_next;
-      case RV32I::OP_LOAD:   return pc_next;
-      case RV32I::OP_STORE:  return pc_next;
-      case RV32I::OP_SYSTEM: return pc_next;
-      case RV32I::OP_OPIMM:  return pc_next;
-      case RV32I::OP_OP:     return pc_next;
-      default:               return b24(DONTCARE);
-    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  //----------------------------------------------------------------------------
+
+  static tilelink_a gen_bus(logic<7> op, logic<3> f3, logic<32> addr, logic<32> reg2) {
+    tilelink_a tla;
+
+    logic<3> bus_size = b3(DONTCARE);
+    logic<4> mask_b   = 0;
+
+    if (f3 == 0) { mask_b = 0b0001; bus_size = 0; }
+    if (f3 == 1) { mask_b = 0b0011; bus_size = 1; }
+    if (f3 == 2) { mask_b = 0b1111; bus_size = 2; }
+    if (addr[0]) mask_b = mask_b << 1;
+    if (addr[1]) mask_b = mask_b << 2;
+
+    tla.a_address = addr;
+    tla.a_data    = (reg2 << ((addr & 3) * 8));
+    tla.a_mask    = mask_b;
+    tla.a_opcode  = (op == RV32I::OP_STORE) ? (bus_size == 2 ? TL::PutFullData : TL::PutPartialData) : TL::Get;
+    tla.a_param   = b3(DONTCARE);
+    tla.a_size    = bus_size;
+    tla.a_source  = b1(DONTCARE);
+    tla.a_valid   = (op == RV32I::OP_LOAD) || (op == RV32I::OP_STORE);
+    tla.a_ready   = 1;
+
+    return tla;
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   //----------------------------------------------------------------------------
 
