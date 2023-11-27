@@ -114,6 +114,10 @@ public:
 
 
     //----------------------------------------
+    // Forward stores from phase D to phase B
+
+    if (D_waddr == cat(B_hart, b5(B_insn.r.rs1)) && D_wren) reg1 = D_wdata;
+    if (D_waddr == cat(B_hart, b5(B_insn.r.rs2)) && D_wren) reg2 = D_wdata;
 
     logic<32> B_reg1 = B_insn.r.rs1 ? reg1 : b32(0);
     logic<32> B_reg2 = B_insn.r.rs2 ? reg2 : b32(0);
@@ -189,9 +193,10 @@ public:
     logic<1> A_active_next = b24(A_hpc_next) != 0;
 
     //--------------------------------------------------------------------------
-    // Regfile write
 
     logic<32> C_mem = unpack_mem(C_insn.r.f3, C_addr, data_tld.d_data);
+
+    //--------------------------------------------------------------------------
 
     logic<32> C_writeback;
 
@@ -204,6 +209,8 @@ public:
       C_writeback = B_hpc_next;
     }
     else if (C_read_regfile) {
+      // Note - this must be the _raw_ register, not zeroed, if we want to use
+      // R0s in the regfile as spare storage
       C_writeback = reg2;
     }
     else if (C_read_mem) {
@@ -241,10 +248,6 @@ public:
       C_wren  = 0;
     }
 
-    reg_if.waddr = C_waddr;
-    reg_if.wdata = C_wdata;
-    reg_if.wren  = C_wren;
-
     //--------------------------------------------------------------------------
     // Regfile read
 
@@ -267,9 +270,6 @@ public:
       A_raddr2 = b13(DONTCARE);
     }
 
-    reg_if.raddr1 = A_raddr1;
-    reg_if.raddr2 = A_raddr2;
-
     //--------------------------------------------------------------------------
     // Code bus read/write
 
@@ -286,6 +286,12 @@ public:
     }
 
     data_tla = gen_bus(B_insn.r.op, B_insn.r.f3, B_addr, B_reg2);
+
+    reg_if.waddr  = D_waddr;
+    reg_if.wdata  = D_wdata;
+    reg_if.wren   = D_wren;
+    reg_if.raddr1 = A_raddr1;
+    reg_if.raddr2 = A_raddr2;
 
     //----------
 
@@ -318,6 +324,7 @@ private:
   }
 
   //----------------------------------------------------------------------------
+  // Translates a RV32I opcode into a TilelinkA transaction
 
   static tilelink_a gen_bus(logic<7> op, logic<3> f3, logic<32> addr, logic<32> reg2) {
     tilelink_a tla;
@@ -437,20 +444,34 @@ private:
 
   //----------------------------------------------------------------------------
 
-  void tick(logic<1> reset_in, logic<32> A_hpc_next, logic<32> B_addr, logic<32> B_result, logic<13> C_waddr, logic<32> C_wdata, logic<1> C_wren)
+  void tick(logic<1> reset_in,
+            logic<32> A_hpc_next,
+            logic<32> B_addr, logic<32> B_result,
+            logic<13> C_waddr, logic<32> C_wdata, logic<1> C_wren)
   {
     if (reset_in) {
-      A_hpc = 0x00000004;
-      B_hpc = 0x00000000;
-      C_hpc = 0x00000000;
-      D_hpc = 0x00000000;
+      A_hpc      = 0x00000004;
+
+      B_hpc      = 0x00000000;
+      B_insn.raw = 0;
+
+      C_hpc      = 0;
+      C_insn.raw = 0;
+      C_addr     = 0;
+      C_result   = 0;
+
+      D_hpc   = 0;
+      D_waddr = 0;
+      D_wdata = 0;
+      D_wren  = 0;
+
       ticks = 0x00000000;
     }
     else {
-      D_hpc   = C_hpc;
-      D_waddr = C_waddr;
-      D_wdata = C_wdata;
-      D_wren  = C_wren;
+      D_hpc    = C_hpc;
+      D_waddr  = C_waddr;
+      D_wdata  = C_wdata;
+      D_wren   = C_wren;
 
       C_hpc    = B_hpc;
       C_insn   = B_insn;
@@ -486,13 +507,6 @@ public:
   /* metron_internal */ logic<13> D_waddr;
   /* metron_internal */ logic<32> D_wdata;
   /* metron_internal */ logic<1>  D_wren;
-
-  // These registers aren't actually needed, but they make debugging easier.
-  ///* metron_internal */ logic<1>  D_active;
-  ///* metron_internal */ logic<8>  D_hart;
-  ///* metron_internal */ logic<24> D_pc;
-  ///* metron_internal */ rv32_insn D_insn;
-  ///* metron_internal */ logic<32> D_result;
 
   /* metron_internal */ logic<32> ticks;
 
