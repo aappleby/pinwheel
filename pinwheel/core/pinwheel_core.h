@@ -128,6 +128,9 @@ public:
 
   void tock(logic<1> reset_in, tilelink_d code_tld, tilelink_d data_tld, logic<32> reg1, logic<32> reg2) {
 
+    logic<1> swap_b = B_active && B_insn.r.op == RV32I::OP2_SYSTEM && B_insn.r.f3 == RV32I::F3_CSRRW && B_insn.c.csr == 0x801;
+    logic<1> swap_c = C_active && C_insn.r.op == RV32I::OP2_SYSTEM && C_insn.r.f3 == RV32I::F3_CSRRW && C_insn.c.csr == 0x800;
+
     //----------------------------------------
     // Vane A receives its instruction from the code bus and issues register
     // reads.
@@ -142,7 +145,7 @@ public:
     B_reg2 = B_insn.r.rs2 ? reg2 : b32(0);
 
     B_imm  = decode_imm2(B_insn);
-    B_addr = gen_address(B_active, B_hart, B_pc, B_insn, B_reg1, B_imm);
+    B_addr = gen_address(swap_b, B_active, B_hart, B_pc, B_insn, B_reg1, B_imm);
 
     data_tla = gen_bus(B_insn.r.op, B_insn.r.f3, B_addr, B_reg2);
 
@@ -158,12 +161,12 @@ public:
     logic<24> next_pc = gen_pc(B_active, B_pc, B_insn, B_reg1, B_reg2, B_addr, B_imm);
 
 
-    if (C_active && C_insn.r.op == RV32I::OP2_SYSTEM && C_insn.r.f3 == RV32I::F3_CSRRW && C_insn.c.csr == 0x800) {
+    if (swap_c) {
       A_active_next = b24(C_result) != 0;
       A_hart_next   = b8 (C_result, 24);
       A_pc_next     = b24(C_result);
     }
-    else if (B_active && B_insn.r.op == RV32I::OP2_SYSTEM && B_insn.r.f3 == RV32I::F3_CSRRW && B_insn.c.csr == 0x801) {
+    else if (swap_b) {
       A_active_next = b24(B_reg1) != 0;
       A_hart_next   = b8 (B_reg1, 24);
       A_pc_next     = b24(B_reg1);
@@ -185,6 +188,7 @@ public:
     // Regfile write
 
     logic<32> writeback = choose_writeback(
+      swap_c,
       src_pc,
       C_active, C_insn, C_addr, C_result,
       reg2,
@@ -241,20 +245,19 @@ public:
 
 private:
 
-  static logic<32> gen_address(logic<1> B_active, logic<8> B_hart, logic<24> B_pc, rv32_insn B_insn, logic<32> B_reg1, logic<32> B_imm) {
+  static logic<32> gen_address(logic<1> swap_b, logic<1> B_active, logic<8> B_hart, logic<24> B_pc, rv32_insn B_insn, logic<32> B_reg1, logic<32> B_imm) {
     logic<32> B_addr;
-    if (B_active) {
-      if (B_insn.r.op == RV32I::OP2_SYSTEM) {
-        if (B_insn.r.f3 == RV32I::F3_CSRRW && B_insn.c.csr == 0x801) {
-          B_addr = cat(B_hart, B_pc);
-        }
-      } else {
-        B_addr = b32(B_reg1 + B_imm);
-      }
+
+    if (swap_b) {
+      B_addr = cat(B_hart, B_pc);
+    }
+    else if (B_active) {
+      B_addr = b32(B_reg1 + B_imm);
     }
     else {
       B_addr = b32(DONTCARE);
     }
+
     return B_addr;
   }
 
@@ -281,13 +284,20 @@ private:
   //--------------------------------------------------------------------------
 
   static logic<32> choose_writeback(
+    logic<1> swap_c,
     logic<32> src_pc,
     logic<1> C_active, rv32_insn C_insn, logic<32> C_addr, logic<32> C_result,
     logic<32> raw_reg2,
     logic<32> mem)
   {
     logic<32> writeback = b32(DONTCARE);
-    if (C_active) {
+
+    // If we're switching secondary threads, we write the previous secondary
+    // thread back to the primary thread's regfile.
+    if (swap_c) {
+      writeback = src_pc;
+    }
+    else if (C_active) {
       writeback = C_result;
       if (C_insn.r.op == RV32I::OP2_LOAD) {
         if (b4(C_addr, 28) == 0xE) {
@@ -299,17 +309,6 @@ private:
           writeback = unpack_mem(C_insn, C_addr, mem);
         }
       }
-
-      // If we're switching secondary threads, we write the previous secondary
-      // thread back to the primary thread's regfile.
-      else if (C_insn.r.op == RV32I::OP2_SYSTEM) {
-        if (C_insn.r.f3 == RV32I::F3_CSRRW) {
-          if (C_insn.c.csr == 0x800) {
-            writeback = src_pc;
-          }
-        }
-      }
-
       else {
         writeback = C_result;
       }
