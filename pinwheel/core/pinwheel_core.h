@@ -160,9 +160,11 @@ public:
 
     logic<1> B_take_branch = take_branch(B_insn.r.f3, B_reg1, B_reg2);
 
+    logic<24> B_pc_jump = B_pc + B_imm;
+    logic<24> B_pc_next = B_pc + 4;
+    logic<24> B_pc_addr = b24(B_addr);
 
     logic<24> next_pc = B_active ? gen_pc(B_insn.r.op, B_take_branch, B_pc, B_addr, B_imm) : B_pc;
-
 
     if (C_swap_pc) {
       A_active_next = b24(C_result) != 0;
@@ -180,35 +182,55 @@ public:
       A_pc_next     = next_pc;
     }
 
-    logic<32> src_pc = cat(A_hart_next, A_pc_next);
+    logic<32> A_hpc_next = cat(A_hart_next, A_pc_next);
 
     //----------------------------------------
 
-    logic<1> C_write_code    = !A_active_next && C_active && C_insn.r.op == RV32I::OP_STORE && b4(C_addr, 28) == 0x0;
-    logic<1> C_read_regfile  = C_active && C_insn.r.op == RV32I::OP_LOAD && b4(C_addr, 28) == 0xE;
-    logic<1> C_write_regfile = C_active && C_insn.r.op == RV32I::OP_STORE && b4(C_addr, 28) == 0xE;
     logic<1> B_read_regfile  = B_active && B_insn.r.op == RV32I::OP_LOAD  && b4(B_addr, 28) == 0xE;
 
+    logic<1> C_write_code    = C_active && C_insn.r.op == RV32I::OP_STORE && b4(C_addr, 28) == 0x0 && !A_active_next;
+    logic<1> C_read_regfile  = C_active && C_insn.r.op == RV32I::OP_LOAD  && b4(C_addr, 28) == 0xE;
+    logic<1> C_write_regfile = C_active && C_insn.r.op == RV32I::OP_STORE && b4(C_addr, 28) == 0xE;
     logic<1> C_read_mem      = C_active && C_insn.r.op == RV32I::OP_LOAD;
 
     //----------------------------------------
     // Vane B executes its instruction and stores the result in _result.
 
-    B_result = execute(B_active, B_hart, B_pc, B_insn, B_reg1, B_reg2, B_imm);
+    //B_result = B_active ? execute(B_active, B_hart, B_pc, B_insn, B_reg1, B_reg2, B_imm) : b32(DONTCARE);
+
+    if (B_active) {
+      switch(B_insn.r.op) {
+        case RV32I::OP_OPIMM:  B_result = execute_alu(B_insn, B_reg1, B_imm); break;
+        case RV32I::OP_OP:     B_result = execute_alu(B_insn, B_reg1, B_reg2); break;
+        case RV32I::OP_SYSTEM: B_result = execute_system(B_hart, B_pc, B_insn, B_reg1); break;
+        case RV32I::OP_BRANCH: B_result = b32(DONTCARE); break;
+        case RV32I::OP_JAL:    B_result = B_pc_next; break;
+        case RV32I::OP_JALR:   B_result = B_pc_next; break;
+        case RV32I::OP_LUI:    B_result = B_imm; break;
+        case RV32I::OP_AUIPC:  B_result = B_pc + B_imm; break;
+        case RV32I::OP_LOAD:   B_result = b32(DONTCARE); break;
+        case RV32I::OP_STORE:  B_result = B_reg2; break;
+        default:               B_result = b32(DONTCARE); break;
+      }
+    }
+    else {
+      B_result = b32(DONTCARE);
+    }
+
 
     //--------------------------------------------------------------------------
     // Regfile write
 
-    logic<32> unpacked_mem = unpack_mem(C_insn.r.f3, C_addr, data_tld.d_data);
+    logic<32> C_mem = unpack_mem(C_insn.r.f3, C_addr, data_tld.d_data);
 
     logic<32> writeback = choose_writeback(
       C_swap_pc,
       C_read_regfile,
       C_read_mem,
-      src_pc,
+      A_hpc_next,
       C_active, C_insn, C_addr, C_result,
       reg2,
-      unpacked_mem);
+      C_mem);
 
     //--------------------------------------------------------------------------
     // Regfile write
@@ -284,48 +306,26 @@ private:
 
   //--------------------------------------------------------------------------
 
-  static logic<32> execute(logic<1> B_active, logic<8> B_hart, logic<24> B_pc, rv32_insn B_insn, logic<32> B_reg1, logic<32> B_reg2, logic<32> B_imm) {
-    logic<32> B_result = b32(DONTCARE);
-    if (B_active) {
-      switch(B_insn.r.op) {
-        case RV32I::OP_OPIMM:  B_result = execute_alu(B_insn, B_reg1, B_imm);  break;
-        case RV32I::OP_OP:     B_result = execute_alu(B_insn, B_reg1, B_reg2); break;
-        case RV32I::OP_SYSTEM: B_result = execute_system(B_hart, B_pc, B_insn, B_reg1); break;
-        case RV32I::OP_BRANCH: B_result = b32(DONTCARE);     break;
-        case RV32I::OP_JAL:    B_result = b24(B_pc) + 4;     break;
-        case RV32I::OP_JALR:   B_result = b24(B_pc) + 4;     break;
-        case RV32I::OP_LUI:    B_result = B_imm;             break;
-        case RV32I::OP_AUIPC:  B_result = b24(B_pc) + B_imm; break;
-        case RV32I::OP_LOAD:   B_result = b32(DONTCARE);     break;
-        case RV32I::OP_STORE:  B_result = B_reg2;            break;
-        default:                B_result = b32(DONTCARE);     break;
-      }
-    }
-    return B_result;
-  }
-
-  //--------------------------------------------------------------------------
-
   static logic<32> choose_writeback(
-    logic<1> swap_c,
+    logic<1> C_swap_pc,
     logic<1> C_read_regfile,
     logic<1> C_read_mem,
-    logic<32> src_pc,
+    logic<32> A_hpc_next,
     logic<1> C_active, rv32_insn C_insn, logic<32> C_addr, logic<32> C_result,
-    logic<32> raw_reg2,
-    logic<32> unpacked_mem)
+    logic<32> reg2,
+    logic<32> C_mem)
   {
-    if (swap_c) {
+    if (C_swap_pc) {
       // If we're switching secondary threads, we write the previous secondary
       // thread back to the primary thread's regfile.
-      return src_pc;
+      return A_hpc_next;
     }
     else if (C_read_regfile) {
-      return raw_reg2;
+      return reg2;
     }
     else if (C_read_mem) {
       // A memory read replaces _result with the unpacked value on the data bus.
-      return unpacked_mem;
+      return C_mem;
     }
     else if (C_active) {
       return C_result;
@@ -404,24 +404,6 @@ private:
 
   //----------------------------------------------------------------------------
 
-  static logic<32> unpack_mem(logic<3> f3, logic<32> addr, logic<32> mem) {
-    if (addr[0]) mem = mem >> 8;
-    if (addr[1]) mem = mem >> 16;
-    switch (f3) {
-      case RV32I::F3_LB:  mem = sign_extend<32>( b8(mem)); break;
-      case RV32I::F3_LH:  mem = sign_extend<32>(b16(mem)); break;
-      case RV32I::F3_LW:  mem = mem; break;
-      case RV32I::F3_LD:  mem = mem; break;
-      case RV32I::F3_LBU: mem = zero_extend<32>( b8(mem)); break;
-      case RV32I::F3_LHU: mem = zero_extend<32>(b16(mem)); break;
-      case RV32I::F3_LWU: mem = mem; break;
-      case RV32I::F3_LDU: mem = mem; break;
-    }
-    return mem;
-  }
-
-  //----------------------------------------------------------------------------
-
   static logic<32> execute_system(logic<8> B_hart, logic<24> B_pc, rv32_insn B_insn, logic<32> B_reg1) {
     // FIXME need a good error if case is missing an expression
     logic<32> B_result = b32(DONTCARE);
@@ -447,8 +429,8 @@ private:
   //----------------------------------------------------------------------------
 
   static logic<24> gen_pc(logic<7> op, logic<1> take_branch, logic<24> pc, logic<32> addr, logic<32> imm) {
-    logic<24> pc_jump = pc + imm;
     logic<24> pc_next = pc + 4;
+    logic<24> pc_jump = pc + imm;
     logic<24> pc_addr = b24(addr);
 
     switch(op) {
@@ -464,6 +446,39 @@ private:
       case RV32I::OP_OP:     return pc_next;
       default:               return b24(DONTCARE);
     }
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  //----------------------------------------------------------------------------
+
+  static logic<32> unpack_mem(logic<3> f3, logic<32> addr, logic<32> mem) {
+    if (addr[0]) mem = mem >> 8;
+    if (addr[1]) mem = mem >> 16;
+    switch (f3) {
+      case RV32I::F3_LB:  mem = sign_extend<32>( b8(mem)); break;
+      case RV32I::F3_LH:  mem = sign_extend<32>(b16(mem)); break;
+      case RV32I::F3_LW:  mem = mem; break;
+      case RV32I::F3_LD:  mem = mem; break;
+      case RV32I::F3_LBU: mem = zero_extend<32>( b8(mem)); break;
+      case RV32I::F3_LHU: mem = zero_extend<32>(b16(mem)); break;
+      case RV32I::F3_LWU: mem = mem; break;
+      case RV32I::F3_LDU: mem = mem; break;
+    }
+    return mem;
   }
 
   //----------------------------------------------------------------------------
@@ -482,7 +497,7 @@ private:
       case RV32I::F3_BGE:  return !slt;
       case RV32I::F3_BLTU: return  ult;
       case RV32I::F3_BGEU: return !ult;
-      default:             return    0;
+      default:             return b1(DONTCARE);
     }
   }
 
