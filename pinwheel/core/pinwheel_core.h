@@ -230,14 +230,25 @@ public:
 
     logic<32> C_mem = unpack_mem(C_insn.r.f3, C_addr, data_tld.d_data);
 
-    logic<32> writeback = choose_writeback(
-      C_swap_pc,
-      C_read_regfile,
-      C_read_mem,
-      A_hpc_next,
-      C_active, C_insn, C_addr, C_result,
-      reg2,
-      C_mem);
+    logic<32> writeback;
+    if (C_swap_pc) {
+      // If we're switching secondary threads, we write the previous secondary
+      // thread back to the primary thread's regfile.
+      writeback = A_hpc_next;
+    }
+    else if (C_read_regfile) {
+      writeback = reg2;
+    }
+    else if (C_read_mem) {
+      // A memory read replaces _result with the unpacked value on the data bus.
+      writeback = C_mem;
+    }
+    else if (C_active) {
+      writeback = C_result;
+    }
+    else {
+      writeback = b32(DONTCARE);
+    }
 
     //--------------------------------------------------------------------------
     // Regfile write
@@ -310,38 +321,6 @@ private:
 
     return B_addr;
   }
-
-  //--------------------------------------------------------------------------
-
-  static logic<32> choose_writeback(
-    logic<1> C_swap_pc,
-    logic<1> C_read_regfile,
-    logic<1> C_read_mem,
-    logic<32> A_hpc_next,
-    logic<1> C_active, rv32_insn C_insn, logic<32> C_addr, logic<32> C_result,
-    logic<32> reg2,
-    logic<32> C_mem)
-  {
-    if (C_swap_pc) {
-      // If we're switching secondary threads, we write the previous secondary
-      // thread back to the primary thread's regfile.
-      return A_hpc_next;
-    }
-    else if (C_read_regfile) {
-      return reg2;
-    }
-    else if (C_read_mem) {
-      // A memory read replaces _result with the unpacked value on the data bus.
-      return C_mem;
-    }
-    else if (C_active) {
-      return C_result;
-    }
-    else {
-      return b32(DONTCARE);
-    }
-  }
-
 
   //--------------------------------------------------------------------------
 
