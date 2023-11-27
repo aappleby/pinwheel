@@ -120,7 +120,6 @@ public:
 
 
     //----------------------------------------
-    // Vane B receives its registers from the regfile and updates the data bus.
 
     B_reg1 = B_insn.r.rs1 ? reg1 : b32(0);
     B_reg2 = B_insn.r.rs2 ? reg2 : b32(0);
@@ -128,25 +127,16 @@ public:
     B_addr = b32(B_reg1 + B_imm);
 
     //----------------------------------------
-    // Vane B chooses the instruction address for the _next_ vane A.
 
-    // If vane C contains a CSRRW @ 800 instruction, we override A_pc_next and
-    // store the previous value to result.
-
-    // FIXME what if both threads trigger PC swaps at once?
-    // - The C one fires first, swapping the other thread.
-
-    logic<1> B_take_branch = take_branch(B_insn.r.f3, B_reg1, B_reg2);
-
+    logic<1>  B_take_branch = take_branch(B_insn.r.f3, B_reg1, B_reg2);
     logic<32> B_pc_jump = B_pc + B_imm;
     logic<32> B_pc_next = B_pc + 4;
-
     logic<24> B_next_pc;
 
     switch(B_insn.r.op) {
       case RV32I::OP_BRANCH: B_next_pc = B_take_branch ? B_pc_jump : B_pc_next; break;
       case RV32I::OP_JAL:    B_next_pc = B_pc_jump; break;
-      case RV32I::OP_JALR:   B_next_pc = B_addr;    break;
+      case RV32I::OP_JALR:   B_next_pc = B_addr; break;
       case RV32I::OP_LUI:    B_next_pc = B_pc_next; break;
       case RV32I::OP_AUIPC:  B_next_pc = B_pc_next; break;
       case RV32I::OP_LOAD:   B_next_pc = B_pc_next; break;
@@ -158,6 +148,7 @@ public:
     }
 
     //----------------------------------------
+    // If both threads trigger PC swaps at once, the C one fires first.
 
     if (C_swap_pc) {
       A_hpc_next = C_result;
