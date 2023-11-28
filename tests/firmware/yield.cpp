@@ -6,7 +6,7 @@ int main(int argc, char** argv) {
   int hart = get_hart();
 
   if (hart == 0) {
-    int hart1_entry = 0x01000000 | int(&_start);
+    int hart1_entry = 0x81000000 | int(&_start);
     csr_yield_thread(hart1_entry);
     test_fail();
   }

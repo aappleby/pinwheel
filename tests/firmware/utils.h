@@ -61,7 +61,7 @@ inline uint32_t csr_swap_secondary_thread(uint32_t dst) {
 }
 
 inline uint32_t pinwheel_start(int hart, void (*pc)()) {
-  uint32_t dst = ((hart & 0xFF) << 24) | (int(pc) & 0xFFFFFF);
+  uint32_t dst = 0x80000000 | ((hart & 0x7F) << 24) | (int(pc) & 0xFFFFFF);
   return csr_swap_secondary_thread(dst);
 }
 

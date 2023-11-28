@@ -5,10 +5,12 @@
 
 #include "metron/metron_tools.h"
 
+// max of 128 regfiles w/ 32 regs each
+
 struct regfile_if {
-  logic<13> raddr1;
-  logic<13> raddr2;
-  logic<13> waddr;
+  logic<12> raddr1;
+  logic<12> raddr2;
+  logic<12> waddr;
   logic<32> wdata;
   logic<1>  wren;
 };

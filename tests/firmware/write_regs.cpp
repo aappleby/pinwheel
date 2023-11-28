@@ -25,7 +25,7 @@ void test_write_regs_dst() {
 int main(int argc, char** argv) {
   int* regs = (int*)0xE0000000;
   regs[32 + 23] = 0xF00DCAFE;
-  csr_yield_thread((int)test_write_regs_dst | 0x01000000);
+  csr_yield_thread((int)test_write_regs_dst | 0x81000000);
   while(1);
   return 0;
 }
