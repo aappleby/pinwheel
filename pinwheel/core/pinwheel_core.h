@@ -132,9 +132,9 @@ public:
     //----------------------------------------
 
     rv32_hpc BC_hpc;
-    logic<32> BC_pc_next = B_hpc.pc + 4;
     {
       logic<1>  BC_take_branch = take_branch(B_insn.r.f3, BC_reg1, BC_reg2);
+      logic<32> BC_pc_next = B_hpc.pc + 4;
       logic<32> BC_pc_jump = B_hpc.pc + BC_imm;
       logic<24> BC_next_pc;
 
@@ -160,6 +160,7 @@ public:
 
     logic<32> BC_result;
     {
+      logic<32> BC_pc_next = B_hpc.pc + 4;
       switch(B_insn.r.op) {
         case RV32I::OP_OPIMM:  BC_result = execute_alu(B_insn, BC_reg1, BC_imm); break;
         case RV32I::OP_OP:     BC_result = execute_alu(B_insn, BC_reg1, BC_reg2); break;
@@ -280,14 +281,16 @@ public:
     //--------------------------------------------------------------------------
     // Code bus read/write
 
+
     // If the other thread is idle, vane C can override the code bus read to
     // write to code memory.
-
     if ((CD_read_code || CD_write_code) && !BA_hpc.active) {
       code_tla = gen_bus(C_insn.r.op, C_insn.r.f3, C_addr, C_result);
     }
+
+    // Just load the next instruction for phase A.
     else {
-      code_tla = gen_bus(RV32I::OP_LOAD, 2, BA_hpc.pc, 0);
+      code_tla = gen_bus(RV32I::OP_LOAD, 2, BA_hpc.pc, C_result);
     }
 
     // FIXME move to phase C
@@ -298,8 +301,6 @@ public:
     reg_if.wren   = D_wren;
     reg_if.raddr1 = AB_raddr1;
     reg_if.raddr2 = AB_raddr2;
-
-    //----------
 
     tick(reset_in, AB_insn, BA_hpc, BC_addr, BC_result, CD_waddr, CD_wdata, CD_wren);
   }
