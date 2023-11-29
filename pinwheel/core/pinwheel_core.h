@@ -191,9 +191,12 @@ public:
     rv32_hpc BA_hpc;
 
     if (CD_swap) {
+      // If we're swapping threads, A is actually going to the HPC from reg1
+      // that was passed in through C_result.
       BA_hpc = from_logic2(C_result);
     }
     else if (BC_yield) {
+      // If we're yielding, A is actually going to the HPC in reg1.
       BA_hpc = from_logic2(BC_reg1);
     }
     else {
@@ -251,7 +254,7 @@ public:
       CD_wren  = C_insn.r.rd && C_insn.r.op != RV32I::OP_STORE && C_insn.r.op != RV32I::OP_BRANCH;
     }
     else {
-      CD_waddr = b13(DONTCARE);
+      CD_waddr = b12(DONTCARE);
       CD_wdata = b32(DONTCARE);
       CD_wren  = 0;
     }
@@ -270,12 +273,12 @@ public:
       AB_raddr2 = cat(b7(A_hpc.hart), b5(AB_insn.r.rs2));
     }
     else if (BC_read_regfile) {
-      AB_raddr1 = b13(DONTCARE);
-      AB_raddr2 = b13(BC_addr >> 2);
+      AB_raddr1 = b12(DONTCARE);
+      AB_raddr2 = b12(BC_addr, 2);
     }
     else {
-      AB_raddr1 = b13(DONTCARE);
-      AB_raddr2 = b13(DONTCARE);
+      AB_raddr1 = b12(DONTCARE);
+      AB_raddr2 = b12(DONTCARE);
     }
 
     //--------------------------------------------------------------------------
