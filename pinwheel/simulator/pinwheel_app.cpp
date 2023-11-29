@@ -223,22 +223,22 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
   auto& pinwheel = pinwheel_sim->states.top().soc;
   auto& pinwheel_tb = pinwheel_sim->states.top();
 
-  uint32_t insn_a = b24(pinwheel.core.A_pc) ? uint32_t(pinwheel.code_ram.get()) : 0;
+  uint32_t insn_a = b24(pinwheel.core.A_hpc.pc) ? uint32_t(pinwheel.code_ram.get()) : 0;
 
-  auto thread_a = pinwheel.core.A_hart;
-  auto thread_b = pinwheel.core.B_hart;
-  auto thread_c = pinwheel.core.C_hart;
-  //auto thread_d = pinwheel.core.D_hart;
+  auto thread_a = pinwheel.core.A_hpc.hart;
+  auto thread_b = pinwheel.core.B_hpc.hart;
+  auto thread_c = pinwheel.core.C_hpc.hart;
+  //auto thread_d = pinwheel.core.D_hpc.hart;
 
   uint32_t thread_pcs[16] = {0};
   //if (pinwheel.core.D_pc) thread_pcs[thread_d] = pinwheel.core.D_pc;
-  //if (pinwheel.core.C_pc) thread_pcs[thread_c] = pinwheel.core.C_pc;
-  if (pinwheel.core.B_pc) thread_pcs[thread_b] = pinwheel.core.B_pc;
-  if (pinwheel.core.A_pc) thread_pcs[thread_a] = pinwheel.core.A_pc;
+  if (pinwheel.core.C_hpc.pc) thread_pcs[thread_c] = pinwheel.core.C_hpc.pc;
+  if (pinwheel.core.B_hpc.pc) thread_pcs[thread_b] = pinwheel.core.B_hpc.pc;
+  if (pinwheel.core.A_hpc.pc) thread_pcs[thread_a] = pinwheel.core.A_hpc.pc;
 
-  auto thread_a_col = pinwheel.core.A_pc ? thread_a + 2 : 0;
-  auto thread_b_col = pinwheel.core.B_pc ? thread_b + 2 : 0;
-  //auto thread_c_col = pinwheel.core.C_pc ? thread_c + 2 : 0;
+  auto thread_a_col = pinwheel.core.A_hpc.pc ? thread_a + 2 : 0;
+  auto thread_b_col = pinwheel.core.B_hpc.pc ? thread_b + 2 : 0;
+  auto thread_c_col = pinwheel.core.C_hpc.pc ? thread_c + 2 : 0;
   //auto thread_d_col = pinwheel.core.D_pc ? thread_d + 2 : 0;
 
   int cursor_x = 32;
@@ -265,7 +265,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
     d.s.push_back(1);
     d("decode\n");
     d.s.push_back(thread_a_col);
-    d("pc   0x%08x\n", pinwheel.core.A_pc);
+    d("pc   0x%08x\n", pinwheel.core.A_hpc.pc);
     d("op   0x%08x ",  insn_a); print_rv(d, insn_a); d("\n");
     d("\n");
   }
@@ -274,7 +274,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
     d.s.push_back(1);
     d("fetch\n");
     d.s.push_back(thread_b_col);
-    d("pc   0x%08x\n", pinwheel.core.B_pc);
+    d("pc   0x%08x\n", pinwheel.core.B_hpc.pc);
     d("op   0x%08x ",  pinwheel.core.B_insn.raw); print_rv(d, pinwheel.core.B_insn.raw); d("\n");
     d("r1   0x%08x\n", pinwheel.regs.get_rs1());
     d("r2   0x%08x\n", pinwheel.regs.get_rs2());
@@ -397,8 +397,8 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
     d.clear();
   }
 
-  code_painter.highlight_x = ((b24(pinwheel.core.B_pc) & 0xFFFF) >> 2) % 16;
-  code_painter.highlight_y = ((b24(pinwheel.core.B_pc) & 0xFFFF) >> 2) / 16;
+  code_painter.highlight_x = ((b24(pinwheel.core.B_hpc.pc) & 0xFFFF) >> 2) % 16;
+  code_painter.highlight_y = ((b24(pinwheel.core.B_hpc.pc) & 0xFFFF) >> 2) / 16;
   text_painter.render_string(view, screen_size, "First 4K of code RAM", 1024, 1024 - 128 - 32 - 12);
   code_painter.dump(view, screen_size, 1024, 1024 - 128 - 32, 0.25, 0.25, 64, 64, vec4(0.0, 0.0, 0.0, 0.4), (uint8_t*)pinwheel.code_ram.get_data());
 

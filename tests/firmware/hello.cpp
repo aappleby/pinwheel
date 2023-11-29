@@ -141,9 +141,9 @@ void main0() {
   Console* c = &c1;
   c->printf("Thread 0 started\n");
 
-  uint32_t pc1 = (1 << 24) | uint32_t(&_start);
-  uint32_t pc2 = (2 << 24) | uint32_t(&_start);
-  uint32_t pc3 = (3 << 24) | uint32_t(&_start);
+  uint32_t pc1 = 0x80000000 | (1 << 24) | uint32_t(&_start);
+  uint32_t pc2 = 0x80000000 | (2 << 24) | uint32_t(&_start);
+  uint32_t pc3 = 0x80000000 | (3 << 24) | uint32_t(&_start);
 
   //c->printf("pc1 0x%x\n", pc1);
   //c->printf("pc2 0x%x\n", pc2);
