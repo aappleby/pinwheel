@@ -131,59 +131,12 @@ public:
 
     //----------------------------------------
 
-    rv32_hpc BC_hpc;
-    {
-      logic<1>  BC_take_branch = take_branch(B_insn.r.f3, BC_reg1, BC_reg2);
-      logic<32> BC_pc_next = B_hpc.pc + 4;
-      logic<32> BC_pc_jump = B_hpc.pc + BC_imm;
-      logic<24> BC_next_pc;
-
-      switch(B_insn.r.op) {
-        case RV32I::OP_BRANCH: BC_next_pc = BC_take_branch ? BC_pc_jump : BC_pc_next; break;
-        case RV32I::OP_JAL:    BC_next_pc = BC_pc_jump; break;
-        case RV32I::OP_JALR:   BC_next_pc = BC_addr; break;
-        case RV32I::OP_LUI:    BC_next_pc = BC_pc_next; break;
-        case RV32I::OP_AUIPC:  BC_next_pc = BC_pc_next; break;
-        case RV32I::OP_LOAD:   BC_next_pc = BC_pc_next; break;
-        case RV32I::OP_STORE:  BC_next_pc = BC_pc_next; break;
-        case RV32I::OP_SYSTEM: BC_next_pc = BC_pc_next; break;
-        case RV32I::OP_OPIMM:  BC_next_pc = BC_pc_next; break;
-        case RV32I::OP_OP:     BC_next_pc = BC_pc_next; break;
-        default:               BC_next_pc = b24(DONTCARE); break;
-      }
-
-      BC_hpc = from_logic1(B_hpc.active, B_hpc.hart, BC_next_pc);
-    }
+    rv32_hpc BC_hpc = next_hpc(B_hpc, B_insn, BC_reg1, BC_reg2);
 
     //----------------------------------------
     // Vane B executes its instruction and stores the result in _result.
 
-    logic<32> BC_result;
-    {
-      logic<32> BC_pc_next = B_hpc.pc + 4;
-      switch(B_insn.r.op) {
-        case RV32I::OP_OPIMM:  BC_result = execute_alu(B_insn, BC_reg1, BC_imm); break;
-        case RV32I::OP_OP:     BC_result = execute_alu(B_insn, BC_reg1, BC_reg2); break;
-        case RV32I::OP_SYSTEM: BC_result = execute_system(B_hpc.hart, B_insn, BC_reg1); break;
-        case RV32I::OP_BRANCH: BC_result = b32(DONTCARE); break;
-        case RV32I::OP_JAL:    BC_result = BC_pc_next; break;
-        case RV32I::OP_JALR:   BC_result = BC_pc_next; break;
-        case RV32I::OP_LUI:    BC_result = BC_imm; break;
-        case RV32I::OP_AUIPC:  BC_result = B_hpc.pc + BC_imm; break;
-        case RV32I::OP_LOAD:   BC_result = b32(DONTCARE); break;
-        case RV32I::OP_STORE:  BC_result = BC_reg2; break;
-        default:               BC_result = b32(DONTCARE); break;
-      }
-
-      // If this thread is yielding, we store where it _would've_ gone in B_result
-      // so we can write it to the regfile in phase C.
-      if (BC_yield) BC_result = to_logic(BC_hpc);
-
-      // If we're going to swap secondary threads in phase C, our target hpc is
-      // coming from reg1. We need to stash it in B_result so we can use it next
-      // phase from C_result below.
-      if (BC_swap)  BC_result = BC_reg1;
-    }
+    logic<32> BC_result = execute(B_hpc, B_insn, BC_reg1, BC_reg2, BC_hpc);
 
     //--------------------------------------------------------------------------
     // If both threads trigger PC swaps at once, the C one fires first.
@@ -205,10 +158,6 @@ public:
 
     //--------------------------------------------------------------------------
 
-    logic<32> CD_mem = unpack_mem(C_insn.r.f3, C_addr, data_tld.d_data);
-
-    //--------------------------------------------------------------------------
-
     logic<32> CD_writeback;
 
     if (CD_yield) {
@@ -226,7 +175,7 @@ public:
     }
     else if (CD_read_mem) {
       // A memory read replaces _result with the unpacked value on the data bus.
-      CD_writeback = CD_mem;
+      CD_writeback = unpack_mem(C_insn.r.f3, C_addr, data_tld.d_data);
     }
     else if (C_hpc.active) {
       CD_writeback = C_result;
@@ -265,20 +214,17 @@ public:
     // If vane A is idle, vane B uses vane A's regfile slot to do an additional
     // regfile read. This is used for memory-mapped regfile reading.
 
-    logic<13> AB_raddr1;
-    logic<13> AB_raddr2;
-
     if (A_hpc.active) {
-      AB_raddr1 = cat(b7(A_hpc.hart), b5(AB_insn.r.rs1));
-      AB_raddr2 = cat(b7(A_hpc.hart), b5(AB_insn.r.rs2));
+      reg_if.raddr1 = cat(b7(A_hpc.hart), b5(AB_insn.r.rs1));
+      reg_if.raddr2 = cat(b7(A_hpc.hart), b5(AB_insn.r.rs2));
     }
     else if (BC_read_regfile) {
-      AB_raddr1 = b12(DONTCARE);
-      AB_raddr2 = b12(BC_addr, 2);
+      reg_if.raddr1 = b12(DONTCARE);
+      reg_if.raddr2 = b12(BC_addr, 2);
     }
     else {
-      AB_raddr1 = b12(DONTCARE);
-      AB_raddr2 = b12(DONTCARE);
+      reg_if.raddr1 = b12(DONTCARE);
+      reg_if.raddr2 = b12(DONTCARE);
     }
 
     //--------------------------------------------------------------------------
@@ -302,8 +248,6 @@ public:
     reg_if.waddr  = D_waddr;
     reg_if.wdata  = D_wdata;
     reg_if.wren   = D_wren;
-    reg_if.raddr1 = AB_raddr1;
-    reg_if.raddr2 = AB_raddr2;
 
     tick(reset_in, AB_insn, BA_hpc, BC_addr, BC_result, CD_waddr, CD_wdata, CD_wren);
   }
@@ -312,11 +256,82 @@ public:
 
 private:
 
+  static logic<32> execute(rv32_hpc old_hpc, rv32_insn insn, logic<32> reg1, logic<32> reg2, rv32_hpc next_hpc) {
+    logic<1> yield = old_hpc.active && insn.r.op == RV32I::OP_SYSTEM && insn.r.f3 == RV32I::F3_CSRRW && insn.c.csr == 0x801;
+    logic<1> swap  = old_hpc.active && insn.r.op == RV32I::OP_SYSTEM && insn.r.f3 == RV32I::F3_CSRRW && insn.c.csr == 0x800;
+    logic<32> result;
+
+    // If this thread is yielding, we store where it _would've_ gone in result
+    // so we can write it to the regfile in phase C.
+    if (yield) {
+      result = to_logic(next_hpc);
+    }
+
+    // If we're going to swap secondary threads in phase C, our target hpc is
+    // coming from reg1. We need to stash it in B_result so we can use it next
+    // phase from C_result below.
+    else if (swap) {
+      result = reg1;
+    }
+
+    // Regular instruction, execute it.
+    else {
+      logic<32> imm  = decode_imm(insn);
+      logic<32> pc_plus_4 = old_hpc.pc + 4;
+      switch(insn.r.op) {
+        case RV32I::OP_OPIMM:  result = execute_alu(insn, reg1, imm); break;
+        case RV32I::OP_OP:     result = execute_alu(insn, reg1, reg2); break;
+        case RV32I::OP_SYSTEM: result = execute_system(old_hpc.hart, insn, reg1); break;
+        case RV32I::OP_BRANCH: result = b32(DONTCARE); break;
+        case RV32I::OP_JAL:    result = pc_plus_4; break;
+        case RV32I::OP_JALR:   result = pc_plus_4; break;
+        case RV32I::OP_LUI:    result = imm; break;
+        case RV32I::OP_AUIPC:  result = old_hpc.pc + imm; break;
+        case RV32I::OP_LOAD:   result = b32(DONTCARE); break;
+        case RV32I::OP_STORE:  result = reg2; break;
+        default:               result = b32(DONTCARE); break;
+      }
+    }
+
+    return result;
+  }
+
+  //----------------------------------------------------------------------------
+
+  static rv32_hpc next_hpc(rv32_hpc old_hpc, rv32_insn insn, logic<32> reg1, logic<32> reg2) {
+
+    logic<32> imm  = decode_imm(insn);
+    logic<32> pc_plus_4 = old_hpc.pc + 4;
+    logic<32> pc_plus_imm = old_hpc.pc + imm;
+
+    logic<1> new_take_branch = take_branch(insn.r.f3, reg1, reg2);
+
+    logic<24> new_pc;
+    switch(insn.r.op) {
+      case RV32I::OP_BRANCH: new_pc = new_take_branch ? pc_plus_imm : pc_plus_4; break;
+      case RV32I::OP_JAL:    new_pc = pc_plus_imm; break;
+      case RV32I::OP_JALR:   new_pc = b24(reg1 + imm); break;
+      case RV32I::OP_LUI:    new_pc = pc_plus_4; break;
+      case RV32I::OP_AUIPC:  new_pc = pc_plus_4; break;
+      case RV32I::OP_LOAD:   new_pc = pc_plus_4; break;
+      case RV32I::OP_STORE:  new_pc = pc_plus_4; break;
+      case RV32I::OP_SYSTEM: new_pc = pc_plus_4; break;
+      case RV32I::OP_OPIMM:  new_pc = pc_plus_4; break;
+      case RV32I::OP_OP:     new_pc = pc_plus_4; break;
+      default:               new_pc = b24(DONTCARE); break;
+    }
+
+    rv32_hpc new_hpc = { old_hpc.active, old_hpc.hart, new_pc };
+
+    return new_hpc;
+  }
+
   //----------------------------------------------------------------------------
 
   static logic<32> execute_system(logic<7> hart, rv32_insn insn, logic<32> B_reg1) {
     // FIXME need a good error if case is missing an expression
     switch(insn.r.f3) {
+      case 0:                return b32(DONTCARE);
       case RV32I::F3_CSRRW: {
         if (insn.c.csr == RV32I::MHARTID) return b32(hart);
         return b32(DONTCARE);
@@ -326,10 +341,10 @@ private:
         return b32(DONTCARE);
       }
       case RV32I::F3_CSRRC:  return b32(DONTCARE);
+      case 4:                return b32(DONTCARE);
       case RV32I::F3_CSRRWI: return b32(DONTCARE);
       case RV32I::F3_CSRRSI: return b32(DONTCARE);
       case RV32I::F3_CSRRCI: return b32(DONTCARE);
-      default:               return b32(DONTCARE);
     }
   }
 
@@ -363,9 +378,12 @@ private:
 
   //----------------------------------------------------------------------------
 
-  static logic<32> unpack_mem(logic<3> f3, logic<32> addr, logic<32> mem) {
+  static logic<32> unpack_mem(logic<3> f3, logic<32> addr, logic<32> packed_mem) {
+    logic<32> mem = packed_mem;
+
     if (addr[0]) mem = mem >> 8;
     if (addr[1]) mem = mem >> 16;
+
     switch (f3) {
       case RV32I::F3_LB:  mem = sign_extend<32>( b8(mem)); break;
       case RV32I::F3_LH:  mem = sign_extend<32>(b16(mem)); break;
@@ -376,6 +394,7 @@ private:
       case RV32I::F3_LWU: mem = mem; break;
       case RV32I::F3_LDU: mem = mem; break;
     }
+
     return mem;
   }
 
