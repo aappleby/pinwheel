@@ -8,7 +8,7 @@
 
 //------------------------------------------------------------------------------
 
-template<int dwords>
+template<int dwords = 512>
 class block_ram {
 public:
 
@@ -35,10 +35,10 @@ private:
   void tick(logic<1> cs, logic<addr_bits> addr, logic<32> wdata, logic<1> wren, logic<4> mask) {
     if (cs) {
       if (wren) {
-        if (mask[0]) slice< 7,  0, 32>(ram[addr]) = b8(wdata,  0);
-        if (mask[1]) slice<15,  8, 32>(ram[addr]) = b8(wdata,  8);
-        if (mask[2]) slice<23, 16, 32>(ram[addr]) = b8(wdata, 16);
-        if (mask[3]) slice<31, 24, 32>(ram[addr]) = b8(wdata, 24);
+        if (mask[0]) slice<8,  0>(ram[addr]) = b8(wdata,  0);
+        if (mask[1]) slice<8,  8>(ram[addr]) = b8(wdata,  8);
+        if (mask[2]) slice<8, 16>(ram[addr]) = b8(wdata, 16);
+        if (mask[3]) slice<8, 24>(ram[addr]) = b8(wdata, 24);
       }
       else {
         rdata = ram[addr];

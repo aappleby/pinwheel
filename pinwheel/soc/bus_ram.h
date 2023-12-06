@@ -10,7 +10,7 @@
 
 // FIXME we are intentionally ignoring the tilelink 'ready' signals
 
-// FIXME sb and sh tests in pinwheel_test are broken
+
 
 //------------------------------------------------------------------------------
 

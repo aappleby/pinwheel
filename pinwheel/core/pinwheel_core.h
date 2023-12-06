@@ -20,6 +20,9 @@
 
 // TODO - Move mem ops to CD so we can read code and still make the writeback
 
+// FIXME we need to be able to stall an instruction so we can handle bus stalls
+// on Tilelink
+
 struct rv32_hpc {
   uint32_t active : 1;
   uint32_t hart : 7;
@@ -130,11 +133,9 @@ public:
     logic<1> CD_write_regfile = C_hpc.active && C_insn.r.op == RV32I::OP_STORE && b4(C_addr, 28) == 0xE;
 
     //----------------------------------------
+    // Vane B executes its instruction and stores the result in _result.
 
     rv32_hpc BC_hpc = next_hpc(B_hpc, B_insn, BC_reg1, BC_reg2);
-
-    //----------------------------------------
-    // Vane B executes its instruction and stores the result in _result.
 
     logic<32> BC_result = execute(B_hpc, B_insn, BC_reg1, BC_reg2, BC_hpc);
 
@@ -160,29 +161,20 @@ public:
 
     logic<32> CD_writeback;
 
-    if (CD_yield) {
-      CD_writeback = C_result;
-    }
-    else if (CD_swap) {
-      // If we're switching secondary threads, we write the previous secondary
-      // thread back to the primary thread's regfile.
-      CD_writeback = to_logic(BC_hpc);
-    }
-    else if (CD_read_regfile) {
-      // Note - this must be the _raw_ register, not zeroed, if we want to use
-      // R0s in the regfile as spare storage
-      CD_writeback = reg2;
-    }
-    else if (CD_read_mem) {
-      // A memory read replaces _result with the unpacked value on the data bus.
-      CD_writeback = unpack_mem(C_insn.r.f3, C_addr, data_tld.d_data);
-    }
-    else if (C_hpc.active) {
-      CD_writeback = C_result;
-    }
-    else {
-      CD_writeback = b32(DONTCARE);
-    }
+    if      (CD_yield)        CD_writeback = C_result;
+
+    // If we're switching secondary threads, we write the previous secondary
+    // thread back to the primary thread's regfile.
+    else if (CD_swap)         CD_writeback = to_logic(BC_hpc);
+
+    // Note - this must be the _raw_ register, not zeroed, if we want to use
+    // R0s in the regfile as spare storage
+    else if (CD_read_regfile) CD_writeback = reg2;
+
+    // A memory read replaces _result with the unpacked value on the data bus.
+    else if (CD_read_mem)     CD_writeback = unpack_mem(C_insn.r.f3, C_addr, data_tld.d_data);
+    else if (C_hpc.active)    CD_writeback = C_result;
+    else                      CD_writeback = b32(DONTCARE);
 
     //--------------------------------------------------------------------------
     // Regfile write
@@ -269,7 +261,7 @@ private:
 
     // If we're going to swap secondary threads in phase C, our target hpc is
     // coming from reg1. We need to stash it in B_result so we can use it next
-    // phase from C_result below.
+    // phase from C_result.
     else if (swap) {
       result = reg1;
     }
