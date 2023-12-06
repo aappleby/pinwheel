@@ -37,9 +37,19 @@ public:
   //----------------------------------------
 
   tilelink_d get_tld() {
-    // Route the ram output from the _previous_ cycle to TLD
-    tld.d_data = ram.rdata;
-    return tld;
+    tilelink_d result;
+
+    result.d_opcode = tld.d_opcode;
+    result.d_param  = tld.d_param;
+    result.d_size   = tld.d_size;
+    result.d_source = tld.d_source;
+    result.d_sink   = tld.d_sink;
+    result.d_data   = ram.rdata;     // Route the ram output from the _previous_ cycle to TLD
+    result.d_error  = tld.d_error;
+    result.d_valid  = tld.d_valid;
+    result.d_ready  = tld.d_ready;
+
+    return result;
   }
 
   void tock_b(tilelink_a tla) {
@@ -50,6 +60,14 @@ public:
 
     tick(cs, tla);
   }
+
+  //----------------------------------------
+
+  /* metron_noconvert */ const uint32_t* get_data() const { return ram.get_data(); }
+  /* metron_noconvert */ uint32_t*       get_data()       { return ram.get_data(); }
+  /* metron_noconvert */ size_t          get_size() const { return ram.get_size(); }
+
+private:
 
   //----------------------------------------
 
@@ -72,12 +90,6 @@ public:
   }
 
   //----------------------------------------
-
-  /* metron_noconvert */ const uint32_t* get_data() const { return ram.get_data(); }
-  /* metron_noconvert */ uint32_t*       get_data()       { return ram.get_data(); }
-  /* metron_noconvert */ size_t          get_size() const { return ram.get_size(); }
-
-private:
 
   tilelink_d tld;
   block_ram<dwords> ram;

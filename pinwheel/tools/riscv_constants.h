@@ -157,7 +157,7 @@ union rv32_insn {
   rv32_ctype c;
 };
 
-static_assert(sizeof(rv32_insn) == 4);
+//static_assert(sizeof(rv32_insn) == 4);
 
 // verilator lint_on unusedparam
 #endif

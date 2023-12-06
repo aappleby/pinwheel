@@ -6,7 +6,7 @@
 #include "pinwheel/tools/tilelink.h"
 #include "pinwheel/tools/riscv_constants.h"
 
-#include <assert.h>
+//#include <assert.h>
 
 // CSR 0x800 - swap secondary thread
 // CSR 0x801 - yield primary thread
@@ -28,7 +28,7 @@ struct rv32_hpc {
   uint32_t hart : 7;
   uint32_t pc : 24;
 };
-static_assert(sizeof(rv32_hpc) == 4);
+//static_assert(sizeof(rv32_hpc) == 4);
 
 //------------------------------------------------------------------------------
 /* verilator lint_off UNUSEDSIGNAL */
@@ -84,27 +84,17 @@ public:
 
   /* metron_noconvert */ logic<32> dbg_decode_imm(rv32_insn insn) const { return decode_imm(insn); }
 
-  static logic<32> to_logic(rv32_hpc hpc) {
-    return cat(b1(hpc.active), b7(hpc.hart), b24(hpc.pc));
-  }
-
-  static rv32_hpc from_logic1(logic<1> active, logic<7> hart, logic<24> pc) {
-    return { active, hart, pc };
-  }
-
-  static rv32_hpc from_logic2(logic<32> hpc) {
-    return { b1(hpc, 31), b7(hpc, 24), b24(hpc) };
-  }
-
   //----------------------------------------------------------------------------
 
-  void tock(logic<1> reset_in, tilelink_d code_tld, tilelink_d data_tld, logic<32> reg1, logic<32> reg2) {
-
+  void tock(logic<1> reset_in, tilelink_d code_tld, tilelink_d data_tld, logic<32> _reg1, logic<32> _reg2) {
     rv32_insn AB_insn;
     AB_insn.raw = A_hpc.active ? code_tld.d_data : b32(0);
 
     //----------------------------------------
     // Forward stores from phase D to phase B
+
+    logic<32> reg1 = _reg1;
+    logic<32> reg2 = _reg2;
 
     if (D_waddr == cat(b7(B_hpc.hart), b5(B_insn.r.rs1)) && D_wren) reg1 = D_wdata;
     if (D_waddr == cat(b7(B_hpc.hart), b5(B_insn.r.rs2)) && D_wren) reg2 = D_wdata;
@@ -142,7 +132,7 @@ public:
     //--------------------------------------------------------------------------
     // If both threads trigger PC swaps at once, the C one fires first.
 
-    rv32_hpc BA_hpc;
+    rv32_hpc BA_hpc = BC_hpc;
 
     if (CD_swap) {
       // If we're swapping threads, A is actually going to the HPC from reg1
@@ -313,7 +303,10 @@ private:
       default:               new_pc = b24(DONTCARE); break;
     }
 
-    rv32_hpc new_hpc = { old_hpc.active, old_hpc.hart, new_pc };
+    rv32_hpc new_hpc;
+    new_hpc.active = old_hpc.active;
+    new_hpc.hart = old_hpc.hart;
+    new_hpc.pc = new_pc;
 
     return new_hpc;
   }
@@ -322,22 +315,21 @@ private:
 
   static logic<32> execute_system(logic<7> hart, rv32_insn insn, logic<32> B_reg1) {
     // FIXME need a good error if case is missing an expression
+
+    logic<32> result = b32(DONTCARE);
+
     switch(insn.r.f3) {
-      case 0:                return b32(DONTCARE);
       case RV32I::F3_CSRRW: {
-        if (insn.c.csr == RV32I::MHARTID) return b32(hart);
-        return b32(DONTCARE);
+        if (insn.c.csr == RV32I::MHARTID) result = b32(hart);
+        break;
       }
       case RV32I::F3_CSRRS: {
-        if (insn.c.csr == RV32I::MHARTID) return b32(hart);
-        return b32(DONTCARE);
+        if (insn.c.csr == RV32I::MHARTID) result = b32(hart);
+        break;
       }
-      case RV32I::F3_CSRRC:  return b32(DONTCARE);
-      case 4:                return b32(DONTCARE);
-      case RV32I::F3_CSRRWI: return b32(DONTCARE);
-      case RV32I::F3_CSRRSI: return b32(DONTCARE);
-      case RV32I::F3_CSRRCI: return b32(DONTCARE);
     }
+
+    return result;
   }
 
   //----------------------------------------------------------------------------
@@ -397,17 +389,20 @@ private:
     logic<1> slt = signed(reg1) < signed(reg2);
     logic<1> ult = reg1 < reg2;
 
+    logic<1> result;
     switch (f3) {
-      case RV32I::F3_BEQ:  return   eq;
-      case RV32I::F3_BNE:  return  !eq;
-      case RV32I::F3_BEQU: return   eq;
-      case RV32I::F3_BNEU: return  !eq;
-      case RV32I::F3_BLT:  return  slt;
-      case RV32I::F3_BGE:  return !slt;
-      case RV32I::F3_BLTU: return  ult;
-      case RV32I::F3_BGEU: return !ult;
-      default:             return b1(DONTCARE);
+      case RV32I::F3_BEQ:  result =   eq; break;
+      case RV32I::F3_BNE:  result =  !eq; break;
+      case RV32I::F3_BEQU: result =   eq; break;
+      case RV32I::F3_BNEU: result =  !eq; break;
+      case RV32I::F3_BLT:  result =  slt; break;
+      case RV32I::F3_BGE:  result = !slt; break;
+      case RV32I::F3_BLTU: result =  ult; break;
+      case RV32I::F3_BGEU: result = !ult; break;
+      default:             result = b1(DONTCARE); break;
     }
+
+    return result;
   }
 
   //----------------------------------------------------------------------------
@@ -433,34 +428,42 @@ private:
       b1 (0)
     ));
 
+    logic<32> result;
+
     switch(insn2.r.op) {
-      case RV32I::OP_LOAD:   return imm_i;
-      case RV32I::OP_OPIMM:  return imm_i;
-      case RV32I::OP_AUIPC:  return imm_u;
-      case RV32I::OP_STORE:  return imm_s;
-      case RV32I::OP_OP:     return imm_i;
-      case RV32I::OP_LUI:    return imm_u;
-      case RV32I::OP_BRANCH: return imm_b;
-      case RV32I::OP_JALR:   return imm_i;
-      case RV32I::OP_JAL:    return imm_j;
-      default:               return b32(DONTCARE);
+      case RV32I::OP_LOAD:   result = imm_i; break;
+      case RV32I::OP_OPIMM:  result = imm_i; break;
+      case RV32I::OP_AUIPC:  result = imm_u; break;
+      case RV32I::OP_STORE:  result = imm_s; break;
+      case RV32I::OP_OP:     result = imm_i; break;
+      case RV32I::OP_LUI:    result = imm_u; break;
+      case RV32I::OP_BRANCH: result = imm_b; break;
+      case RV32I::OP_JALR:   result = imm_i; break;
+      case RV32I::OP_JAL:    result = imm_j; break;
+      default:               result = b32(DONTCARE); break;
     }
+
+    return result;
   }
 
   //----------------------------------------------------------------------------
 
   static logic<32> execute_alu(rv32_insn insn, logic<32> alu1, logic<32> alu2) {
+    logic<32> result;
+
     switch (insn.r.f3) {
-      case RV32I::F3_ADDSUB: return (insn.r.op == RV32I::OP_OP && insn.r.f7 == 32) ? alu1 - alu2 : alu1 + alu2;
-      case RV32I::F3_SL:     return alu1 << b5(alu2);
-      case RV32I::F3_SLT:    return signed(alu1) < signed(alu2);
-      case RV32I::F3_SLTU:   return alu1 < alu2;
-      case RV32I::F3_XOR:    return alu1 ^ alu2;
-      case RV32I::F3_SR:     return insn.r.f7 == 32 ? signed(alu1) >> b5(alu2) : alu1 >> b5(alu2);
-      case RV32I::F3_OR:     return alu1 | alu2;
-      case RV32I::F3_AND:    return alu1 & alu2;
-      default:               return b32(DONTCARE);
+      case RV32I::F3_ADDSUB: result = (insn.r.op == RV32I::OP_OP && insn.r.f7 == 32) ? alu1 - alu2 : alu1 + alu2; break;
+      case RV32I::F3_SL:     result = alu1 << b5(alu2); break;
+      case RV32I::F3_SLT:    result = signed(alu1) < signed(alu2); break;
+      case RV32I::F3_SLTU:   result = alu1 < alu2; break;
+      case RV32I::F3_XOR:    result = alu1 ^ alu2; break;
+      case RV32I::F3_SR:     result = insn.r.f7 == 32 ? signed(alu1) >> b5(alu2) : alu1 >> b5(alu2); break;
+      case RV32I::F3_OR:     result = alu1 | alu2; break;
+      case RV32I::F3_AND:    result = alu1 & alu2; break;
+      default:               result = b32(DONTCARE); break;
     }
+
+    return result;
   }
 
   //----------------------------------------------------------------------------
@@ -505,6 +508,26 @@ private:
 
       ticks    = ticks + 1;
     }
+  }
+
+  static logic<32> to_logic(rv32_hpc hpc) {
+    return cat(b1(hpc.active), b7(hpc.hart), b24(hpc.pc));
+  }
+
+  static rv32_hpc from_logic1(logic<1> active, logic<7> hart, logic<24> pc) {
+    rv32_hpc result;
+    result.active = active;
+    result.hart = hart;
+    result.pc = pc;
+    return result;
+  }
+
+  static rv32_hpc from_logic2(logic<32> hpc) {
+    rv32_hpc result;
+    result.active = b1(hpc, 31);
+    result.hart = b7(hpc, 24);
+    result.pc = b24(hpc);
+    return result;
   }
 
 public:
