@@ -100,7 +100,9 @@ public:
     tick(reset, next_data, next_req);
   }
 
-  tilelink_d tld;
+  tilelink_d get_tld() const {
+    return tld;
+  }
 
 private:
 
@@ -143,6 +145,10 @@ private:
       }
     }
   }
+
+  //----------------------------------------
+
+  tilelink_d tld;
 
   // We wait {cycles_per_bit} cycles between sending bits.
   logic<16> bit_delay;

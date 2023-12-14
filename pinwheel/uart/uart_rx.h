@@ -144,6 +144,8 @@ public:
     if (byte_consumed) data_flag = 0;
   }
 
+  //----------------------------------------
+
   tilelink_d tld;
 
   // We wait for cycles_per_bit cycles

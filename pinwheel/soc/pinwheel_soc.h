@@ -43,7 +43,7 @@ public:
 
   //logic<1> get_uart() { return uart0_tx.get_serial(); }
 
-  tilelink_d get_data_tld() {
+  /* metron_internal */ tilelink_d get_data_tld() {
     tilelink_d data_tld  = data_ram.get_tld();
     tilelink_d debug_tld = debug_reg.get_tld();
     tilelink_d uart0_tld = uart0_rx.get_tld();
