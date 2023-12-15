@@ -238,7 +238,7 @@ void PinwheelApp::app_render_frame(dvec2 screen_size, double delta)  {
 
   auto thread_a_col = pinwheel.core.A_hpc.pc ? thread_a + 2 : 0;
   auto thread_b_col = pinwheel.core.B_hpc.pc ? thread_b + 2 : 0;
-  auto thread_c_col = pinwheel.core.C_hpc.pc ? thread_c + 2 : 0;
+  //auto thread_c_col = pinwheel.core.C_hpc.pc ? thread_c + 2 : 0;
   //auto thread_d_col = pinwheel.core.D_pc ? thread_d + 2 : 0;
 
   int cursor_x = 32;

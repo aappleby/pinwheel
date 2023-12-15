@@ -21,33 +21,33 @@ public:
   static const int addr_bits = clog2(dwords);
 
   bus_ram(const char* filename = nullptr) : ram(filename) {
-    tld.d_opcode = TL::Invalid;
-    tld.d_param  = b2(DONTCARE);
-    tld.d_size   = b3(DONTCARE);
-    tld.d_source = b1(DONTCARE);
-    tld.d_sink   = b3(DONTCARE);
-    tld.d_data   = b32(DONTCARE);
-    tld.d_error  = 0;
-    tld.d_valid  = 0;
-    tld.d_ready  = 1;
+    tld_.d_opcode = b32(DONTCARE);
+    tld_.d_param  = b2(DONTCARE);
+    tld_.d_size   = b3(DONTCARE);
+    tld_.d_source = b1(DONTCARE);
+    tld_.d_sink   = b3(DONTCARE);
+    tld_.d_data   = b32(DONTCARE);
+    tld_.d_error  = b1(DONTCARE);
+    tld_.d_valid  = 0;
+    tld_.d_ready  = 1;
   }
 
-  /* metron_noconvert */ logic<32> get() const { return tld.d_data; }
+  /* metron_noconvert */ logic<32> get() const { return tld_.d_data; }
 
   //----------------------------------------
 
   tilelink_d get_tld() {
     tilelink_d result;
 
-    result.d_opcode = tld.d_opcode;
-    result.d_param  = tld.d_param;
-    result.d_size   = tld.d_size;
-    result.d_source = tld.d_source;
-    result.d_sink   = tld.d_sink;
+    result.d_opcode = tld_.d_opcode;
+    result.d_param  = tld_.d_param;
+    result.d_size   = tld_.d_size;
+    result.d_source = tld_.d_source;
+    result.d_sink   = tld_.d_sink;
     result.d_data   = ram.rdata;     // Route the ram output from the _previous_ cycle to TLD
-    result.d_error  = tld.d_error;
-    result.d_valid  = tld.d_valid;
-    result.d_ready  = tld.d_ready;
+    result.d_error  = tld_.d_error;
+    result.d_valid  = tld_.d_valid;
+    result.d_ready  = tld_.d_ready;
 
     return result;
   }
@@ -72,26 +72,26 @@ private:
   //----------------------------------------
 
   void tick(logic<1> cs, tilelink_a tla) {
-    tld.d_opcode = TL::Invalid;
-    tld.d_size   = tla.a_size;
-    tld.d_valid  = 0;
+    tld_.d_opcode = TL::Invalid;
+    tld_.d_size   = tla.a_size;
+    tld_.d_valid  = 0;
 
     if (cs) {
       if (tla.a_opcode == TL::PutFullData || tla.a_opcode == TL::PutPartialData) {
-        tld.d_opcode = TL::AccessAck;
-        tld.d_valid  = 1;
+        tld_.d_opcode = TL::AccessAck;
+        tld_.d_valid  = 1;
       }
 
       if (tla.a_opcode == TL::Get) {
-        tld.d_opcode = TL::AccessAckData;
-        tld.d_valid  = 1;
+        tld_.d_opcode = TL::AccessAckData;
+        tld_.d_valid  = 1;
       }
     }
   }
 
   //----------------------------------------
 
-  tilelink_d tld;
+  tilelink_d tld_;
   block_ram<dwords> ram;
 };
 

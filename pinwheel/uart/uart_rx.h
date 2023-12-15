@@ -4,95 +4,36 @@
 #include "metron/metron_tools.h"
 #include "pinwheel/tools/tilelink.h"
 
-//------------------------------------------------------------------------------
+//==============================================================================
 // verilator lint_off unusedsignal
 // verilator lint_off unusedparam
 
-// 0xB0000000 = data ready
-// 0xB0000004 = data
-// 0xB0000008 = checksum
-
-template <uint32_t addr_mask = 0xF000F000, uint32_t addr_tag = 0xB0000000>
 class uart_rx {
 public:
 
   uart_rx(int clock_rate, int baud_rate) {
-    bit_delay     = (clock_rate / baud_rate) - 1;
+    bit_delay_    = (clock_rate / baud_rate) - 1;
     bit_delay_max = (clock_rate / baud_rate) - 1;
-
-    tld.d_opcode = b3(DONTCARE);
-    tld.d_param  = 0; // required by spec
-    tld.d_size   = 2;
-    tld.d_source = 0;
-    tld.d_sink   = 0;
-    tld.d_data   = b32(DONTCARE);
-    tld.d_error  = 0;
-    tld.d_valid  = 0;
-    tld.d_ready  = 1;
   }
 
   // Our output is valid once we've received 8 bits.
   logic<1> get_valid() const {
-    return bit_count == 8;
+    return bit_count_ == 8;
   }
 
   // The most recent data byte received.
-  logic<8> get_data_out() const {
-    return data_out;
+  logic<8> get_data_buf() const {
+    return data_buf_;
+  }
+  // True if we have a byte waiting.
+  logic<1> get_data_flag() const {
+    return data_flag_;
   }
 
   // The checksum of all bytes received so far.
   logic<32> get_checksum() const {
-    return checksum;
+    return checksum_;
   }
-
-  tilelink_d get_tld() const {
-    return tld;
-  }
-
-  // FIXME should this be happening in tick? Probably?
-
-  void tock(const logic<1> reset, const logic<1> serial, const tilelink_a tla)
-  {
-    tld.d_opcode = b3(DONTCARE);
-    tld.d_param  = 0; // required by spec
-    tld.d_size   = 2;
-    tld.d_source = 0;
-    tld.d_sink   = 0;
-    tld.d_data   = b32(DONTCARE);
-    tld.d_error  = 0;
-    tld.d_valid  = 0;
-    tld.d_ready  = 1;
-
-    logic<1> byte_consumed = 0;
-
-    if (tla.a_valid && (tla.a_address & addr_mask) == addr_tag && tla.a_opcode == TL::Get) {
-      /* metron_noconvert */
-      tld.d_opcode = TL::AccessAckData;
-      tld.d_error  = 0;
-
-      switch(tla.a_address & 0xF) {
-        case 0x0000:
-          tld.d_data  = b32(data_flag);
-          tld.d_valid = 1;
-          break;
-        case 0x0004:
-          //tld.d_data  = b32(data_out);
-          tld.d_data = b32(data_buf);
-          tld.d_valid = 1;
-          byte_consumed = 1;
-          break;
-        case 0x0008:
-          tld.d_data  = checksum;
-          tld.d_valid = 1;
-          break;
-      }
-    }
-
-    tick(reset, serial, byte_consumed);
-  }
-
- private:
 
   void tick(
     logic<1> reset,  // Top-level reset signal
@@ -101,76 +42,77 @@ public:
   )
   {
     if (reset) {
-      bit_delay = bit_delay_max;
-      bit_count = bit_count_max;
-      data_out = 0;
-      checksum = 0;
+      bit_delay_ = bit_delay_max;
+      bit_count_ = bit_count_max;
+      shift_ = 0;
+      checksum_ = 0;
     }
     else {
 
       // If we're waiting for the next bit to arrive, keep waiting until our
       // bit delay counter runs out.
-      if (bit_delay < bit_delay_max) {
-        bit_delay = bit_delay + 1;
+      if (bit_delay_ < bit_delay_max) {
+        bit_delay_ = bit_delay_ + 1;
       }
 
       // We're done waiting for a bit. If we have bits left to receive, shift
       // them into the top of the output register.
-      else if (bit_count < bit_count_max) {
-        logic<8> new_output = (serial << 7) | (data_out >> 1);
+      else if (bit_count_ < bit_count_max) {
+        logic<8> new_shift = (serial << 7) | (shift_ >> 1);
 
         // If that was the last data bit, add the finished byte to our checksum.
-        if (bit_count == 7) {
-          data_buf = new_output;
-          data_flag = 1;
-          checksum = checksum + new_output;
+        if (bit_count_ == 7) {
+          data_buf_ = new_shift;
+          data_flag_ = 1;
+          checksum_ = checksum_ + new_shift;
         }
 
         // Move to the next bit and reset our delay counter.
-        bit_delay = 0;
-        bit_count = bit_count + 1;
-        data_out = new_output;
+        bit_delay_ = 0;
+        bit_count_ = bit_count_ + 1;
+        shift_ = new_shift;
       }
 
       // We're not waiting for a bit and we finished receiving the previous
       // byte. Wait for the serial line to go low, which signals the start of
       // the next byte.
       else if (serial == 0) {
-        bit_delay = 0;
-        bit_count = 0;
+        bit_delay_ = 0;
+        bit_count_ = 0;
       }
     }
 
-    if (byte_consumed) data_flag = 0;
+    if (byte_consumed) data_flag_ = 0;
   }
 
   //----------------------------------------
 
-  tilelink_d tld;
+ private:
 
   // We wait for cycles_per_bit cycles
-  logic<16> bit_delay;
+  logic<16> bit_delay_;
   logic<16> bit_delay_max;
 
   // Our serial data format is 8n1, which is short for "one start bit, 8 data
-  // bits, no parity bit, one stop bit". If bit_count == 1, we're only waiting
+  // bits, no parity bit, one stop bit". If bit_count_ == 1, we're only waiting
   // on the stop bit.
   static const int bit_count_max = 9;
   static const int bit_count_width = clog2(bit_count_max);
-  logic<bit_count_width> bit_count;
+  logic<bit_count_width> bit_count_;
 
-  // The received byte
-  logic<8> data_out;
+  // The shift register that receives bits
+  logic<8> shift_;
 
-  logic<8> data_buf;
-  logic<1> data_flag;
+  // The most recently received byte
+  logic<8> data_buf_;
+  logic<1> data_flag_;
 
   // The checksum of all bytes received so far.
-  logic<32> checksum;
+  logic<32> checksum_;
 };
 
 // verilator lint_on unusedsignal
 // verilator lint_on unusedparam
-//------------------------------------------------------------------------------
+//==============================================================================
 
 #endif // PINWHEEL_UART_UART_RX

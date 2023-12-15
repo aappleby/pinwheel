@@ -30,13 +30,13 @@ TestResults test_uart_metron() {
   for (int cycle = 0; cycle < 1688703; cycle++) {
     bool old_valid = top.uart0_rx.get_valid();
     top.tock(0);
-    if (!old_valid && top.uart0_rx.get_valid()) {
-      LOG_B("%c", (uint8_t)top.uart0_rx.get_data_out());
+    if (!old_valid && top.uart0_rx.get_data_flag()) {
+      LOG_B("%c", (uint8_t)top.uart0_rx.get_data_buf());
     }
 
-    if (top.uart0_hello.get_done() && top.uart0_tx.get_idle()) {
-      break;
-    }
+    //if (top.uart0_hello.get_done() && top.uart0_tx.get_idle()) {
+    //  break;
+    //}
   }
 
   LOG_B("\n");

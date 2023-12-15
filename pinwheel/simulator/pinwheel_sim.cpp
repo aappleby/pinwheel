@@ -28,7 +28,7 @@ void PinwheelSim::step() {
     pinwheel.console4.tick(0, pinwheel.soc.core.data_tla);
 
     if (!old_uart_valid && pinwheel.soc.uart0_rx.get_valid()) {
-      pinwheel.console5.putchar(pinwheel.soc.uart0_rx.get_data_out());
+      pinwheel.console5.putchar(pinwheel.soc.uart0_rx.get_data_buf());
     }
 
     steps--;

@@ -10,10 +10,9 @@
 #include "pinwheel/tools/tilelink.h"
 
 #include "pinwheel/uart/uart_hello.h"
-#include "pinwheel/uart/uart_tx.h"
-#include "pinwheel/uart/uart_rx.h"
+#include "pinwheel/uart/uart_tilelink.h"
 
-//------------------------------------------------------------------------------
+//==============================================================================
 // verilator lint_off unusedsignal
 // verilator lint_off undriven
 
@@ -31,8 +30,8 @@ public:
   )
   : code_ram(code_hexfile),
     data_ram(data_hexfile),
-    uart0_tx(clock_rate, baud_rate),
-    uart0_rx(clock_rate, baud_rate),
+    uart0_tx(clock_rate, baud_rate, 0xFFFF'0000, 0xB000'0000),
+    uart0_rx(clock_rate, baud_rate, 0xFFFF'0000, 0xB001'0000),
     uart0_hello(message_hex, repeat_msg)
   {
   }
@@ -41,17 +40,22 @@ public:
 
   /*metron_noconvert*/ logic<32> get_debug() { return debug_reg.get_tld().d_data; }
 
-  //logic<1> get_uart() { return uart0_tx.get_serial(); }
+  logic<1> get_uart() { return uart0_tx.get_serial(); }
 
   /* metron_internal */ tilelink_d get_data_tld() {
-    tilelink_d data_tld  = data_ram.get_tld();
-    tilelink_d debug_tld = debug_reg.get_tld();
-    tilelink_d uart0_tld = uart0_rx.get_tld();
+    tilelink_d data_tld     = data_ram.get_tld();
+    tilelink_d debug_tld    = debug_reg.get_tld();
+    tilelink_d uart0_tx_tld = uart0_tx.get_tld();
+    tilelink_d uart0_rx_tld = uart0_rx.get_tld();
 
-    if (debug_tld.d_valid == 1) data_tld = debug_tld;
-    if (uart0_tld.d_valid == 1) data_tld = uart0_tld;
+    tilelink_d result;
 
-    return data_tld;
+    if      (debug_tld.d_valid    == 1) result = debug_tld;
+    else if (uart0_tx_tld.d_valid == 1) result = uart0_tx_tld;
+    else if (uart0_rx_tld.d_valid == 1) result = uart0_rx_tld;
+    else                                result = data_tld;
+
+    return result;
   }
 
   //----------------------------------------
@@ -77,7 +81,7 @@ public:
     logic<1> request = uart0_hello.get_request();
 
     uart0_tx.tock(reset_in, data, request, core.data_tla);
-    uart0_hello.tock(reset_in, clear_to_send, idle);
+    uart0_hello.tick(reset_in, clear_to_send, idle);
   }
 
   //----------------------------------------
@@ -88,14 +92,15 @@ public:
   /* metron_internal */ bus_ram   <0xF000'0000, 0x0000'0000, code_dwords> code_ram;  // Code  at 0x0xxx'xxxx
   /* metron_internal */ bus_ram   <0xF000'0000, 0x8000'0000, data_dwords> data_ram;  // Data  at 0x8xxx'xxxx
   /* metron_internal */ test_reg  <0xF000'0000, 0xF000'0000> debug_reg; // Debug at 0xFxxx'xxxx
-  /* metron_internal */ uart_tx   <0xFFFF'0000, 0xB000'0000> uart0_tx;  // Uart TX  0xB000'xxxx
-  /* metron_internal */ uart_rx   <0xFFFF'0000, 0xB001'0000> uart0_rx;  // Uart RX  0xB001'xxxx
+
+  /* metron_internal */ uart_tx_tilelink uart0_tx;
+  /* metron_internal */ uart_rx_tilelink uart0_rx;
 
   /* metron_internal */ uart_hello uart0_hello;
 };
 
 // verilator lint_on unusedsignal
 // verilator lint_off undriven
-//------------------------------------------------------------------------------
+//==============================================================================
 
 #endif // PINWHEEL_RTL_PINWHEEL_H
