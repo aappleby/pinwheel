@@ -2,7 +2,6 @@
 #define PINWHEEL_UART_UART_RX
 
 #include "metron/metron_tools.h"
-#include "pinwheel/tools/tilelink.h"
 
 //==============================================================================
 // verilator lint_off unusedsignal
@@ -14,6 +13,8 @@ public:
   uart_rx(int clock_rate, int baud_rate) {
     bit_delay_    = (clock_rate / baud_rate) - 1;
     bit_delay_max = (clock_rate / baud_rate) - 1;
+    data_buf = 0;
+    checksum_ = 0;
   }
 
   // Our output is valid once we've received 8 bits.
@@ -49,6 +50,8 @@ public:
     }
     else {
 
+      if (byte_consumed) data_flag_ = 0;
+
       // If we're waiting for the next bit to arrive, keep waiting until our
       // bit delay counter runs out.
       if (bit_delay_ < bit_delay_max) {
@@ -81,8 +84,6 @@ public:
         bit_count_ = 0;
       }
     }
-
-    if (byte_consumed) data_flag_ = 0;
   }
 
   //----------------------------------------

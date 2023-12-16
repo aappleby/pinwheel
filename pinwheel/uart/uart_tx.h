@@ -2,7 +2,6 @@
 #define PINWHEEL_UART_UART_TX_H
 
 #include "metron/metron_tools.h"
-#include "pinwheel/tools/tilelink.h"
 
 //==============================================================================
 // verilator lint_off unusedsignal
