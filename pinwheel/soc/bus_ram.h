@@ -44,7 +44,7 @@ public:
     result.d_size   = tld_.d_size;
     result.d_source = tld_.d_source;
     result.d_sink   = tld_.d_sink;
-    result.d_data   = ram.rdata;     // Route the ram output from the _previous_ cycle to TLD
+    result.d_data   = ram.rdata_;     // Route the ram output from the _previous_ cycle to TLD
     result.d_error  = tld_.d_error;
     result.d_valid  = tld_.d_valid;
     result.d_ready  = tld_.d_ready;

@@ -7,43 +7,72 @@
 //------------------------------------------------------------------------------
 // verilator lint_off unusedsignal
 
+// 8 kilobits of ram in 2 SB_RAM40_4K blocks
+
+class ram_256x32 {
+public:
+
+  ram_256x32(const char* filename = nullptr) {
+    if (filename) {
+      readmemh(filename, ram_);
+    }
+  }
+
+  // metron_noemit
+  void tick(logic<8> raddr, logic<8> waddr, logic<32> wdata, logic<1> wren) {
+    rdata_ = raddr == waddr ? wdata : ram_[raddr];
+    if (wren) ram_[waddr] = wdata;
+  }
+
+  /*#
+  SB_RAM40_4K #(
+		.READ_MODE(0),
+		.WRITE_MODE(0)
+	) my_ram_lo(
+    .RCLK(clock), .RADDR({3'b0, tick_raddr}), .RDATA(rdata_[15:0]),
+    .WCLK(clock), .WADDR({3'b0, tick_waddr}), .WDATA(tick_wdata[15:0]), .WE(tick_wren),
+  );
+
+  SB_RAM40_4K #(
+		.READ_MODE(0),
+		.WRITE_MODE(0)
+	) my_ram_hi(
+    .RCLK(clock), .RADDR({3'b0, tick_raddr}), .RDATA(rdata_[31:16]),
+    .WCLK(clock), .WADDR({3'b0, tick_waddr}), .WDATA(tick_wdata[31:16]), .WE(tick_wren),
+  );
+  #*/
+
+  // metron_noemit
+  logic<32> ram_[256];
+
+  logic<32> rdata_;
+};
+
+//------------------------------------------------------------------------------
+
 class regfile {
 public:
 
-  logic<32> get_rs1() const { return out_1; }
-  logic<32> get_rs2() const { return out_2; }
+  logic<32> get_rs1() const { return ram1.rdata_; }
+  logic<32> get_rs2() const { return ram2.rdata_; }
 
-  void tock(regfile_if in) {
-    tick(in);
+  // metron_noconvert
+  const uint32_t get(int index) const {
+    return ram1.rdata_[index];
   }
 
-  /* metron_noconvert */
-  const uint32_t get(int index) const {
-    return data1[index];
+  void tick(regfile_if in) {
+    ram1.tick(b8(in.raddr1), b8(in.waddr), in.wdata, in.wren);
+    ram2.tick(b8(in.raddr2), b8(in.waddr), in.wdata, in.wren);
   }
 
 private:
 
-  void tick(regfile_if in) {
-    if (in.wren) {
-      out_1 = in.raddr1 == in.waddr ? in.wdata : data1[in.raddr1];
-      out_2 = in.raddr2 == in.waddr ? in.wdata : data2[in.raddr2];
-      data1[in.waddr] = in.wdata;
-      data2[in.waddr] = in.wdata;
-    }
-    else {
-      out_1 = data1[in.raddr1];
-      out_2 = data2[in.raddr2];
-    }
-  }
-
-  logic<32> data1[256];
-  logic<32> data2[256];
-  logic<32> out_1;
-  logic<32> out_2;
+  ram_256x32 ram1;
+  ram_256x32 ram2;
 };
 
-//------------------------------------------------------------------------------
 // verilator lint_on unusedsignal
+//------------------------------------------------------------------------------
 
 #endif // PINHWEEL_SOC_REGFILE_H

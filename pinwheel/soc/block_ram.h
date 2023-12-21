@@ -8,15 +8,13 @@
 
 //------------------------------------------------------------------------------
 
-template<int dwords = 512>
+template<int dwords = 512, int addr_bits = clog2(dwords)>
 class block_ram {
 public:
 
-  static const int addr_bits = clog2(dwords);
-
   block_ram(const char* filename = nullptr) {
     if (filename) {
-      readmemh(filename, ram);
+      readmemh(filename, ram_);
     }
   }
 
@@ -24,29 +22,29 @@ public:
     tick(cs, addr, wdata, wren, mask);
   }
 
-  logic<32> rdata;
+  logic<32> rdata_;
 
-  /* metron_noconvert */ const uint32_t* get_data() const { return (const uint32_t*)ram; }
-  /* metron_noconvert */ uint32_t*       get_data()       { return (uint32_t*)ram; }
-  /* metron_noconvert */ size_t          get_size() const { return sizeof(ram); }
+  /* metron_noconvert */ const uint32_t* get_data() const { return (const uint32_t*)ram_; }
+  /* metron_noconvert */ uint32_t*       get_data()       { return (uint32_t*)ram_; }
+  /* metron_noconvert */ size_t          get_size() const { return sizeof(ram_); }
 
 private:
 
   void tick(logic<1> cs, logic<addr_bits> addr, logic<32> wdata, logic<1> wren, logic<4> mask) {
     if (cs) {
       if (wren) {
-        if (mask[0]) slice<8,  0>(ram[addr]) = b8(wdata,  0);
-        if (mask[1]) slice<8,  8>(ram[addr]) = b8(wdata,  8);
-        if (mask[2]) slice<8, 16>(ram[addr]) = b8(wdata, 16);
-        if (mask[3]) slice<8, 24>(ram[addr]) = b8(wdata, 24);
+        if (mask[0]) slice<8,  0>(ram_[addr]) = b8(wdata,  0);
+        if (mask[1]) slice<8,  8>(ram_[addr]) = b8(wdata,  8);
+        if (mask[2]) slice<8, 16>(ram_[addr]) = b8(wdata, 16);
+        if (mask[3]) slice<8, 24>(ram_[addr]) = b8(wdata, 24);
       }
       else {
-        rdata = ram[addr];
+        rdata_ = ram_[addr];
       }
     }
   }
 
-  logic<32> ram[dwords];
+  logic<32> ram_[dwords];
 };
 
 //------------------------------------------------------------------------------

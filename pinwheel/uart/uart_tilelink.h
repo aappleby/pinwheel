@@ -194,18 +194,21 @@ public:
       tld_.d_error  = 0;
 
       switch(tla.a_address & 0xF) {
-        case 0x0000:
+        case 0x0000: {
           tld_.d_data  = b32(rx.get_data_flag());
           tld_.d_valid = 1;
           break;
-        case 0x0004:
+        }
+        case 0x0004: {
           tld_.d_data  = b32(rx.get_data_buf());
           tld_.d_valid = 1;
           break;
-        case 0x0008:
+        }
+        case 0x0008: {
           tld_.d_data  = rx.get_checksum();
           tld_.d_valid = 1;
           break;
+        }
       }
     }
   }

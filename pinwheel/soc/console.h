@@ -15,57 +15,57 @@ public:
   Console() {
     addr_mask = 0;
     addr_tag = 0;
-    x = 0;
-    y = 0;
+    x_ = 0;
+    y_ = 0;
   }
 
   void init(uint32_t addr_mask, uint32_t addr_tag) {
     this->addr_mask = addr_mask;
     this->addr_tag = addr_tag;
-    memset(buf, 0, sizeof(buf));
+    memset(buf_, 0, sizeof(buf_));
   }
 
   void putchar(char c) {
-    buf[y * width + x] = 0;
+    buf_[y_ * width + x_] = 0;
 
     if (c == 0) c = '?';
 
     if (c == '\n') {
-      x = 0;
-      y++;
+      x_ = 0;
+      y_++;
     }
     else if (c == '\r') {
-      x = 0;
+      x_ = 0;
     }
     else {
-      buf[y * width + x] = c;
-      x++;
+      buf_[y_ * width + x_] = c;
+      x_++;
     }
 
-    if (x == width) {
-      x = 0;
-      y++;
+    if (x_ == width) {
+      x_ = 0;
+      y_++;
     }
-    if (y == height) {
+    if (y_ == height) {
       for (int i = 0; i < width*(height-1); i++) {
-        buf[i] = buf[i + width];
+        buf_[i] = buf_[i + width];
       }
-      memset(buf + (width*(height-1)), 0, width);
-      y = height-1;
+      memset(buf_ + (width*(height-1)), 0, width);
+      y_ = height-1;
     }
-    buf[y * width + x] = 30;
+    buf_[y_ * width + x_] = 30;
   }
 
   void tick(logic<1> reset, tilelink_a tla) {
     if (reset) {
-      memset(buf, 0, sizeof(buf));
-      x = 0;
-      y = 0;
+      memset(buf_, 0, sizeof(buf_));
+      x_ = 0;
+      y_ = 0;
     }
     else {
       if ((tla.a_address & addr_mask) == addr_tag) {
         if (tla.a_opcode == TL::PutPartialData || tla.a_opcode == TL::PutFullData) {
-          buf[y * width + x] = 0;
+          buf_[y_ * width + x_] = 0;
           putchar(char(tla.a_data));
         }
       }
@@ -77,9 +77,9 @@ public:
 
   uint32_t addr_mask;
   uint32_t addr_tag;
-  char buf[width*height];
-  int x;
-  int y;
+  char buf_[width*height];
+  int x_;
+  int y_;
 };
 
 // verilator lint_on unusedparam

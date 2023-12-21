@@ -15,7 +15,7 @@ class Serial {
 public:
 
   Serial() {
-    test_reg = 0;
+    test_reg_ = 0;
   }
 
   void tock() {
@@ -23,33 +23,33 @@ public:
   }
 
   tilelink_a tla;
-  tilelink_d tld;
+  tilelink_d tld_;
 
 private:
 
-  logic<32> test_reg;
+  logic<32> test_reg_;
 
   void tick() {
-    tld.d_param  = 0;
-    tld.d_size   = tla.a_size;
-    tld.d_source = tla.a_source;
-    tld.d_sink   = b3(DONTCARE);
-    tld.d_data   = b32(DONTCARE);
-    tld.d_error  = 0;
-    tld.d_valid  = 0;
-    tld.d_ready  = 1;
+    tld_.d_param  = 0;
+    tld_.d_size   = tla.a_size;
+    tld_.d_source = tla.a_source;
+    tld_.d_sink   = b3(DONTCARE);
+    tld_.d_data   = b32(DONTCARE);
+    tld_.d_error  = 0;
+    tld_.d_valid  = 0;
+    tld_.d_ready  = 1;
 
     if (tla.a_opcode == TL::Get) {
-      tld.d_opcode = TL::AccessAckData;
+      tld_.d_opcode = TL::AccessAckData;
       if (b4(tla.a_address, 28) == 0x5) {
-        tld.d_data   = test_reg;
-        tld.d_valid  = 1;
+        tld_.d_data   = test_reg_;
+        tld_.d_valid  = 1;
       }
     }
     else if (tla.a_opcode == TL::PutFullData || tla.a_opcode == TL::PutPartialData) {
-      tld.d_opcode = TL::AccessAck;
+      tld_.d_opcode = TL::AccessAck;
       logic<32> bitmask = expand_bitmask(tla.a_mask);
-      test_reg = (test_reg & ~bitmask) | (tla.a_data & bitmask);
+      test_reg_ = (test_reg_ & ~bitmask) | (tla.a_data & bitmask);
     }
   }
 

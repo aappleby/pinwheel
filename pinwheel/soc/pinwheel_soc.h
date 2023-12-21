@@ -72,7 +72,7 @@ public:
     debug_reg.tock(core.data_tla);
     code_ram.tock_b(core.code_tla);
     data_ram.tock_b(core.data_tla);
-    regs.tock(core.reg_if);
+    regs.tick(core.reg_if);
 
     logic<1> clear_to_send = uart0_tx.get_clear_to_send();
     logic<1> idle = uart0_tx.get_idle();

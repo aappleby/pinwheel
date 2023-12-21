@@ -7,9 +7,11 @@
 
 class uart_hello {
 public:
-  uart_hello(const char* message_filename = nullptr, int repeat_msg = 1)
-  : repeat_msg(repeat_msg) {
-    readmemh(message_filename, memory_, 0, 511);
+  uart_hello(const char* message_filename = nullptr, int _repeat_msg = 1)
+  : repeat_msg(_repeat_msg) {
+    if (message_filename) {
+      readmemh(message_filename, memory_, 0, 511);
+    }
     state_ = 0;
     cursor_ = 0;
   }

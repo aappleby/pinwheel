@@ -13,7 +13,7 @@ public:
   uart_rx(int clock_rate, int baud_rate) {
     bit_delay_    = (clock_rate / baud_rate) - 1;
     bit_delay_max = (clock_rate / baud_rate) - 1;
-    data_buf = 0;
+    data_buf_ = 0;
     checksum_ = 0;
   }
 
