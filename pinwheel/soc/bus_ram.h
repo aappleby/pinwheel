@@ -14,7 +14,7 @@
 
 //------------------------------------------------------------------------------
 
-template <uint32_t addr_mask = 0xF0000000, uint32_t addr_tag = 0x00000000, int dwords = 256>
+template <uint32_t addr_mask = 0xF0000000, uint32_t addr_tag = 0x00000000, int dwords = 16384>
 class bus_ram {
 public:
 

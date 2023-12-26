@@ -24,11 +24,17 @@ public:
     if (wren) ram_[waddr] = wdata;
   }
 
+  // metron_noemit
+  logic<32> ram_[256];
+
+  logic<32> rdata_;
+
   /*#
   SB_RAM40_4K #(
 		.READ_MODE(0),
 		.WRITE_MODE(0)
-	) my_ram_lo(
+	)
+  my_ram_lo (
     .RCLK(clock), .RADDR({3'b0, tick_raddr}), .RDATA(rdata_[15:0]),
     .WCLK(clock), .WADDR({3'b0, tick_waddr}), .WDATA(tick_wdata[15:0]), .WE(tick_wren),
   );
@@ -36,16 +42,12 @@ public:
   SB_RAM40_4K #(
 		.READ_MODE(0),
 		.WRITE_MODE(0)
-	) my_ram_hi(
+	)
+  my_ram_hi (
     .RCLK(clock), .RADDR({3'b0, tick_raddr}), .RDATA(rdata_[31:16]),
     .WCLK(clock), .WADDR({3'b0, tick_waddr}), .WDATA(tick_wdata[31:16]), .WE(tick_wren),
   );
   #*/
-
-  // metron_noemit
-  logic<32> ram_[256];
-
-  logic<32> rdata_;
 };
 
 //------------------------------------------------------------------------------

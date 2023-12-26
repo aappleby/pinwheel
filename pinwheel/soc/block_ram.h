@@ -6,45 +6,57 @@
 
 #include "metron/metron_tools.h"
 
+//FIXME this should be using SB_SPRAM256KA not SB_RAM40_4K
+
 //------------------------------------------------------------------------------
 
-template<int dwords = 512, int addr_bits = clog2(dwords)>
+template<int dwords = 4096>
 class block_ram {
 public:
 
-  block_ram(const char* filename = nullptr) {
+  block_ram(const char* filename = "pinwheel/uart/message.hex") {
     if (filename) {
       readmemh(filename, ram_);
     }
   }
 
-  void tock(logic<1> cs, logic<addr_bits> addr, logic<32> wdata, logic<1> wren, logic<4> mask) {
-    tick(cs, addr, wdata, wren, mask);
-  }
-
-  logic<32> rdata_;
-
-  /* metron_noconvert */ const uint32_t* get_data() const { return (const uint32_t*)ram_; }
-  /* metron_noconvert */ uint32_t*       get_data()       { return (uint32_t*)ram_; }
-  /* metron_noconvert */ size_t          get_size() const { return sizeof(ram_); }
-
-private:
-
-  void tick(logic<1> cs, logic<addr_bits> addr, logic<32> wdata, logic<1> wren, logic<4> mask) {
-    if (cs) {
-      if (wren) {
-        if (mask[0]) slice<8,  0>(ram_[addr]) = b8(wdata,  0);
-        if (mask[1]) slice<8,  8>(ram_[addr]) = b8(wdata,  8);
-        if (mask[2]) slice<8, 16>(ram_[addr]) = b8(wdata, 16);
-        if (mask[3]) slice<8, 24>(ram_[addr]) = b8(wdata, 24);
-      }
-      else {
-        rdata_ = ram_[addr];
-      }
+  void tock(logic<12> addr, logic<16> wdata, logic<1> wren) {
+    if (wren) {
+      ram_[addr] = wdata;
+    }
+    else {
+      rdata_ = ram_[addr];
     }
   }
 
-  logic<32> ram_[dwords];
+  logic<16> rdata_;
+
+private:
+
+  logic<16> ram_[dwords];
+};
+
+//------------------------------------------------------------------------------
+
+class top {
+public:
+
+  top() : block_ram("pinwheel/uart/message.hex") {
+    counter_ = 0;
+  }
+
+  logic<16> get_data() {
+    return my_ram.rdata_;
+  }
+
+  void tock(logic<1> wren) {
+    my_ram.tock(b12(counter_), b16(counter_), wren);
+  }
+
+private:
+  logic<32> counter_;
+
+  block_ram<4096> my_ram;
 };
 
 //------------------------------------------------------------------------------
