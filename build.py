@@ -6,6 +6,9 @@ import glob
 
 sys.path.append("symlinks/metrolib")
 import tinybuild
+import pprint
+
+################################################################################
 
 tinybuild.global_config["toolchain"]  = "x86_64-linux-gnu"
 tinybuild.global_config["build_type"] = "-g -O0"
@@ -50,13 +53,12 @@ def compile_dir(dir):
   compile_cpp(files, objs)
   return objs
 
-
 objs = []
 objs += compile_dir("symlinks/imgui")
 objs += compile_dir("pinwheel/soc")
 objs += compile_dir("pinwheel/simulator")
 objs += compile_dir("pinwheel/tools")
-objs += compile_dir("symlinks/glad");
+objs += compile_dir("symlinks/glad")
 
 link_c_bin(
   objs,
