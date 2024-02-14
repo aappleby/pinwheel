@@ -38,10 +38,11 @@ private:
 
 //------------------------------------------------------------------------------
 
+#if 0
 class top {
 public:
 
-  top() : block_ram("pinwheel/uart/message.hex") {
+  top() : my_ram("pinwheel/uart/message.hex") {
     counter_ = 0;
   }
 
@@ -58,6 +59,7 @@ private:
 
   block_ram<4096> my_ram;
 };
+#endif
 
 //------------------------------------------------------------------------------
 

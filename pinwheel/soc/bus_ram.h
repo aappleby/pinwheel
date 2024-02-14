@@ -64,7 +64,7 @@ public:
   //----------------------------------------
 
   /* metron_noconvert */ const uint32_t* get_data() const { return ram.get_data(); }
-  /* metron_noconvert */ uint32_t*       get_data()       { return ram.get_data(); }
+  /* metron_noconvert */ uint32_t*       get_data()       { return ram.rdata_; }
   /* metron_noconvert */ size_t          get_size() const { return ram.get_size(); }
 
 private:
