@@ -48,6 +48,15 @@
 			"regex": "cpp",
 			"complex": "cpp"
 		},
-		"search.useIgnoreFiles": false
+		"search.useIgnoreFiles": false,
+		"files.exclude": {
+			"**/.DS_Store": true,
+			"**/.git": true,
+			"**/.hg": true,
+			"**/.svn": true,
+			"**/CVS": true,
+			"**/Thumbs.db": true
+		},
+		"explorer.excludeGitIgnore": true
 	},
 }
