@@ -1,0 +1,25 @@
+from glob import glob
+import pprint
+
+rules = load("rules.hancho")
+
+imgui_lib = rules.cpp_lib(glob("symlinks/imgui/*.cpp"),     "imgui.a")
+glad_lib  = rules.c_lib  (glob("symlinks/glad/*.c"),        "glad.a")
+soc_lib   = rules.cpp_lib(glob("pinwheel/soc/*.cpp"),       "soc.a")
+sim_lib   = rules.cpp_lib(glob("pinwheel/simulator/*.cpp"), "sim.a")
+tool_lib  = rules.cpp_lib(glob("pinwheel/tools/*.cpp"), "tools.a")
+
+metrolib = load("symlinks/metrolib/build.hancho")
+
+"""
+
+link_c_bin(
+  objs,
+  "bin/pinwheel_app",
+  deps = [
+    "symlinks/metrolib/bin/metrolib/libappbase.a",
+    "symlinks/metrolib/bin/metrolib/libcore.a",
+  ],
+  libraries="-lSDL2 -lubsan"
+  )
+"""

@@ -1,0 +1,46 @@
+print(f"loading {__file__}")
+
+base = config.extend(
+  toolchain  = "x86_64-linux-gnu",
+  build_type = "-g -O0",
+  warnings   = "-Wunused-variable -Werror",
+  defines    = "-DCONFIG_DEBUG",
+  cpp_std    = "-std=gnu++2a",
+  includes  = "-I. -Isymlinks -Isymlinks/metrolib -Isymlinks/metron ",
+)
+
+compile_cpp = base.extend(
+  desc      = "Compiling C++ {files_in} => {files_out}",
+  command   = "{toolchain}-g++ -MMD {cpp_std} {warnings} {build_type} {includes} {defines} -c {files_in} -o {files_out}",
+  files_out = "{swap_ext(files_in, '.o')}",
+  depfile   = "{swap_ext(files_out, '.d')}",
+)
+
+compile_c   = base.extend(
+  desc      = "Compiling C {files_in} => {files_out}",
+  command   = "{toolchain}-gcc -MMD {warnings} {build_type} {includes} {defines} -c {files_in} -o {files_out}",
+  files_out = "{swap_ext(files_in, '.o')}",
+  depfile   = "{swap_ext(files_out, '.d')}",
+)
+
+link_c_lib = base.extend(
+  desc      = "Bundling {files_out}",
+  command   = "ar rcs {files_out} {files_in}",
+)
+
+link_c_bin  = base.extend(
+  desc      = "Linking {files_out}",
+  command   = "{toolchain}-g++ {build_type} {files_in} {deps} {libraries} -o {files_out}",
+)
+
+def cpp_binary(files_in, files_out, **kwargs):
+  objs = [compile_cpp(file, **kwargs) for file in files_in]
+  return link_c_bin(objs, files_out, **kwargs)
+
+def cpp_lib(files_in, files_out, **kwargs):
+  objs = [compile_cpp(file, **kwargs) for file in files_in]
+  return link_c_lib(objs, files_out, **kwargs)
+
+def c_lib(files_in, files_out, **kwargs):
+  objs = [compile_c(file, **kwargs) for file in files_in]
+  return link_c_lib(objs, files_out, **kwargs)

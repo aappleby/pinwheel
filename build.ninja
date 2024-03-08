@@ -3,8 +3,6 @@ target=DEBUG
 #target=RELEASE
 #target=SIZE
 
-toolchain=x86_64-linux-gnu
-
 include symlinks/metrolib/ninja/rules.ninja
 include symlinks/metrolib/ninja/config_ALL.ninja
 include symlinks/metrolib/ninja/config_${target}.ninja
