@@ -14,26 +14,40 @@ template<int dwords = 4096>
 class block_ram {
 public:
 
+  static const int addr_bits = clog2(dwords);
+
   block_ram(const char* filename = "pinwheel/uart/message.hex") {
     if (filename) {
       readmemh(filename, ram_);
     }
   }
 
-  void tock(logic<12> addr, logic<16> wdata, logic<1> wren) {
-    if (wren) {
-      ram_[addr] = wdata;
+  void tock(logic<addr_bits> addr, logic<32> wdata, logic<4> wmask) {
+    if (wmask) {
+      rdata_ = ram_[addr];
+
+      logic<32> mask = 0x00000000;
+      if (wmask[0]) mask = mask | 0x000000FF;
+      if (wmask[1]) mask = mask | 0x0000FF00;
+      if (wmask[2]) mask = mask | 0x00FF0000;
+      if (wmask[3]) mask = mask | 0xFF000000;
+
+      ram_[addr] = (wdata & mask) | (rdata_ & ~mask);
     }
     else {
       rdata_ = ram_[addr];
     }
   }
 
-  logic<16> rdata_;
+  logic<32> rdata_;
+
+  /* metron_noconvert */ const uint32_t* get_data() const { return (const uint32_t*)ram_; }
+  /* metron_noconvert */ uint32_t*       get_data()       { return (uint32_t*)ram_; }
+  /* metron_noconvert */ size_t          get_size() const { return dwords * 4; }
 
 private:
 
-  logic<16> ram_[dwords];
+  logic<32> ram_[dwords];
 };
 
 //------------------------------------------------------------------------------

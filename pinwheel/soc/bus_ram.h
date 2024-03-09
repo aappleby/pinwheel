@@ -56,7 +56,12 @@ public:
     logic<1> cs   = tla.a_valid && ((tla.a_address & addr_mask) == addr_tag);
     logic<1> wren = (tla.a_opcode == TL::PutFullData) || (tla.a_opcode == TL::PutPartialData);
 
-    ram.tock(cs, bx<addr_bits>(tla.a_address, 2), tla.a_data, wren, tla.a_mask);
+    ram.tock(
+      //cs,
+      bx<addr_bits>(tla.a_address, 2),
+      tla.a_data,
+      cs && wren ? tla.a_mask : b4(0)
+    );
 
     tick(cs, tla);
   }
@@ -64,7 +69,7 @@ public:
   //----------------------------------------
 
   /* metron_noconvert */ const uint32_t* get_data() const { return ram.get_data(); }
-  /* metron_noconvert */ uint32_t*       get_data()       { return ram.rdata_; }
+  /* metron_noconvert */ uint32_t*       get_data()       { return ram.get_data(); }
   /* metron_noconvert */ size_t          get_size() const { return ram.get_size(); }
 
 private:

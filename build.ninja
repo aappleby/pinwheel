@@ -25,56 +25,56 @@ build obj/check_metron : run_command
 ################################################################################
 # Syntax check for Pinwheel Metron RTL
 
-#build obj/pinwheel/tools/tilelink.h.ok     : check_cpp pinwheel/tools/tilelink.h
-#build obj/pinwheel/soc/regfile.h.ok        : check_cpp pinwheel/soc/regfile.h
-#build obj/pinwheel/soc/serial.h.ok         : check_cpp pinwheel/soc/serial.h
-#build obj/pinwheel/soc/test_reg.h.ok       : check_cpp pinwheel/soc/test_reg.h
-#build obj/pinwheel/soc/bus_ram.h.ok        : check_cpp pinwheel/soc/bus_ram.h
-#build obj/pinwheel/core/pinwheel_core.h.ok : check_cpp pinwheel/core/pinwheel_core.h
-#build obj/pinwheel/soc/pinwheel_soc.h.ok   : check_cpp pinwheel/soc/pinwheel_soc.h
+build obj/pinwheel/tools/tilelink.h.ok     : check_cpp pinwheel/tools/tilelink.h
+build obj/pinwheel/soc/regfile.h.ok        : check_cpp pinwheel/soc/regfile.h
+build obj/pinwheel/soc/serial.h.ok         : check_cpp pinwheel/soc/serial.h
+build obj/pinwheel/soc/test_reg.h.ok       : check_cpp pinwheel/soc/test_reg.h
+build obj/pinwheel/soc/bus_ram.h.ok        : check_cpp pinwheel/soc/bus_ram.h
+build obj/pinwheel/core/pinwheel_core.h.ok : check_cpp pinwheel/core/pinwheel_core.h
+build obj/pinwheel/soc/pinwheel_soc.h.ok   : check_cpp pinwheel/soc/pinwheel_soc.h
 
 ################################################################################
 # Debugger app
 
-#build obj/pinwheel/soc/console.o      : compile_cpp pinwheel/soc/console.cpp
-#
-#build obj/pinwheel/simulator/pinwheel_app.o  : compile_cpp pinwheel/simulator/pinwheel_app.cpp
-#build obj/pinwheel/simulator/pinwheel_main.o : compile_cpp pinwheel/simulator/pinwheel_main.cpp
-#build obj/pinwheel/simulator/pinwheel_sim.o  : compile_cpp pinwheel/simulator/pinwheel_sim.cpp
-#build obj/pinwheel/simulator/sim_thread.o    : compile_cpp pinwheel/simulator/sim_thread.cpp
-#
-#build obj/pinwheel/tools/rvdisasm.o : compile_cpp pinwheel/tools/rvdisasm.cpp
-#build obj/symlinks/glad/glad.o      : compile_cpp symlinks/glad/glad.c
-#
-#build bin/pinwheel_app: c_binary $
-#  obj/symlinks/glad/glad.o $
-#  bin/imgui/libimgui.a $
-#  obj/pinwheel/simulator/pinwheel_app.o $
-#  obj/pinwheel/simulator/pinwheel_main.o $
-#  obj/pinwheel/simulator/pinwheel_sim.o $
-#  obj/pinwheel/simulator/sim_thread.o $
-#  obj/pinwheel/tools/rvdisasm.o $
-#  symlinks/metrolib/bin/metrolib/libappbase.a $
-#  symlinks/metrolib/bin/metrolib/libcore.a $
-#  bin/imgui/libimgui.a | firmware
-#  libraries=-lSDL2 -lubsan
+build obj/pinwheel/soc/console.o      : compile_cpp pinwheel/soc/console.cpp
+
+build obj/pinwheel/simulator/pinwheel_app.o  : compile_cpp pinwheel/simulator/pinwheel_app.cpp
+build obj/pinwheel/simulator/pinwheel_main.o : compile_cpp pinwheel/simulator/pinwheel_main.cpp
+build obj/pinwheel/simulator/pinwheel_sim.o  : compile_cpp pinwheel/simulator/pinwheel_sim.cpp
+build obj/pinwheel/simulator/sim_thread.o    : compile_cpp pinwheel/simulator/sim_thread.cpp
+
+build obj/pinwheel/tools/rvdisasm.o : compile_cpp pinwheel/tools/rvdisasm.cpp
+build obj/symlinks/glad/glad.o      : compile_cpp symlinks/glad/glad.c
+
+build bin/pinwheel_app: c_binary $
+  obj/symlinks/glad/glad.o $
+  bin/imgui/libimgui.a $
+  obj/pinwheel/simulator/pinwheel_app.o $
+  obj/pinwheel/simulator/pinwheel_main.o $
+  obj/pinwheel/simulator/pinwheel_sim.o $
+  obj/pinwheel/simulator/sim_thread.o $
+  obj/pinwheel/tools/rvdisasm.o $
+  symlinks/metrolib/bin/metrolib/libappbase.a $
+  symlinks/metrolib/bin/metrolib/libcore.a $
+  bin/imgui/libimgui.a | firmware
+  libraries=-lSDL2 -lubsan
 
 ################################################################################
 # Metron conversion tests
 
-#build gen/pinwheel/tools/riscv_constants.sv    : metron2 pinwheel/tools/riscv_constants.h
-#build gen/pinwheel/tools/tilelink.sv           : metron2 pinwheel/tools/tilelink.h
-#build gen/pinwheel/tools/regfile_if.sv         : metron2 pinwheel/tools/regfile_if.h
-#build gen/pinwheel/core/pinwheel_core.sv       : metron2 pinwheel/core/pinwheel_core.h
+build gen/pinwheel/tools/riscv_constants.sv    : metron2 pinwheel/tools/riscv_constants.h
+build gen/pinwheel/tools/tilelink.sv           : metron2 pinwheel/tools/tilelink.h
+build gen/pinwheel/tools/regfile_if.sv         : metron2 pinwheel/tools/regfile_if.h
+build gen/pinwheel/core/pinwheel_core.sv       : metron2 pinwheel/core/pinwheel_core.h
 
-#build gen/pinwheel/uart/uart_hello.sv          : metron2 pinwheel/uart/uart_hello.h
-#build gen/pinwheel/uart/uart_rx.sv             : metron2 pinwheel/uart/uart_rx.h
-#build gen/pinwheel/uart/uart_tx.sv             : metron2 pinwheel/uart/uart_tx.h
-#build gen/pinwheel/uart/uart_tilelink.sv       : metron2 pinwheel/uart/uart_tilelink.h
+build gen/pinwheel/uart/uart_hello.sv          : metron2 pinwheel/uart/uart_hello.h
+build gen/pinwheel/uart/uart_rx.sv             : metron2 pinwheel/uart/uart_rx.h
+build gen/pinwheel/uart/uart_tx.sv             : metron2 pinwheel/uart/uart_tx.h
+build gen/pinwheel/uart/uart_tilelink.sv       : metron2 pinwheel/uart/uart_tilelink.h
 
-#build gen/pinwheel/soc/regfile.sv              : metron2 pinwheel/soc/regfile.h
-#build gen/pinwheel/soc/serial.sv               : metron2 pinwheel/soc/serial.h
-#build gen/pinwheel/soc/test_reg.sv             : metron2 pinwheel/soc/test_reg.h
+build gen/pinwheel/soc/regfile.sv              : metron2 pinwheel/soc/regfile.h
+build gen/pinwheel/soc/serial.sv               : metron2 pinwheel/soc/serial.h
+build gen/pinwheel/soc/test_reg.sv             : metron2 pinwheel/soc/test_reg.h
 #build gen/pinwheel/soc/bus_ram.sv              : metron2 pinwheel/soc/bus_ram.h
 #build gen/pinwheel/soc/block_ram.sv            : metron2 pinwheel/soc/block_ram.h
 #build gen/pinwheel/soc/pinwheel_soc.sv         : metron2 pinwheel/soc/pinwheel_soc.h
@@ -101,8 +101,8 @@ build obj/check_metron : run_command
 #build gen/pinwheel/soc/pinwheel_soc.sv.2.v : sv2v gen/pinwheel/soc/pinwheel_soc.sv
 #  includes = -I. -Igen -Isymlinks/metron
 
-build gen/pinwheel/soc/block_ram.sv.2.v : sv2v gen/pinwheel/soc/block_ram.sv
-  includes = -I. -Igen -Isymlinks/metron
+#build gen/pinwheel/soc/block_ram.sv.2.v : sv2v gen/pinwheel/soc/block_ram.sv
+#  includes = -I. -Igen -Isymlinks/metron
 
 #build gen/pinwheel/soc/bus_ram.sv.2.v : sv2v gen/pinwheel/soc/bus_ram.sv
 #  includes = -I. -Igen -Isymlinks/metron
@@ -121,14 +121,14 @@ build gen/pinwheel/soc/block_ram.sv.2.v : sv2v gen/pinwheel/soc/block_ram.sv
 
 #build gen/pinwheel/yosys/pinwheel_soc.json : yosys_check gen/pinwheel/soc/pinwheel_soc.sv.2.v
 
-build gen/pinwheel/yosys/block_ram.json : yosys_noisy gen/pinwheel/soc/block_ram.sv.2.v
+#build gen/pinwheel/yosys/block_ram.json : yosys_noisy gen/pinwheel/soc/block_ram.sv.2.v
 
-build gen/pinwheel/yosys/block_ram.asc  : nextpnr-ice40 gen/pinwheel/yosys/block_ram.json
-#  chip = hx8k
-  chip = up5k
-  package = sg48
-  pcf = ice40/icebreaker.pcf
-  flags = --pcf-allow-unconstrained
+#build gen/pinwheel/yosys/block_ram.asc  : nextpnr-ice40 gen/pinwheel/yosys/block_ram.json
+##  chip = hx8k
+#  chip = up5k
+#  package = sg48
+#  pcf = ice40/icebreaker.pcf
+#  flags = --pcf-allow-unconstrained
 
 #rule nextpnr-ice40
 #  command = nextpnr-ice40 -q --${chip} --package ${package} --json ${in} --asc ${out} --pcf ${pcf}
