@@ -1,6 +1,6 @@
-print(f"loading {__file__}")
+from hancho import *
 
-base = config.extend(
+base = Rule(
   toolchain  = "x86_64-linux-gnu",
   build_type = "-g -O0",
   warnings   = "-Wunused-variable -Werror",
@@ -30,7 +30,7 @@ link_c_lib = base.extend(
 
 link_c_bin  = base.extend(
   desc      = "Linking {files_out}",
-  command   = "{toolchain}-g++ {build_type} {files_in} {deps} {libraries} -o {files_out}",
+  command   = "{toolchain}-g++ -g -Wl,--as-needed -Wl,--no-undefined -Wl,--start-group {files_in} {sys_libs} -Wl,--end-group -o {files_out}",
 )
 
 def cpp_binary(files_in, files_out, **kwargs):
