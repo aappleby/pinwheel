@@ -1,0 +1,5 @@
+from hancho import *
+
+rules = load("../rules/rules.hancho")
+
+lib = rules.c_lib(glob("glad/*.c"), "glad/libglad.a")

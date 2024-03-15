@@ -35,9 +35,6 @@
 .ninja_log
 #.vscode
 build
-bin
-obj
-gen
 icarus
 yosys
 verilator

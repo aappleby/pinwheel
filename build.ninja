@@ -22,6 +22,9 @@ include symlinks/metrolib/rules/build_imgui.ninja
 build build/check_metron : run_command
   command = ninja -C symlinks/metron > /dev/null
 
+build build/check_metrolib : run_command
+  command = ninja -C symlinks/metrolib > /dev/null
+
 ################################################################################
 # Syntax check for Pinwheel Metron RTL
 
@@ -55,7 +58,7 @@ build build/pinwheel/simulator/pinwheel_app: c_binary $
   build/pinwheel/tools/rvdisasm.o $
   symlinks/metrolib/build/metrolib/appbase/libappbase.a $
   symlinks/metrolib/build/metrolib/core/libcore.a $
-  build/imgui/libimgui.a | firmware
+  build/imgui/libimgui.a | firmware build/check_metrolib
   libraries=-lSDL2 -lubsan
 
 ################################################################################

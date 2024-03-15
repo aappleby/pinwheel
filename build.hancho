@@ -1,24 +1,25 @@
 from hancho import *
 
-rules    = load("rules.hancho")
+rules    = load("rules/rules.hancho")
 rv_tests = load("tests/rv_tests/build.hancho")
-metrolib = load("symlinks/metrolib/build.hancho")
 
-imgui_lib = rules.cpp_lib(glob("symlinks/imgui/*.cpp"),     "imgui.a")
-glad_lib  = rules.c_lib  (glob("symlinks/glad/*.c"),        "glad.a")
-soc_lib   = rules.cpp_lib(glob("pinwheel/soc/*.cpp"),       "soc.a")
-tool_lib  = rules.cpp_lib(glob("pinwheel/tools/*.cpp"),     "tools.a")
-sim_lib   = rules.cpp_lib(glob("pinwheel/simulator/*.cpp"), "sim.a")
+simulator = load("pinwheel/simulator/build.hancho")
+soc       = load("pinwheel/soc/build.hancho")
+tools     = load("pinwheel/tools/build.hancho")
+appbase   = load("symlinks/metrolib/metrolib/appbase/build.hancho")
+core      = load("symlinks/metrolib/metrolib/core/build.hancho")
+glad      = load("symlinks/glad.hancho")
+imgui     = load("symlinks/imgui.hancho")
 
 rules.link_c_bin(
   [
-    metrolib.appbase,
-    metrolib.core,
-    sim_lib,
-    tool_lib,
-    glad_lib,
-    imgui_lib,
-    soc_lib
+    simulator.lib,
+    soc.lib,
+    tools.lib,
+    appbase.lib,
+    core.lib,
+    glad.lib,
+    imgui.lib,
   ],
   "pinwheel_app",
   sys_libs="-lSDL2 -lubsan"
