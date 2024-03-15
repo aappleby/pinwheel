@@ -42,3 +42,5 @@ icarus
 yosys
 verilator
 imgui.ini
+
+__pycache__
