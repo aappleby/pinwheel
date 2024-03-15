@@ -12,8 +12,8 @@ TestResults test_uart_metron() {
   TEST_INIT("Metron UART simulation\n");
 
   pinwheel_soc top(
-    "gen/tests/firmware/hello.code.vh",
-    "gen/tests/firmware/hello.data.vh",
+    "build/tests/firmware/hello.code.vh",
+    "build/tests/firmware/hello.data.vh",
     "pinwheel/uart/message.hex",
     /*int clock_rate =*/ 12000000,
     /*int baud_rate =*/ 1000000,

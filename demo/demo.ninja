@@ -1,14 +1,14 @@
-build obj/demo/demo_mc.o : compile_cpp demo/demo_mc.cpp
-build bin/demo/demo_mc   : c_binary $
-  obj/demo/demo_mc.o $
+build build/demo/demo_mc.o : compile_cpp demo/demo_mc.cpp
+build build/demo/demo_mc   : c_binary $
+  build/demo/demo_mc.o $
   symlinks/metrolib/bin/metrolib/libcore.a
 
-build gen/demo/demo_ice40.json : yosys demo/demo_ice40.sv | gen/pinwheel/soc/pinwheel_soc.sv
+build build/demo/demo_ice40.json : yosys demo/demo_ice40.sv | build/pinwheel/soc/pinwheel_soc.sv
   includes = -I. -Igen -Isymlinks/metron
 
-build gen/demo/demo_ice40.asc : nextpnr-ice40 gen/demo/demo_ice40.json
+build build/demo/demo_ice40.asc : nextpnr-ice40 build/demo/demo_ice40.json
   chip = hx8k
   package = ct256
   pcf = demo/demo_ice40.pcf
 
-build gen/demo/demo_ice40.bin : icepack gen/demo/demo_ice40.asc
+build build/demo/demo_ice40.bin : icepack build/demo/demo_ice40.asc

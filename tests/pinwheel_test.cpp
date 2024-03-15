@@ -74,8 +74,8 @@ TestResults run_rv32i_tests(int reps, int max_cycles) {
   for (int i = 0; i < instruction_count; i++) {
     char code_filename[256];
     char data_filename[256];
-    sprintf(code_filename, "gen/tests/rv_tests/%s.code.vh", instructions[i]);
-    sprintf(data_filename, "gen/tests/rv_tests/%s.data.vh", instructions[i]);
+    sprintf(code_filename, "build/tests/rv_tests/%s.code.vh", instructions[i]);
+    sprintf(data_filename, "build/tests/rv_tests/%s.data.vh", instructions[i]);
     results << run_test_hex(code_filename, data_filename, reps, max_cycles);
   }
   TEST_DONE();
@@ -97,8 +97,8 @@ TestResults run_microtests(int reps, int max_cycles) {
   for (int i =0; i < test_count; i++) {
     char code_filename[256];
     char data_filename[256];
-    sprintf(code_filename, "gen/tests/firmware/%s.code.vh", tests[i]);
-    sprintf(data_filename, "gen/tests/firmware/%s.data.vh", tests[i]);
+    sprintf(code_filename, "build/tests/firmware/%s.code.vh", tests[i]);
+    sprintf(data_filename, "build/tests/firmware/%s.data.vh", tests[i]);
     results << run_test_hex(code_filename, data_filename, reps, max_cycles);
   }
 

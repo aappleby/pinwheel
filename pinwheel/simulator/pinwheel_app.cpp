@@ -65,10 +65,10 @@ void PinwheelApp::app_init(int screen_w, int screen_h) {
   //const char* firmware_filename = "tests/rv_tests/add.elf";
 
   pinwheel_sim = new PinwheelSim(
-    "gen/tests/firmware/hello.code.vh",
-    "gen/tests/firmware/hello.data.vh",
-    //"gen/tests/rv_tests/add.code.vh",
-    //"gen/tests/rv_tests/add.data.vh",
+    "build/tests/firmware/hello.code.vh",
+    "build/tests/firmware/hello.data.vh",
+    //"build/tests/rv_tests/add.code.vh",
+    //"build/tests/rv_tests/add.data.vh",
     "pinwheel/uart/message.hex"
   );
 

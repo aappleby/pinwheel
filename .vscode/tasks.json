@@ -46,5 +46,19 @@
         "clear": true
       }
     },
+    {
+      "type": "shell",
+      "label": "build_pinwheel_app_hancho",
+      "command": "hancho",
+      "problemMatcher": "$gcc",
+      "group": {
+        "kind": "build",
+      },
+      "presentation": {
+        "echo": false,
+        "showReuseMessage": false,
+        "clear": true
+      }
+    },
   ]
 }

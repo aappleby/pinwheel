@@ -1,48 +1,24 @@
 from hancho import *
 
+elf_to_hex = load("../../symlinks/metrolib/metrolib/tools/elf_to_hex.hancho")
 
-elf_to_hex = load("symlinks/metrolib/metrolib/tools/elf_to_hex.hancho")
+rv_base = Rule(
+  arch         = "-march=rv32i -mabi=ilp32 -mstrict-align",
+  linkerscript = "pinwheel/tools/pinwheel.ld",
+)
 
+rv_compile = rv_base.extend(
+  command   = "riscv64-unknown-elf-gcc {opts} -c {files_in} -o {files_out}",
+  opts      = "{arch} -g -Os -std=gnu++2a  -MMD",
+  files_out = "{swap_ext(files_in, '.o')}",
+  depfile   = "{swap_ext(files_out, '.d')}",
+)
 
+rv_link = rv_base.extend(
+  command   = "riscv64-unknown-elf-gcc {opts} {files_in} -o {files_out}",
+  opts      = "{arch} -nostdlib -nostartfiles -Wl,-T {linkerscript} -lgcc",
+)
 
-rules = load("rules.hancho")
-
-#elf_to_hex_bin = rules.link_c_bin(
-#  "elf_to_hex.cpp",
-#  "elf_to_hex",
-#  load_dir = "symlinks/metrolib/metrolib/tools"
-#)
-
-#elf_to_hex = Rule(
-#  command = "{tool} {files_in}",
-#  files_out = [
-#    "{swap_ext(files_in, '.code.vh')}",
-#    "{swap_ext(files_in, '.data.vh')}",
-#  ],
-#  tool = elf_to_hex_bin
-#)
-
-
-
-
-
-
-#rv_compile = Rule(
-#  command   = "riscv64-unknown-elf-gcc {opts} -c {files_in} -o {files_out}",
-#  opts      = "-g -Os -std=gnu++2a -mabi=ilp32 -march=rv32i -mstrict-align -MMD",
-#  files_out = "{swap_ext(files_in, '.o')}",
-#  depfile   = "{swap_ext(files_out, '.d')}",
-#)
-
-#rv_link = Rule(
-#  command   = "riscv64-unknown-elf-gcc {opts} {files_in} -o {files_out}",
-#  opts      = "-mabi=ilp32 -march=rv32i -mstrict-align -nostdlib -nostartfiles -Wl,-T pinwheel/tools/pinwheel.ld -lgcc",
-#  files_out = "{swap_ext(files_in, '.elf')}",
-#)
-
-#objs  = [rv_compile(source) for source in glob("*.S")]
-#bins  = [rv_link(obj) for obj in objs]
-#hexes = [elf_to_hex(bin) for bin in bins]
-
-#rule elf_to_hex
-#  command = symlinks/metrolib/bin/elf_to_hex ${in}
+objs  = [rv_compile(source) for source in glob("*.S")]
+bins  = [rv_link(obj, "{swap_ext(files_in, '')}") for obj in objs]
+hexes = [elf_to_hex.run(bin) for bin in bins]

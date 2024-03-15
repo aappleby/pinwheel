@@ -25,216 +25,216 @@ rule rv_c_binary
 ################################################################################
 # From https://github.com/riscv/riscv-tests/tree/master/isa/rv32ui
 
-build obj/tests/rv_tests/addi.o      : rv_assemble tests/rv_tests/addi.S
-build obj/tests/rv_tests/add.o       : rv_assemble tests/rv_tests/add.S
-build obj/tests/rv_tests/andi.o      : rv_assemble tests/rv_tests/andi.S
-build obj/tests/rv_tests/and.o       : rv_assemble tests/rv_tests/and.S
-build obj/tests/rv_tests/auipc.o     : rv_assemble tests/rv_tests/auipc.S
-build obj/tests/rv_tests/benchmark.o : rv_assemble tests/rv_tests/benchmark.S
-build obj/tests/rv_tests/beq.o       : rv_assemble tests/rv_tests/beq.S
-build obj/tests/rv_tests/bge.o       : rv_assemble tests/rv_tests/bge.S
-build obj/tests/rv_tests/bgeu.o      : rv_assemble tests/rv_tests/bgeu.S
-build obj/tests/rv_tests/blt.o       : rv_assemble tests/rv_tests/blt.S
-build obj/tests/rv_tests/bltu.o      : rv_assemble tests/rv_tests/bltu.S
-build obj/tests/rv_tests/bne.o       : rv_assemble tests/rv_tests/bne.S
-build obj/tests/rv_tests/jalr.o      : rv_assemble tests/rv_tests/jalr.S
-build obj/tests/rv_tests/jal.o       : rv_assemble tests/rv_tests/jal.S
-build obj/tests/rv_tests/lb.o        : rv_assemble tests/rv_tests/lb.S
-build obj/tests/rv_tests/lbu.o       : rv_assemble tests/rv_tests/lbu.S
-build obj/tests/rv_tests/lh.o        : rv_assemble tests/rv_tests/lh.S
-build obj/tests/rv_tests/lhu.o       : rv_assemble tests/rv_tests/lhu.S
-build obj/tests/rv_tests/lui.o       : rv_assemble tests/rv_tests/lui.S
-build obj/tests/rv_tests/lw.o        : rv_assemble tests/rv_tests/lw.S
-build obj/tests/rv_tests/ori.o       : rv_assemble tests/rv_tests/ori.S
-build obj/tests/rv_tests/or.o        : rv_assemble tests/rv_tests/or.S
-build obj/tests/rv_tests/sb.o        : rv_assemble tests/rv_tests/sb.S
-build obj/tests/rv_tests/sh.o        : rv_assemble tests/rv_tests/sh.S
-build obj/tests/rv_tests/simple.o    : rv_assemble tests/rv_tests/simple.S
-build obj/tests/rv_tests/slli.o      : rv_assemble tests/rv_tests/slli.S
-build obj/tests/rv_tests/sll.o       : rv_assemble tests/rv_tests/sll.S
-build obj/tests/rv_tests/slti.o      : rv_assemble tests/rv_tests/slti.S
-build obj/tests/rv_tests/sltiu.o     : rv_assemble tests/rv_tests/sltiu.S
-build obj/tests/rv_tests/slt.o       : rv_assemble tests/rv_tests/slt.S
-build obj/tests/rv_tests/sltu.o      : rv_assemble tests/rv_tests/sltu.S
-build obj/tests/rv_tests/srai.o      : rv_assemble tests/rv_tests/srai.S
-build obj/tests/rv_tests/sra.o       : rv_assemble tests/rv_tests/sra.S
-build obj/tests/rv_tests/srli.o      : rv_assemble tests/rv_tests/srli.S
-build obj/tests/rv_tests/srl.o       : rv_assemble tests/rv_tests/srl.S
-build obj/tests/rv_tests/sub.o       : rv_assemble tests/rv_tests/sub.S
-build obj/tests/rv_tests/sw.o        : rv_assemble tests/rv_tests/sw.S
-build obj/tests/rv_tests/xori.o      : rv_assemble tests/rv_tests/xori.S
-build obj/tests/rv_tests/xor.o       : rv_assemble tests/rv_tests/xor.S
+build build/tests/rv_tests/addi.o      : rv_assemble tests/rv_tests/addi.S
+build build/tests/rv_tests/add.o       : rv_assemble tests/rv_tests/add.S
+build build/tests/rv_tests/andi.o      : rv_assemble tests/rv_tests/andi.S
+build build/tests/rv_tests/and.o       : rv_assemble tests/rv_tests/and.S
+build build/tests/rv_tests/auipc.o     : rv_assemble tests/rv_tests/auipc.S
+build build/tests/rv_tests/benchmark.o : rv_assemble tests/rv_tests/benchmark.S
+build build/tests/rv_tests/beq.o       : rv_assemble tests/rv_tests/beq.S
+build build/tests/rv_tests/bge.o       : rv_assemble tests/rv_tests/bge.S
+build build/tests/rv_tests/bgeu.o      : rv_assemble tests/rv_tests/bgeu.S
+build build/tests/rv_tests/blt.o       : rv_assemble tests/rv_tests/blt.S
+build build/tests/rv_tests/bltu.o      : rv_assemble tests/rv_tests/bltu.S
+build build/tests/rv_tests/bne.o       : rv_assemble tests/rv_tests/bne.S
+build build/tests/rv_tests/jalr.o      : rv_assemble tests/rv_tests/jalr.S
+build build/tests/rv_tests/jal.o       : rv_assemble tests/rv_tests/jal.S
+build build/tests/rv_tests/lb.o        : rv_assemble tests/rv_tests/lb.S
+build build/tests/rv_tests/lbu.o       : rv_assemble tests/rv_tests/lbu.S
+build build/tests/rv_tests/lh.o        : rv_assemble tests/rv_tests/lh.S
+build build/tests/rv_tests/lhu.o       : rv_assemble tests/rv_tests/lhu.S
+build build/tests/rv_tests/lui.o       : rv_assemble tests/rv_tests/lui.S
+build build/tests/rv_tests/lw.o        : rv_assemble tests/rv_tests/lw.S
+build build/tests/rv_tests/ori.o       : rv_assemble tests/rv_tests/ori.S
+build build/tests/rv_tests/or.o        : rv_assemble tests/rv_tests/or.S
+build build/tests/rv_tests/sb.o        : rv_assemble tests/rv_tests/sb.S
+build build/tests/rv_tests/sh.o        : rv_assemble tests/rv_tests/sh.S
+build build/tests/rv_tests/simple.o    : rv_assemble tests/rv_tests/simple.S
+build build/tests/rv_tests/slli.o      : rv_assemble tests/rv_tests/slli.S
+build build/tests/rv_tests/sll.o       : rv_assemble tests/rv_tests/sll.S
+build build/tests/rv_tests/slti.o      : rv_assemble tests/rv_tests/slti.S
+build build/tests/rv_tests/sltiu.o     : rv_assemble tests/rv_tests/sltiu.S
+build build/tests/rv_tests/slt.o       : rv_assemble tests/rv_tests/slt.S
+build build/tests/rv_tests/sltu.o      : rv_assemble tests/rv_tests/sltu.S
+build build/tests/rv_tests/srai.o      : rv_assemble tests/rv_tests/srai.S
+build build/tests/rv_tests/sra.o       : rv_assemble tests/rv_tests/sra.S
+build build/tests/rv_tests/srli.o      : rv_assemble tests/rv_tests/srli.S
+build build/tests/rv_tests/srl.o       : rv_assemble tests/rv_tests/srl.S
+build build/tests/rv_tests/sub.o       : rv_assemble tests/rv_tests/sub.S
+build build/tests/rv_tests/sw.o        : rv_assemble tests/rv_tests/sw.S
+build build/tests/rv_tests/xori.o      : rv_assemble tests/rv_tests/xori.S
+build build/tests/rv_tests/xor.o       : rv_assemble tests/rv_tests/xor.S
 
-build gen/tests/rv_tests/addi.elf      : rv_c_binary obj/tests/rv_tests/addi.o
-build gen/tests/rv_tests/add.elf       : rv_c_binary obj/tests/rv_tests/add.o
-build gen/tests/rv_tests/andi.elf      : rv_c_binary obj/tests/rv_tests/andi.o
-build gen/tests/rv_tests/and.elf       : rv_c_binary obj/tests/rv_tests/and.o
-build gen/tests/rv_tests/auipc.elf     : rv_c_binary obj/tests/rv_tests/auipc.o
-build gen/tests/rv_tests/benchmark.elf : rv_c_binary obj/tests/rv_tests/benchmark.o
-build gen/tests/rv_tests/beq.elf       : rv_c_binary obj/tests/rv_tests/beq.o
-build gen/tests/rv_tests/bge.elf       : rv_c_binary obj/tests/rv_tests/bge.o
-build gen/tests/rv_tests/bgeu.elf      : rv_c_binary obj/tests/rv_tests/bgeu.o
-build gen/tests/rv_tests/blt.elf       : rv_c_binary obj/tests/rv_tests/blt.o
-build gen/tests/rv_tests/bltu.elf      : rv_c_binary obj/tests/rv_tests/bltu.o
-build gen/tests/rv_tests/bne.elf       : rv_c_binary obj/tests/rv_tests/bne.o
-build gen/tests/rv_tests/jalr.elf      : rv_c_binary obj/tests/rv_tests/jalr.o
-build gen/tests/rv_tests/jal.elf       : rv_c_binary obj/tests/rv_tests/jal.o
-build gen/tests/rv_tests/lb.elf        : rv_c_binary obj/tests/rv_tests/lb.o
-build gen/tests/rv_tests/lbu.elf       : rv_c_binary obj/tests/rv_tests/lbu.o
-build gen/tests/rv_tests/lh.elf        : rv_c_binary obj/tests/rv_tests/lh.o
-build gen/tests/rv_tests/lhu.elf       : rv_c_binary obj/tests/rv_tests/lhu.o
-build gen/tests/rv_tests/lui.elf       : rv_c_binary obj/tests/rv_tests/lui.o
-build gen/tests/rv_tests/lw.elf        : rv_c_binary obj/tests/rv_tests/lw.o
-build gen/tests/rv_tests/ori.elf       : rv_c_binary obj/tests/rv_tests/ori.o
-build gen/tests/rv_tests/or.elf        : rv_c_binary obj/tests/rv_tests/or.o
-build gen/tests/rv_tests/sb.elf        : rv_c_binary obj/tests/rv_tests/sb.o
-build gen/tests/rv_tests/sh.elf        : rv_c_binary obj/tests/rv_tests/sh.o
-build gen/tests/rv_tests/simple.elf    : rv_c_binary obj/tests/rv_tests/simple.o
-build gen/tests/rv_tests/slli.elf      : rv_c_binary obj/tests/rv_tests/slli.o
-build gen/tests/rv_tests/sll.elf       : rv_c_binary obj/tests/rv_tests/sll.o
-build gen/tests/rv_tests/slti.elf      : rv_c_binary obj/tests/rv_tests/slti.o
-build gen/tests/rv_tests/sltiu.elf     : rv_c_binary obj/tests/rv_tests/sltiu.o
-build gen/tests/rv_tests/slt.elf       : rv_c_binary obj/tests/rv_tests/slt.o
-build gen/tests/rv_tests/sltu.elf      : rv_c_binary obj/tests/rv_tests/sltu.o
-build gen/tests/rv_tests/srai.elf      : rv_c_binary obj/tests/rv_tests/srai.o
-build gen/tests/rv_tests/sra.elf       : rv_c_binary obj/tests/rv_tests/sra.o
-build gen/tests/rv_tests/srli.elf      : rv_c_binary obj/tests/rv_tests/srli.o
-build gen/tests/rv_tests/srl.elf       : rv_c_binary obj/tests/rv_tests/srl.o
-build gen/tests/rv_tests/sub.elf       : rv_c_binary obj/tests/rv_tests/sub.o
-build gen/tests/rv_tests/sw.elf        : rv_c_binary obj/tests/rv_tests/sw.o
-build gen/tests/rv_tests/xori.elf      : rv_c_binary obj/tests/rv_tests/xori.o
-build gen/tests/rv_tests/xor.elf       : rv_c_binary obj/tests/rv_tests/xor.o
+build build/tests/rv_tests/addi.elf      : rv_c_binary build/tests/rv_tests/addi.o
+build build/tests/rv_tests/add.elf       : rv_c_binary build/tests/rv_tests/add.o
+build build/tests/rv_tests/andi.elf      : rv_c_binary build/tests/rv_tests/andi.o
+build build/tests/rv_tests/and.elf       : rv_c_binary build/tests/rv_tests/and.o
+build build/tests/rv_tests/auipc.elf     : rv_c_binary build/tests/rv_tests/auipc.o
+build build/tests/rv_tests/benchmark.elf : rv_c_binary build/tests/rv_tests/benchmark.o
+build build/tests/rv_tests/beq.elf       : rv_c_binary build/tests/rv_tests/beq.o
+build build/tests/rv_tests/bge.elf       : rv_c_binary build/tests/rv_tests/bge.o
+build build/tests/rv_tests/bgeu.elf      : rv_c_binary build/tests/rv_tests/bgeu.o
+build build/tests/rv_tests/blt.elf       : rv_c_binary build/tests/rv_tests/blt.o
+build build/tests/rv_tests/bltu.elf      : rv_c_binary build/tests/rv_tests/bltu.o
+build build/tests/rv_tests/bne.elf       : rv_c_binary build/tests/rv_tests/bne.o
+build build/tests/rv_tests/jalr.elf      : rv_c_binary build/tests/rv_tests/jalr.o
+build build/tests/rv_tests/jal.elf       : rv_c_binary build/tests/rv_tests/jal.o
+build build/tests/rv_tests/lb.elf        : rv_c_binary build/tests/rv_tests/lb.o
+build build/tests/rv_tests/lbu.elf       : rv_c_binary build/tests/rv_tests/lbu.o
+build build/tests/rv_tests/lh.elf        : rv_c_binary build/tests/rv_tests/lh.o
+build build/tests/rv_tests/lhu.elf       : rv_c_binary build/tests/rv_tests/lhu.o
+build build/tests/rv_tests/lui.elf       : rv_c_binary build/tests/rv_tests/lui.o
+build build/tests/rv_tests/lw.elf        : rv_c_binary build/tests/rv_tests/lw.o
+build build/tests/rv_tests/ori.elf       : rv_c_binary build/tests/rv_tests/ori.o
+build build/tests/rv_tests/or.elf        : rv_c_binary build/tests/rv_tests/or.o
+build build/tests/rv_tests/sb.elf        : rv_c_binary build/tests/rv_tests/sb.o
+build build/tests/rv_tests/sh.elf        : rv_c_binary build/tests/rv_tests/sh.o
+build build/tests/rv_tests/simple.elf    : rv_c_binary build/tests/rv_tests/simple.o
+build build/tests/rv_tests/slli.elf      : rv_c_binary build/tests/rv_tests/slli.o
+build build/tests/rv_tests/sll.elf       : rv_c_binary build/tests/rv_tests/sll.o
+build build/tests/rv_tests/slti.elf      : rv_c_binary build/tests/rv_tests/slti.o
+build build/tests/rv_tests/sltiu.elf     : rv_c_binary build/tests/rv_tests/sltiu.o
+build build/tests/rv_tests/slt.elf       : rv_c_binary build/tests/rv_tests/slt.o
+build build/tests/rv_tests/sltu.elf      : rv_c_binary build/tests/rv_tests/sltu.o
+build build/tests/rv_tests/srai.elf      : rv_c_binary build/tests/rv_tests/srai.o
+build build/tests/rv_tests/sra.elf       : rv_c_binary build/tests/rv_tests/sra.o
+build build/tests/rv_tests/srli.elf      : rv_c_binary build/tests/rv_tests/srli.o
+build build/tests/rv_tests/srl.elf       : rv_c_binary build/tests/rv_tests/srl.o
+build build/tests/rv_tests/sub.elf       : rv_c_binary build/tests/rv_tests/sub.o
+build build/tests/rv_tests/sw.elf        : rv_c_binary build/tests/rv_tests/sw.o
+build build/tests/rv_tests/xori.elf      : rv_c_binary build/tests/rv_tests/xori.o
+build build/tests/rv_tests/xor.elf       : rv_c_binary build/tests/rv_tests/xor.o
 
-build gen/tests/rv_tests/addi.code.vh      gen/tests/rv_tests/addi.data.vh      : elf_to_hex gen/tests/rv_tests/addi.elf
-build gen/tests/rv_tests/add.code.vh       gen/tests/rv_tests/add.data.vh       : elf_to_hex gen/tests/rv_tests/add.elf
-build gen/tests/rv_tests/andi.code.vh      gen/tests/rv_tests/andi.data.vh      : elf_to_hex gen/tests/rv_tests/andi.elf
-build gen/tests/rv_tests/and.code.vh       gen/tests/rv_tests/and.data.vh       : elf_to_hex gen/tests/rv_tests/and.elf
-build gen/tests/rv_tests/auipc.code.vh     gen/tests/rv_tests/auipc.data.vh     : elf_to_hex gen/tests/rv_tests/auipc.elf
-build gen/tests/rv_tests/benchmark.code.vh gen/tests/rv_tests/benchmark.data.vh : elf_to_hex gen/tests/rv_tests/benchmark.elf
-build gen/tests/rv_tests/beq.code.vh       gen/tests/rv_tests/beq.data.vh       : elf_to_hex gen/tests/rv_tests/beq.elf
-build gen/tests/rv_tests/bge.code.vh       gen/tests/rv_tests/bge.data.vh       : elf_to_hex gen/tests/rv_tests/bge.elf
-build gen/tests/rv_tests/bgeu.code.vh      gen/tests/rv_tests/bgeu.data.vh      : elf_to_hex gen/tests/rv_tests/bgeu.elf
-build gen/tests/rv_tests/blt.code.vh       gen/tests/rv_tests/blt.data.vh       : elf_to_hex gen/tests/rv_tests/blt.elf
-build gen/tests/rv_tests/bltu.code.vh      gen/tests/rv_tests/bltu.data.vh      : elf_to_hex gen/tests/rv_tests/bltu.elf
-build gen/tests/rv_tests/bne.code.vh       gen/tests/rv_tests/bne.data.vh       : elf_to_hex gen/tests/rv_tests/bne.elf
-build gen/tests/rv_tests/jalr.code.vh      gen/tests/rv_tests/jalr.data.vh      : elf_to_hex gen/tests/rv_tests/jalr.elf
-build gen/tests/rv_tests/jal.code.vh       gen/tests/rv_tests/jal.data.vh       : elf_to_hex gen/tests/rv_tests/jal.elf
-build gen/tests/rv_tests/lb.code.vh        gen/tests/rv_tests/lb.data.vh        : elf_to_hex gen/tests/rv_tests/lb.elf
-build gen/tests/rv_tests/lbu.code.vh       gen/tests/rv_tests/lbu.data.vh       : elf_to_hex gen/tests/rv_tests/lbu.elf
-build gen/tests/rv_tests/lh.code.vh        gen/tests/rv_tests/lh.data.vh        : elf_to_hex gen/tests/rv_tests/lh.elf
-build gen/tests/rv_tests/lhu.code.vh       gen/tests/rv_tests/lhu.data.vh       : elf_to_hex gen/tests/rv_tests/lhu.elf
-build gen/tests/rv_tests/lui.code.vh       gen/tests/rv_tests/lui.data.vh       : elf_to_hex gen/tests/rv_tests/lui.elf
-build gen/tests/rv_tests/lw.code.vh        gen/tests/rv_tests/lw.data.vh        : elf_to_hex gen/tests/rv_tests/lw.elf
-build gen/tests/rv_tests/ori.code.vh       gen/tests/rv_tests/ori.data.vh       : elf_to_hex gen/tests/rv_tests/ori.elf
-build gen/tests/rv_tests/or.code.vh        gen/tests/rv_tests/or.data.vh        : elf_to_hex gen/tests/rv_tests/or.elf
-build gen/tests/rv_tests/sb.code.vh        gen/tests/rv_tests/sb.data.vh        : elf_to_hex gen/tests/rv_tests/sb.elf
-build gen/tests/rv_tests/sh.code.vh        gen/tests/rv_tests/sh.data.vh        : elf_to_hex gen/tests/rv_tests/sh.elf
-build gen/tests/rv_tests/simple.code.vh    gen/tests/rv_tests/simple.data.vh    : elf_to_hex gen/tests/rv_tests/simple.elf
-build gen/tests/rv_tests/slli.code.vh      gen/tests/rv_tests/slli.data.vh      : elf_to_hex gen/tests/rv_tests/slli.elf
-build gen/tests/rv_tests/sll.code.vh       gen/tests/rv_tests/sll.data.vh       : elf_to_hex gen/tests/rv_tests/sll.elf
-build gen/tests/rv_tests/slti.code.vh      gen/tests/rv_tests/slti.data.vh      : elf_to_hex gen/tests/rv_tests/slti.elf
-build gen/tests/rv_tests/sltiu.code.vh     gen/tests/rv_tests/sltiu.data.vh     : elf_to_hex gen/tests/rv_tests/sltiu.elf
-build gen/tests/rv_tests/slt.code.vh       gen/tests/rv_tests/slt.data.vh       : elf_to_hex gen/tests/rv_tests/slt.elf
-build gen/tests/rv_tests/sltu.code.vh      gen/tests/rv_tests/sltu.data.vh      : elf_to_hex gen/tests/rv_tests/sltu.elf
-build gen/tests/rv_tests/srai.code.vh      gen/tests/rv_tests/srai.data.vh      : elf_to_hex gen/tests/rv_tests/srai.elf
-build gen/tests/rv_tests/sra.code.vh       gen/tests/rv_tests/sra.data.vh       : elf_to_hex gen/tests/rv_tests/sra.elf
-build gen/tests/rv_tests/srli.code.vh      gen/tests/rv_tests/srli.data.vh      : elf_to_hex gen/tests/rv_tests/srli.elf
-build gen/tests/rv_tests/srl.code.vh       gen/tests/rv_tests/srl.data.vh       : elf_to_hex gen/tests/rv_tests/srl.elf
-build gen/tests/rv_tests/sub.code.vh       gen/tests/rv_tests/sub.data.vh       : elf_to_hex gen/tests/rv_tests/sub.elf
-build gen/tests/rv_tests/sw.code.vh        gen/tests/rv_tests/sw.data.vh        : elf_to_hex gen/tests/rv_tests/sw.elf
-build gen/tests/rv_tests/xori.code.vh      gen/tests/rv_tests/xori.data.vh      : elf_to_hex gen/tests/rv_tests/xori.elf
-build gen/tests/rv_tests/xor.code.vh       gen/tests/rv_tests/xor.data.vh       : elf_to_hex gen/tests/rv_tests/xor.elf
+build build/tests/rv_tests/addi.code.vh      build/tests/rv_tests/addi.data.vh      : elf_to_hex build/tests/rv_tests/addi.elf
+build build/tests/rv_tests/add.code.vh       build/tests/rv_tests/add.data.vh       : elf_to_hex build/tests/rv_tests/add.elf
+build build/tests/rv_tests/andi.code.vh      build/tests/rv_tests/andi.data.vh      : elf_to_hex build/tests/rv_tests/andi.elf
+build build/tests/rv_tests/and.code.vh       build/tests/rv_tests/and.data.vh       : elf_to_hex build/tests/rv_tests/and.elf
+build build/tests/rv_tests/auipc.code.vh     build/tests/rv_tests/auipc.data.vh     : elf_to_hex build/tests/rv_tests/auipc.elf
+build build/tests/rv_tests/benchmark.code.vh build/tests/rv_tests/benchmark.data.vh : elf_to_hex build/tests/rv_tests/benchmark.elf
+build build/tests/rv_tests/beq.code.vh       build/tests/rv_tests/beq.data.vh       : elf_to_hex build/tests/rv_tests/beq.elf
+build build/tests/rv_tests/bge.code.vh       build/tests/rv_tests/bge.data.vh       : elf_to_hex build/tests/rv_tests/bge.elf
+build build/tests/rv_tests/bgeu.code.vh      build/tests/rv_tests/bgeu.data.vh      : elf_to_hex build/tests/rv_tests/bgeu.elf
+build build/tests/rv_tests/blt.code.vh       build/tests/rv_tests/blt.data.vh       : elf_to_hex build/tests/rv_tests/blt.elf
+build build/tests/rv_tests/bltu.code.vh      build/tests/rv_tests/bltu.data.vh      : elf_to_hex build/tests/rv_tests/bltu.elf
+build build/tests/rv_tests/bne.code.vh       build/tests/rv_tests/bne.data.vh       : elf_to_hex build/tests/rv_tests/bne.elf
+build build/tests/rv_tests/jalr.code.vh      build/tests/rv_tests/jalr.data.vh      : elf_to_hex build/tests/rv_tests/jalr.elf
+build build/tests/rv_tests/jal.code.vh       build/tests/rv_tests/jal.data.vh       : elf_to_hex build/tests/rv_tests/jal.elf
+build build/tests/rv_tests/lb.code.vh        build/tests/rv_tests/lb.data.vh        : elf_to_hex build/tests/rv_tests/lb.elf
+build build/tests/rv_tests/lbu.code.vh       build/tests/rv_tests/lbu.data.vh       : elf_to_hex build/tests/rv_tests/lbu.elf
+build build/tests/rv_tests/lh.code.vh        build/tests/rv_tests/lh.data.vh        : elf_to_hex build/tests/rv_tests/lh.elf
+build build/tests/rv_tests/lhu.code.vh       build/tests/rv_tests/lhu.data.vh       : elf_to_hex build/tests/rv_tests/lhu.elf
+build build/tests/rv_tests/lui.code.vh       build/tests/rv_tests/lui.data.vh       : elf_to_hex build/tests/rv_tests/lui.elf
+build build/tests/rv_tests/lw.code.vh        build/tests/rv_tests/lw.data.vh        : elf_to_hex build/tests/rv_tests/lw.elf
+build build/tests/rv_tests/ori.code.vh       build/tests/rv_tests/ori.data.vh       : elf_to_hex build/tests/rv_tests/ori.elf
+build build/tests/rv_tests/or.code.vh        build/tests/rv_tests/or.data.vh        : elf_to_hex build/tests/rv_tests/or.elf
+build build/tests/rv_tests/sb.code.vh        build/tests/rv_tests/sb.data.vh        : elf_to_hex build/tests/rv_tests/sb.elf
+build build/tests/rv_tests/sh.code.vh        build/tests/rv_tests/sh.data.vh        : elf_to_hex build/tests/rv_tests/sh.elf
+build build/tests/rv_tests/simple.code.vh    build/tests/rv_tests/simple.data.vh    : elf_to_hex build/tests/rv_tests/simple.elf
+build build/tests/rv_tests/slli.code.vh      build/tests/rv_tests/slli.data.vh      : elf_to_hex build/tests/rv_tests/slli.elf
+build build/tests/rv_tests/sll.code.vh       build/tests/rv_tests/sll.data.vh       : elf_to_hex build/tests/rv_tests/sll.elf
+build build/tests/rv_tests/slti.code.vh      build/tests/rv_tests/slti.data.vh      : elf_to_hex build/tests/rv_tests/slti.elf
+build build/tests/rv_tests/sltiu.code.vh     build/tests/rv_tests/sltiu.data.vh     : elf_to_hex build/tests/rv_tests/sltiu.elf
+build build/tests/rv_tests/slt.code.vh       build/tests/rv_tests/slt.data.vh       : elf_to_hex build/tests/rv_tests/slt.elf
+build build/tests/rv_tests/sltu.code.vh      build/tests/rv_tests/sltu.data.vh      : elf_to_hex build/tests/rv_tests/sltu.elf
+build build/tests/rv_tests/srai.code.vh      build/tests/rv_tests/srai.data.vh      : elf_to_hex build/tests/rv_tests/srai.elf
+build build/tests/rv_tests/sra.code.vh       build/tests/rv_tests/sra.data.vh       : elf_to_hex build/tests/rv_tests/sra.elf
+build build/tests/rv_tests/srli.code.vh      build/tests/rv_tests/srli.data.vh      : elf_to_hex build/tests/rv_tests/srli.elf
+build build/tests/rv_tests/srl.code.vh       build/tests/rv_tests/srl.data.vh       : elf_to_hex build/tests/rv_tests/srl.elf
+build build/tests/rv_tests/sub.code.vh       build/tests/rv_tests/sub.data.vh       : elf_to_hex build/tests/rv_tests/sub.elf
+build build/tests/rv_tests/sw.code.vh        build/tests/rv_tests/sw.data.vh        : elf_to_hex build/tests/rv_tests/sw.elf
+build build/tests/rv_tests/xori.code.vh      build/tests/rv_tests/xori.data.vh      : elf_to_hex build/tests/rv_tests/xori.elf
+build build/tests/rv_tests/xor.code.vh       build/tests/rv_tests/xor.data.vh       : elf_to_hex build/tests/rv_tests/xor.elf
 
 build rv32_test_firmware : phony $
-  gen/tests/rv_tests/addi.code.vh $
-  gen/tests/rv_tests/add.code.vh $
-  gen/tests/rv_tests/andi.code.vh $
-  gen/tests/rv_tests/and.code.vh $
-  gen/tests/rv_tests/auipc.code.vh $
-  gen/tests/rv_tests/benchmark.code.vh $
-  gen/tests/rv_tests/beq.code.vh $
-  gen/tests/rv_tests/bge.code.vh $
-  gen/tests/rv_tests/bgeu.code.vh $
-  gen/tests/rv_tests/blt.code.vh $
-  gen/tests/rv_tests/bltu.code.vh $
-  gen/tests/rv_tests/bne.code.vh $
-  gen/tests/rv_tests/jalr.code.vh $
-  gen/tests/rv_tests/jal.code.vh $
-  gen/tests/rv_tests/lb.code.vh $
-  gen/tests/rv_tests/lbu.code.vh $
-  gen/tests/rv_tests/lh.code.vh $
-  gen/tests/rv_tests/lhu.code.vh $
-  gen/tests/rv_tests/lui.code.vh $
-  gen/tests/rv_tests/lw.code.vh $
-  gen/tests/rv_tests/ori.code.vh $
-  gen/tests/rv_tests/or.code.vh $
-  gen/tests/rv_tests/sb.code.vh $
-  gen/tests/rv_tests/sh.code.vh $
-  gen/tests/rv_tests/simple.code.vh $
-  gen/tests/rv_tests/slli.code.vh $
-  gen/tests/rv_tests/sll.code.vh $
-  gen/tests/rv_tests/slti.code.vh $
-  gen/tests/rv_tests/sltiu.code.vh $
-  gen/tests/rv_tests/slt.code.vh $
-  gen/tests/rv_tests/sltu.code.vh $
-  gen/tests/rv_tests/srai.code.vh $
-  gen/tests/rv_tests/sra.code.vh $
-  gen/tests/rv_tests/srli.code.vh $
-  gen/tests/rv_tests/srl.code.vh $
-  gen/tests/rv_tests/sub.code.vh $
-  gen/tests/rv_tests/sw.code.vh $
-  gen/tests/rv_tests/xori.code.vh $
-  gen/tests/rv_tests/xor.code.vh
+  build/tests/rv_tests/addi.code.vh $
+  build/tests/rv_tests/add.code.vh $
+  build/tests/rv_tests/andi.code.vh $
+  build/tests/rv_tests/and.code.vh $
+  build/tests/rv_tests/auipc.code.vh $
+  build/tests/rv_tests/benchmark.code.vh $
+  build/tests/rv_tests/beq.code.vh $
+  build/tests/rv_tests/bge.code.vh $
+  build/tests/rv_tests/bgeu.code.vh $
+  build/tests/rv_tests/blt.code.vh $
+  build/tests/rv_tests/bltu.code.vh $
+  build/tests/rv_tests/bne.code.vh $
+  build/tests/rv_tests/jalr.code.vh $
+  build/tests/rv_tests/jal.code.vh $
+  build/tests/rv_tests/lb.code.vh $
+  build/tests/rv_tests/lbu.code.vh $
+  build/tests/rv_tests/lh.code.vh $
+  build/tests/rv_tests/lhu.code.vh $
+  build/tests/rv_tests/lui.code.vh $
+  build/tests/rv_tests/lw.code.vh $
+  build/tests/rv_tests/ori.code.vh $
+  build/tests/rv_tests/or.code.vh $
+  build/tests/rv_tests/sb.code.vh $
+  build/tests/rv_tests/sh.code.vh $
+  build/tests/rv_tests/simple.code.vh $
+  build/tests/rv_tests/slli.code.vh $
+  build/tests/rv_tests/sll.code.vh $
+  build/tests/rv_tests/slti.code.vh $
+  build/tests/rv_tests/sltiu.code.vh $
+  build/tests/rv_tests/slt.code.vh $
+  build/tests/rv_tests/sltu.code.vh $
+  build/tests/rv_tests/srai.code.vh $
+  build/tests/rv_tests/sra.code.vh $
+  build/tests/rv_tests/srli.code.vh $
+  build/tests/rv_tests/srl.code.vh $
+  build/tests/rv_tests/sub.code.vh $
+  build/tests/rv_tests/sw.code.vh $
+  build/tests/rv_tests/xori.code.vh $
+  build/tests/rv_tests/xor.code.vh
 
 
 ################################################################################
 # Pinwheel-specific test firmware
 
-build obj/tests/firmware/start.o : rv_assemble tests/firmware/start.s
+build build/tests/firmware/start.o : rv_assemble tests/firmware/start.s
 
-build obj/tests/firmware/basic.o        : rv_compile_cpp tests/firmware/basic.cpp
-build obj/tests/firmware/call_jalr.o    : rv_compile_cpp tests/firmware/call_jalr.cpp
-build obj/tests/firmware/get_hart.o     : rv_compile_cpp tests/firmware/get_hart.cpp
-build obj/tests/firmware/hello.o        : rv_compile_cpp tests/firmware/hello.cpp
-build obj/tests/firmware/read_regs.o    : rv_compile_cpp tests/firmware/read_regs.cpp
-build obj/tests/firmware/start_thread.o : rv_compile_cpp tests/firmware/start_thread.cpp
-build obj/tests/firmware/stepping.o     : rv_compile_cpp tests/firmware/stepping.cpp
-build obj/tests/firmware/write_code.o   : rv_compile_cpp tests/firmware/write_code.cpp
-build obj/tests/firmware/write_regs.o   : rv_compile_cpp tests/firmware/write_regs.cpp
-build obj/tests/firmware/yield.o        : rv_compile_cpp tests/firmware/yield.cpp
+build build/tests/firmware/basic.o        : rv_compile_cpp tests/firmware/basic.cpp
+build build/tests/firmware/call_jalr.o    : rv_compile_cpp tests/firmware/call_jalr.cpp
+build build/tests/firmware/get_hart.o     : rv_compile_cpp tests/firmware/get_hart.cpp
+build build/tests/firmware/hello.o        : rv_compile_cpp tests/firmware/hello.cpp
+build build/tests/firmware/read_regs.o    : rv_compile_cpp tests/firmware/read_regs.cpp
+build build/tests/firmware/start_thread.o : rv_compile_cpp tests/firmware/start_thread.cpp
+build build/tests/firmware/stepping.o     : rv_compile_cpp tests/firmware/stepping.cpp
+build build/tests/firmware/write_code.o   : rv_compile_cpp tests/firmware/write_code.cpp
+build build/tests/firmware/write_regs.o   : rv_compile_cpp tests/firmware/write_regs.cpp
+build build/tests/firmware/yield.o        : rv_compile_cpp tests/firmware/yield.cpp
 
-build gen/tests/firmware/basic.elf            : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/basic.o        | pinwheel/tools/pinwheel.ld
-build gen/tests/firmware/call_jalr.elf        : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/call_jalr.o    | pinwheel/tools/pinwheel.ld
-build gen/tests/firmware/get_hart.elf         : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/get_hart.o     | pinwheel/tools/pinwheel.ld
-build gen/tests/firmware/hello.elf            : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/hello.o        | pinwheel/tools/pinwheel.ld
-build gen/tests/firmware/read_regs.elf        : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/read_regs.o    | pinwheel/tools/pinwheel.ld
-build gen/tests/firmware/start_thread.elf     : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/start_thread.o | pinwheel/tools/pinwheel.ld
-build gen/tests/firmware/stepping.elf         : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/stepping.o     | pinwheel/tools/pinwheel.ld
-build gen/tests/firmware/write_code.elf       : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/write_code.o   | pinwheel/tools/pinwheel.ld
-build gen/tests/firmware/write_regs.elf       : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/write_regs.o   | pinwheel/tools/pinwheel.ld
-build gen/tests/firmware/yield.elf            : rv_c_binary obj/tests/firmware/start.o obj/tests/firmware/yield.o        | pinwheel/tools/pinwheel.ld
+build build/tests/firmware/basic.elf            : rv_c_binary build/tests/firmware/start.o build/tests/firmware/basic.o        | pinwheel/tools/pinwheel.ld
+build build/tests/firmware/call_jalr.elf        : rv_c_binary build/tests/firmware/start.o build/tests/firmware/call_jalr.o    | pinwheel/tools/pinwheel.ld
+build build/tests/firmware/get_hart.elf         : rv_c_binary build/tests/firmware/start.o build/tests/firmware/get_hart.o     | pinwheel/tools/pinwheel.ld
+build build/tests/firmware/hello.elf            : rv_c_binary build/tests/firmware/start.o build/tests/firmware/hello.o        | pinwheel/tools/pinwheel.ld
+build build/tests/firmware/read_regs.elf        : rv_c_binary build/tests/firmware/start.o build/tests/firmware/read_regs.o    | pinwheel/tools/pinwheel.ld
+build build/tests/firmware/start_thread.elf     : rv_c_binary build/tests/firmware/start.o build/tests/firmware/start_thread.o | pinwheel/tools/pinwheel.ld
+build build/tests/firmware/stepping.elf         : rv_c_binary build/tests/firmware/start.o build/tests/firmware/stepping.o     | pinwheel/tools/pinwheel.ld
+build build/tests/firmware/write_code.elf       : rv_c_binary build/tests/firmware/start.o build/tests/firmware/write_code.o   | pinwheel/tools/pinwheel.ld
+build build/tests/firmware/write_regs.elf       : rv_c_binary build/tests/firmware/start.o build/tests/firmware/write_regs.o   | pinwheel/tools/pinwheel.ld
+build build/tests/firmware/yield.elf            : rv_c_binary build/tests/firmware/start.o build/tests/firmware/yield.o        | pinwheel/tools/pinwheel.ld
 
-build gen/tests/firmware/basic.code.vh        gen/tests/firmware/basic.data.vh        : elf_to_hex gen/tests/firmware/basic.elf
-build gen/tests/firmware/call_jalr.code.vh    gen/tests/firmware/call_jalr.data.vh    : elf_to_hex gen/tests/firmware/call_jalr.elf
-build gen/tests/firmware/get_hart.code.vh     gen/tests/firmware/get_hart.data.vh     : elf_to_hex gen/tests/firmware/get_hart.elf
-build gen/tests/firmware/hello.code.vh        gen/tests/firmware/hello.data.vh        : elf_to_hex gen/tests/firmware/hello.elf
-build gen/tests/firmware/read_regs.code.vh    gen/tests/firmware/read_regs.data.vh    : elf_to_hex gen/tests/firmware/read_regs.elf
-build gen/tests/firmware/start_thread.code.vh gen/tests/firmware/start_thread.data.vh : elf_to_hex gen/tests/firmware/start_thread.elf
-build gen/tests/firmware/stepping.code.vh     gen/tests/firmware/stepping.data.vh     : elf_to_hex gen/tests/firmware/stepping.elf
-build gen/tests/firmware/write_code.code.vh   gen/tests/firmware/write_code.data.vh   : elf_to_hex gen/tests/firmware/write_code.elf
-build gen/tests/firmware/write_regs.code.vh   gen/tests/firmware/write_regs.data.vh   : elf_to_hex gen/tests/firmware/write_regs.elf
-build gen/tests/firmware/yield.code.vh        gen/tests/firmware/yield.data.vh        : elf_to_hex gen/tests/firmware/yield.elf
+build build/tests/firmware/basic.code.vh        build/tests/firmware/basic.data.vh        : elf_to_hex build/tests/firmware/basic.elf
+build build/tests/firmware/call_jalr.code.vh    build/tests/firmware/call_jalr.data.vh    : elf_to_hex build/tests/firmware/call_jalr.elf
+build build/tests/firmware/get_hart.code.vh     build/tests/firmware/get_hart.data.vh     : elf_to_hex build/tests/firmware/get_hart.elf
+build build/tests/firmware/hello.code.vh        build/tests/firmware/hello.data.vh        : elf_to_hex build/tests/firmware/hello.elf
+build build/tests/firmware/read_regs.code.vh    build/tests/firmware/read_regs.data.vh    : elf_to_hex build/tests/firmware/read_regs.elf
+build build/tests/firmware/start_thread.code.vh build/tests/firmware/start_thread.data.vh : elf_to_hex build/tests/firmware/start_thread.elf
+build build/tests/firmware/stepping.code.vh     build/tests/firmware/stepping.data.vh     : elf_to_hex build/tests/firmware/stepping.elf
+build build/tests/firmware/write_code.code.vh   build/tests/firmware/write_code.data.vh   : elf_to_hex build/tests/firmware/write_code.elf
+build build/tests/firmware/write_regs.code.vh   build/tests/firmware/write_regs.data.vh   : elf_to_hex build/tests/firmware/write_regs.elf
+build build/tests/firmware/yield.code.vh        build/tests/firmware/yield.data.vh        : elf_to_hex build/tests/firmware/yield.elf
 
 build pinwheel_test_firmware : phony $
-  gen/tests/firmware/basic.code.vh $
-  gen/tests/firmware/call_jalr.code.vh $
-  gen/tests/firmware/get_hart.code.vh $
-  gen/tests/firmware/hello.code.vh $
-  gen/tests/firmware/read_regs.code.vh $
-  gen/tests/firmware/start_thread.code.vh $
-  gen/tests/firmware/stepping.code.vh $
-  gen/tests/firmware/write_code.code.vh $
-  gen/tests/firmware/write_regs.code.vh $
-  gen/tests/firmware/yield.code.vh
+  build/tests/firmware/basic.code.vh $
+  build/tests/firmware/call_jalr.code.vh $
+  build/tests/firmware/get_hart.code.vh $
+  build/tests/firmware/hello.code.vh $
+  build/tests/firmware/read_regs.code.vh $
+  build/tests/firmware/start_thread.code.vh $
+  build/tests/firmware/stepping.code.vh $
+  build/tests/firmware/write_code.code.vh $
+  build/tests/firmware/write_regs.code.vh $
+  build/tests/firmware/yield.code.vh
 
 build firmware : phony rv32_test_firmware pinwheel_test_firmware
