@@ -3,9 +3,9 @@ target=DEBUG
 #target=RELEASE
 #target=SIZE
 
-include symlinks/metrolib/ninja/rules.ninja
-include symlinks/metrolib/ninja/config_ALL.ninja
-include symlinks/metrolib/ninja/config_${target}.ninja
+include symlinks/metrolib/rules/rules.ninja
+include symlinks/metrolib/rules/config_ALL.ninja
+include symlinks/metrolib/rules/config_${target}.ninja
 
 #opts_cpp = ${opts_cpp} -fsanitize=undefined
 
@@ -17,7 +17,7 @@ include tests/firmware.ninja
 ################################################################################
 # Prereqs
 
-include symlinks/metrolib/ninja/build_imgui.ninja
+include symlinks/metrolib/rules/build_imgui.ninja
 
 build build/check_metron : run_command
   command = ninja -C symlinks/metron > /dev/null
@@ -46,16 +46,15 @@ build build/pinwheel/simulator/sim_thread.o    : compile_cpp pinwheel/simulator/
 build build/pinwheel/tools/rvdisasm.o : compile_cpp pinwheel/tools/rvdisasm.cpp
 build build/symlinks/glad/glad.o      : compile_cpp symlinks/glad/glad.c
 
-build build/pinwheel_app: c_binary $
+build build/pinwheel/simulator/pinwheel_app: c_binary $
   build/symlinks/glad/glad.o $
-  build/imgui/libimgui.a $
   build/pinwheel/simulator/pinwheel_app.o $
   build/pinwheel/simulator/pinwheel_main.o $
   build/pinwheel/simulator/pinwheel_sim.o $
   build/pinwheel/simulator/sim_thread.o $
   build/pinwheel/tools/rvdisasm.o $
-  symlinks/metrolib/bin/metrolib/libappbase.a $
-  symlinks/metrolib/bin/metrolib/libcore.a $
+  symlinks/metrolib/build/metrolib/appbase/libappbase.a $
+  symlinks/metrolib/build/metrolib/core/libcore.a $
   build/imgui/libimgui.a | firmware
   libraries=-lSDL2 -lubsan
 
