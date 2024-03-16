@@ -1,0 +1,16 @@
+from hancho import *
+
+rules = load("../../rules/rules.hancho")
+
+# FIXME what happened to uart_top?
+
+metron_src = [
+  "uart_hello.h",
+  "uart_rx.h",
+  "uart_tilelink.h",
+  #"uart_top.h",
+  "uart_tx.h",
+]
+
+#metron_ok = [rules.check_cpp(s) for s in metron_src]
+metron_sv = [rules.metron(s)    for s in metron_src]

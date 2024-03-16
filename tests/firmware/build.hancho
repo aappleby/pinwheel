@@ -1,0 +1,62 @@
+from hancho import *
+
+rules = load("../../rules/rules.hancho")
+
+elf_to_hex = load("../../symlinks/metrolib/metrolib/tools/elf_to_hex.hancho")
+
+#objs  = [rv_compile(source) for source in glob("*.S")]
+#bins  = [rv_link(obj, "{swap_ext(files_in, '')}") for obj in objs]
+#hexes = [elf_to_hex.run(bin) for bin in bins]
+
+start_o = rules.rv_compile("start.s")
+
+#basic_o   = rules.rv_compile("basic.cpp")
+#basic_elf = rules.rv_link([basic_o, start_o], "{swap_ext(files_in[0], '')}")
+#elf_to_hex.run(basic_elf)
+
+objs = [rules.rv_compile(src) for src in glob("*.cpp")]
+elfs = [rules.rv_link([obj, start_o], "{swap_ext(files_in[0], '')}") for obj in objs]
+
+
+
+"""
+
+objs  = [rv_compile(source) for source in glob("*.S")]
+bins  = []
+hexes = [elf_to_hex.run(bin) for bin in bins]
+
+build build/tests/firmware/start.o : rv_assemble tests/firmware/start.s
+
+build build/tests/firmware/basic.o        : rv_compile_cpp tests/firmware/basic.cpp
+build build/tests/firmware/call_jalr.o    : rv_compile_cpp tests/firmware/call_jalr.cpp
+build build/tests/firmware/get_hart.o     : rv_compile_cpp tests/firmware/get_hart.cpp
+build build/tests/firmware/hello.o        : rv_compile_cpp tests/firmware/hello.cpp
+build build/tests/firmware/read_regs.o    : rv_compile_cpp tests/firmware/read_regs.cpp
+build build/tests/firmware/start_thread.o : rv_compile_cpp tests/firmware/start_thread.cpp
+build build/tests/firmware/stepping.o     : rv_compile_cpp tests/firmware/stepping.cpp
+build build/tests/firmware/write_code.o   : rv_compile_cpp tests/firmware/write_code.cpp
+build build/tests/firmware/write_regs.o   : rv_compile_cpp tests/firmware/write_regs.cpp
+build build/tests/firmware/yield.o        : rv_compile_cpp tests/firmware/yield.cpp
+
+build build/tests/firmware/basic.elf            : rv_c_binary build/tests/firmware/start.o build/tests/firmware/basic.o        | pinwheel/tools/pinwheel.ld
+build build/tests/firmware/call_jalr.elf        : rv_c_binary build/tests/firmware/start.o build/tests/firmware/call_jalr.o    | pinwheel/tools/pinwheel.ld
+build build/tests/firmware/get_hart.elf         : rv_c_binary build/tests/firmware/start.o build/tests/firmware/get_hart.o     | pinwheel/tools/pinwheel.ld
+build build/tests/firmware/hello.elf            : rv_c_binary build/tests/firmware/start.o build/tests/firmware/hello.o        | pinwheel/tools/pinwheel.ld
+build build/tests/firmware/read_regs.elf        : rv_c_binary build/tests/firmware/start.o build/tests/firmware/read_regs.o    | pinwheel/tools/pinwheel.ld
+build build/tests/firmware/start_thread.elf     : rv_c_binary build/tests/firmware/start.o build/tests/firmware/start_thread.o | pinwheel/tools/pinwheel.ld
+build build/tests/firmware/stepping.elf         : rv_c_binary build/tests/firmware/start.o build/tests/firmware/stepping.o     | pinwheel/tools/pinwheel.ld
+build build/tests/firmware/write_code.elf       : rv_c_binary build/tests/firmware/start.o build/tests/firmware/write_code.o   | pinwheel/tools/pinwheel.ld
+build build/tests/firmware/write_regs.elf       : rv_c_binary build/tests/firmware/start.o build/tests/firmware/write_regs.o   | pinwheel/tools/pinwheel.ld
+build build/tests/firmware/yield.elf            : rv_c_binary build/tests/firmware/start.o build/tests/firmware/yield.o        | pinwheel/tools/pinwheel.ld
+
+build build/tests/firmware/basic.code.vh        build/tests/firmware/basic.data.vh        : elf_to_hex build/tests/firmware/basic.elf
+build build/tests/firmware/call_jalr.code.vh    build/tests/firmware/call_jalr.data.vh    : elf_to_hex build/tests/firmware/call_jalr.elf
+build build/tests/firmware/get_hart.code.vh     build/tests/firmware/get_hart.data.vh     : elf_to_hex build/tests/firmware/get_hart.elf
+build build/tests/firmware/hello.code.vh        build/tests/firmware/hello.data.vh        : elf_to_hex build/tests/firmware/hello.elf
+build build/tests/firmware/read_regs.code.vh    build/tests/firmware/read_regs.data.vh    : elf_to_hex build/tests/firmware/read_regs.elf
+build build/tests/firmware/start_thread.code.vh build/tests/firmware/start_thread.data.vh : elf_to_hex build/tests/firmware/start_thread.elf
+build build/tests/firmware/stepping.code.vh     build/tests/firmware/stepping.data.vh     : elf_to_hex build/tests/firmware/stepping.elf
+build build/tests/firmware/write_code.code.vh   build/tests/firmware/write_code.data.vh   : elf_to_hex build/tests/firmware/write_code.elf
+build build/tests/firmware/write_regs.code.vh   build/tests/firmware/write_regs.data.vh   : elf_to_hex build/tests/firmware/write_regs.elf
+build build/tests/firmware/yield.code.vh        build/tests/firmware/yield.data.vh        : elf_to_hex build/tests/firmware/yield.elf
+"""

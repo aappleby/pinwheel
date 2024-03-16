@@ -9,18 +9,25 @@ base = Rule(
   includes  = "-I. -Isymlinks -Isymlinks/metrolib -Isymlinks/metron ",
 )
 
+check_cpp = base.extend(
+  desc      = "Syntax checking {files_in}",
+  command = "{toolchain}-g++ -fsyntax-only -MMD {cpp_std} {warnings} {build_type} {includes} {defines} -c {files_in} && touch {files_out}",
+  files_out = "{swap_ext(files_in, '.ok')}",
+  depfile   = "{swap_ext(files_in, '.d')}",
+)
+
 compile_cpp = base.extend(
   desc      = "Compiling C++ {files_in} => {files_out}",
   command   = "{toolchain}-g++ -MMD {cpp_std} {warnings} {build_type} {includes} {defines} -c {files_in} -o {files_out}",
   files_out = "{swap_ext(files_in, '.o')}",
-  depfile   = "{swap_ext(files_out, '.d')}",
+  depfile   = "{swap_ext(files_in, '.d')}",
 )
 
 compile_c   = base.extend(
   desc      = "Compiling C {files_in} => {files_out}",
   command   = "{toolchain}-gcc -MMD {warnings} {build_type} {includes} {defines} -c {files_in} -o {files_out}",
   files_out = "{swap_ext(files_in, '.o')}",
-  depfile   = "{swap_ext(files_out, '.d')}",
+  depfile   = "{swap_ext(files_in, '.d')}",
 )
 
 link_c_lib = base.extend(
@@ -44,3 +51,35 @@ def cpp_lib(files_in, files_out, **kwargs):
 def c_lib(files_in, files_out, **kwargs):
   objs = [compile_c(file, **kwargs) for file in files_in]
   return link_c_lib(objs, files_out, **kwargs)
+
+
+
+rv_base = Rule(
+  arch         = "-march=rv32i -mabi=ilp32 -mstrict-align",
+)
+
+rv_compile = rv_base.extend(
+  command   = "riscv64-unknown-elf-gcc {opts} -c {files_in} -o {files_out}",
+  opts      = "{arch} -g -Os -std=gnu++2a  -MMD",
+  files_out = "{swap_ext(files_in, '.o')}",
+  depfile   = "{swap_ext(files_out, '.d')}",
+)
+
+rv_link = rv_base.extend(
+  command   = "riscv64-unknown-elf-gcc {files_in} {opts} -o {files_out}",
+  opts      = "{arch} -nostdlib -nostartfiles -Wl,-T {linkerscript} -lgcc",
+  deps      = rv_base.deps + ["{linkerscript}"],
+  linkerscript = "{root_dir}/pinwheel/tools/pinwheel.ld",
+)
+
+
+metron = Rule(
+  command   = "symlinks/metron/build/metron/metron -q -v -e -c {files_in} -o {files_out}",
+  depfile   = "{swap_ext(files_in, '.d')}",
+  files_out = "{swap_ext(files_in, '.sv')}",
+)
+
+sv2v = Rule(
+  command = "symlinks/sv2v/bin/sv2v {includes} {files_in} -w {files_out}",
+  files_out = "{swap_ext(files_in, '.sv.2.v')}",
+)

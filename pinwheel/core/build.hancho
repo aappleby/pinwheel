@@ -1,12 +1,9 @@
 from hancho import *
 
 rules = load("../../rules/rules.hancho")
-lib = rules.cpp_lib(glob("*.cpp"), "libtools.a")
 
 metron_src = [
-  "riscv_constants.h",
-  "tilelink.h",
-  "regfile_if.h",
+  "pinwheel_core.h",
 ]
 
 metron_ok = [rules.check_cpp(s) for s in metron_src]

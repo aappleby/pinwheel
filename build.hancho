@@ -2,10 +2,13 @@ from hancho import *
 
 rules    = load("rules/rules.hancho")
 rv_tests = load("tests/rv_tests/build.hancho")
+firmware = load("tests/firmware/build.hancho")
 
+core      = load("pinwheel/core/build.hancho")
 simulator = load("pinwheel/simulator/build.hancho")
 soc       = load("pinwheel/soc/build.hancho")
 tools     = load("pinwheel/tools/build.hancho")
+uart      = load("pinwheel/uart/build.hancho")
 appbase   = load("symlinks/metrolib/metrolib/appbase/build.hancho")
 core      = load("symlinks/metrolib/metrolib/core/build.hancho")
 glad      = load("symlinks/glad.hancho")
