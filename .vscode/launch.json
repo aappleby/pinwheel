@@ -61,6 +61,16 @@
         }
       ]
     },
+    {
+      "name": "Debug Hancho",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/hancho.py",
+      "cwd": "${workspaceFolder}",
+      "args": [],
+      "console": "integratedTerminal",
+      "justMyCode": false,
+    },
   ]
 }
 // clang-format on

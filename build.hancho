@@ -9,20 +9,20 @@ simulator = load("pinwheel/simulator/build.hancho")
 soc       = load("pinwheel/soc/build.hancho")
 tools     = load("pinwheel/tools/build.hancho")
 uart      = load("pinwheel/uart/build.hancho")
-appbase   = load("symlinks/metrolib/metrolib/appbase/build.hancho")
-core      = load("symlinks/metrolib/metrolib/core/build.hancho")
 glad      = load("symlinks/glad.hancho")
 imgui     = load("symlinks/imgui.hancho")
+
+metrolib = load(root="symlinks/metrolib", file="build.hancho")
 
 rules.link_c_bin(
   [
     simulator.lib,
     soc.lib,
     tools.lib,
-    appbase.lib,
-    core.lib,
     glad.lib,
     imgui.lib,
+    metrolib.appbase.lib,
+    metrolib.core.lib,
   ],
   "pinwheel_app",
   sys_libs="-lSDL2 -lubsan"
