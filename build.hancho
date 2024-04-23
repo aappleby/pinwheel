@@ -1,29 +1,29 @@
-from hancho import *
+rules = hancho.load("rules/rules.hancho")
 
-rules    = load("rules/rules.hancho")
-rv_tests = load("tests/rv_tests/build.hancho")
-firmware = load("tests/firmware/build.hancho")
+#rv_tests = hancho.module("tests/rv_tests/build.hancho")
+#firmware = hancho.module("tests/firmware/build.hancho")
 
-core      = load("pinwheel/core/build.hancho")
-simulator = load("pinwheel/simulator/build.hancho")
-soc       = load("pinwheel/soc/build.hancho")
-tools     = load("pinwheel/tools/build.hancho")
-uart      = load("pinwheel/uart/build.hancho")
-glad      = load("symlinks/glad.hancho")
-imgui     = load("symlinks/imgui.hancho")
+core      = hancho.load("pinwheel/core/build.hancho")
 
-metrolib = load(root="symlinks/metrolib", file="build.hancho")
-
-rules.link_c_bin(
-  [
-    simulator.lib,
-    soc.lib,
-    tools.lib,
-    glad.lib,
-    imgui.lib,
-    metrolib.appbase.lib,
-    metrolib.core.lib,
-  ],
-  "pinwheel_app",
-  sys_libs="-lSDL2 -lubsan"
-)
+#simulator = hancho.module("pinwheel/simulator/build.hancho")
+#soc       = hancho.module("pinwheel/soc/build.hancho")
+#tools     = hancho.module("pinwheel/tools/build.hancho")
+#uart      = hancho.module("pinwheel/uart/build.hancho")
+#glad      = hancho.module("symlinks/glad.hancho")
+#imgui     = hancho.module("symlinks/imgui.hancho")
+#
+#metrolib = load(root="symlinks/metrolib", file="build.hancho")
+#
+#rules.link_c_bin(
+#  [
+#    simulator.lib,
+#    soc.lib,
+#    tools.lib,
+#    glad.lib,
+#    imgui.lib,
+#    metrolib.appbase.lib,
+#    metrolib.core.lib,
+#  ],
+#  "pinwheel_app",
+#  sys_libs="-lSDL2 -lubsan"
+#)

@@ -1,6 +1,4 @@
-from hancho import *
-
-rules = load("../../rules/rules.hancho")
+rules = hancho.load("{repo_path}/rules/rules.hancho")
 
 metron_src = [
   "pinwheel_core.h",
