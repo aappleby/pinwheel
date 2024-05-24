@@ -6,6 +6,7 @@
 
 //------------------------------------------------------------------------------
 
+/*
 module pinwheel_regs (
   input  logic       clock,
   input  logic[7:0]  raddr1,
@@ -17,26 +18,22 @@ module pinwheel_regs (
   input  logic       wren,
 );
 
-/*
+
   // SB_RAM40_4K is WRITE-BEFORE-READ, if a write and a read to the same cell
   // occur on the same clock cycle the read will see the NEW value.
 
-  SB_RAM40_4K regs1_lo(
-    .RDATA(rdata1[15: 0]), .RCLK(clock), .RCLKE(1), .RE(1), .RADDR(raddr1),
-    .WCLK(clock), .WCLKE(1), .WE(wren), .WADDR(waddr), .MASK(16'h0), .WDATA(wdata[15: 0]));
-
-  SB_RAM40_4K regs1_hi(
-    .RDATA(rdata1[31:16]), .RCLK(clock), .RCLKE(1), .RE(1), .RADDR(raddr1),
-    .WCLK(clock), .WCLKE(1), .WE(wren), .WADDR(waddr), .MASK(16'h0), .WDATA(wdata[31:16]));
-
-  SB_RAM40_4K regs2_lo(
-    .RDATA(rdata2[15: 0]), .RCLK(clock), .RCLKE(1), .RE(1), .RADDR(raddr2),
-    .WCLK(clock), .WCLKE(1), .WE(wren), .WADDR(waddr), .MASK(16'h0), .WDATA(wdata[15: 0]));
-
-  SB_RAM40_4K regs2_hi(
-    .RDATA(rdata2[31:16]), .RCLK(clock), .RCLKE(1), .RE(1), .RADDR(raddr2),
-    .WCLK(clock), .WCLKE(1), .WE(wren), .WADDR(waddr), .MASK(16'h0), .WDATA(wdata[31:16]));
-*/
+  //SB_RAM40_4K regs1_lo(
+  //  .RDATA(rdata1[15: 0]), .RCLK(clock), .RCLKE(1), .RE(1), .RADDR(raddr1),
+  //  .WCLK(clock), .WCLKE(1), .WE(wren), .WADDR(waddr), .MASK(16'h0), .WDATA(wdata[15: 0]));
+  //SB_RAM40_4K regs1_hi(
+  //  .RDATA(rdata1[31:16]), .RCLK(clock), .RCLKE(1), .RE(1), .RADDR(raddr1),
+  //  .WCLK(clock), .WCLKE(1), .WE(wren), .WADDR(waddr), .MASK(16'h0), .WDATA(wdata[31:16]));
+  //SB_RAM40_4K regs2_lo(
+  //  .RDATA(rdata2[15: 0]), .RCLK(clock), .RCLKE(1), .RE(1), .RADDR(raddr2),
+  //  .WCLK(clock), .WCLKE(1), .WE(wren), .WADDR(waddr), .MASK(16'h0), .WDATA(wdata[15: 0]));
+  //SB_RAM40_4K regs2_hi(
+  //  .RDATA(rdata2[31:16]), .RCLK(clock), .RCLKE(1), .RE(1), .RADDR(raddr2),
+  //  .WCLK(clock), .WCLKE(1), .WE(wren), .WADDR(waddr), .MASK(16'h0), .WDATA(wdata[31:16]));
 
   always_ff @(posedge clock) begin
     if (wren) regs[waddr] <= wdata;
@@ -47,11 +44,13 @@ module pinwheel_regs (
   logic[31:0] regs [0:255];
 
 endmodule
+*/
 
 //------------------------------------------------------------------------------
 // This configuration appears to produce a minimal number of cells in Yosys,
 // maybe because not always assigning rdata means it can use the RCLKE signal?
 
+/*
 module pinwheel_mem #(parameter integer DEPTH = 256)
 (
   input  logic                clock,
@@ -79,6 +78,7 @@ module pinwheel_mem #(parameter integer DEPTH = 256)
     end
   end
 endmodule
+*/
 
 //------------------------------------------------------------------------------
 // Byte-granularity 2k ram made out of 4 512x8s
@@ -199,7 +199,6 @@ endmodule
 //------------------------------------------------------------------------------
 // Word-granularity 1k ram made out of 2 256x16s
 
-/*
 module bram_align2_1024
 (
   input  logic       clock,
@@ -247,7 +246,6 @@ module bram_align2_1024
   bram_256x16 ram1(.clock(clock), .raddr(raddr1), .waddr(waddr1), .wdata(wdata1), .wren(wren), .out(out1));
 
 endmodule
-*/
 
 //------------------------------------------------------------------------------
 
@@ -311,7 +309,6 @@ endmodule
 //------------------------------------------------------------------------------
 // 1k dword-aligned with byte mask
 
-/*
 module bram_align2_1024_mask
 #(
   parameter init_a = "",
@@ -327,25 +324,25 @@ module bram_align2_1024_mask
   input  logic       wren,
 );
 
-`ifdef SYNTHESIS
-
-  logic[15:0] mask_a;
-  logic[15:0] mask_b;
-
-  assign mask_a[ 7: 0] = {8{~wmask[0]}};
-  assign mask_a[15: 8] = {8{~wmask[1]}};
-  assign mask_b[ 7: 0] = {8{~wmask[2]}};
-  assign mask_b[15: 8] = {8{~wmask[3]}};
-
-  SB_RAM40_4K ram_a(
-    .RDATA(rdata[15: 0]), .RCLK(clock), .RCLKE(1'b1), .RE(1'b1), .RADDR(11'(raddr)),
-    .WCLK(clock), .WCLKE(1'b1), .WE(wren), .WADDR(11'(waddr)), .MASK(mask_a), .WDATA(wdata[15: 0]));
-
-  SB_RAM40_4K ram_b(
-    .RDATA(rdata[31:16]), .RCLK(clock), .RCLKE(1'b1), .RE(1'b1), .RADDR(11'(raddr)),
-    .WCLK(clock), .WCLKE(1'b1), .WE(wren), .WADDR(11'(waddr)), .MASK(mask_b), .WDATA(wdata[31:16]));
-
-`else
+//`ifdef SYNTHESIS
+//
+//  logic[15:0] mask_a;
+//  logic[15:0] mask_b;
+//
+//  assign mask_a[ 7: 0] = {8{~wmask[0]}};
+//  assign mask_a[15: 8] = {8{~wmask[1]}};
+//  assign mask_b[ 7: 0] = {8{~wmask[2]}};
+//  assign mask_b[15: 8] = {8{~wmask[3]}};
+//
+//  SB_RAM40_4K ram_a(
+//    .RDATA(rdata[15: 0]), .RCLK(clock), .RCLKE(1'b1), .RE(1'b1), .RADDR(11'(raddr)),
+//    .WCLK(clock), .WCLKE(1'b1), .WE(wren), .WADDR(11'(waddr)), .MASK(mask_a), .WDATA(wdata[15: 0]));
+//
+//  SB_RAM40_4K ram_b(
+//    .RDATA(rdata[31:16]), .RCLK(clock), .RCLKE(1'b1), .RE(1'b1), .RADDR(11'(raddr)),
+//    .WCLK(clock), .WCLKE(1'b1), .WE(wren), .WADDR(11'(waddr)), .MASK(mask_b), .WDATA(wdata[31:16]));
+//
+//`else
 
   always_ff @(posedge clock) begin
     if (wren) begin
@@ -363,7 +360,6 @@ module bram_align2_1024_mask
 
   logic[31:0] ram[0:255];
 
-`endif
+//`endif
 
 endmodule
-*/

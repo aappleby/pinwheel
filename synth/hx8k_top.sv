@@ -24,40 +24,15 @@ module top(
   end
 
   always_ff @(posedge clock) begin
-    logic[31:0] counter_next;
-
-    counter_next = counter + 1;
-
-    if (counter_next == 12000) begin
+    if (counter == 12000 - 1) begin
       msec <= msec + 1;
       counter <= 0;
     end else begin
-      counter <= counter_next;
+      counter <= counter + 1;
     end
   end
 
   //----------------------------------------
-
-  /*
-  logic[7:0]  raddr1;
-  logic[31:0] rdata1;
-  logic[7:0]  raddr2;
-  logic[31:0] rdata2;
-  logic[7:0]  waddr;
-  logic[15:0] wdata;
-  logic       wren;
-
-  picosoc_regs2 regs(
-    .clock(clock),
-    .raddr1(raddr1),
-    .rdata1(rdata1),
-    .raddr2(raddr2),
-    .rdata2(rdata2),
-    .waddr(waddr),
-    .wdata(wdata),
-    .wren(wren),
-  );
-  */
 
   logic[7:0]  raddr;
   logic[31:0] rdata;

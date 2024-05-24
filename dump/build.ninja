@@ -13,44 +13,49 @@ includes = ${includes} -Isymlinks/metron
 ################################################################################
 # Prereqs
 
-#include symlinks/metrolib/rules/build_imgui.ninja
+include symlinks/metrolib/rules/build_imgui.ninja
 
-#build build/check_metron : run_command
-#  command = ninja -C symlinks/metron > /dev/null
-#
-#build build/check_metrolib : run_command
-#  command = ninja -C symlinks/metrolib > /dev/null
+build build/check_metron : run_command
+  command = symlinks/hancho/hancho.py -C symlinks/metron > /dev/null
+
+build build/check_metrolib : run_command
+  command = ninja -C symlinks/metrolib > /dev/null
 
 ################################################################################
 # Syntax check for Pinwheel Metron RTL
 
-#build build/pinwheel/tools/tilelink.h.ok     : check_cpp pinwheel/tools/tilelink.h
-#build build/pinwheel/soc/regfile.h.ok        : check_cpp pinwheel/soc/regfile.h
-#build build/pinwheel/soc/serial.h.ok         : check_cpp pinwheel/soc/serial.h
-#build build/pinwheel/soc/test_reg.h.ok       : check_cpp pinwheel/soc/test_reg.h
-#build build/pinwheel/soc/bus_ram.h.ok        : check_cpp pinwheel/soc/bus_ram.h
-#build build/pinwheel/core/pinwheel_core.h.ok : check_cpp pinwheel/core/pinwheel_core.h
-#build build/pinwheel/soc/pinwheel_soc.h.ok   : check_cpp pinwheel/soc/pinwheel_soc.h
+build build/pinwheel/tools/tilelink.h.ok     : check_cpp pinwheel/tools/tilelink.h
+build build/pinwheel/soc/regfile.h.ok        : check_cpp pinwheel/soc/regfile.h
+build build/pinwheel/soc/serial.h.ok         : check_cpp pinwheel/soc/serial.h
+build build/pinwheel/soc/test_reg.h.ok       : check_cpp pinwheel/soc/test_reg.h
+build build/pinwheel/soc/bus_ram.h.ok        : check_cpp pinwheel/soc/bus_ram.h
+build build/pinwheel/core/pinwheel_core.h.ok : check_cpp pinwheel/core/pinwheel_core.h
+build build/pinwheel/soc/pinwheel_soc.h.ok   : check_cpp pinwheel/soc/pinwheel_soc.h
 
 ################################################################################
 # Metron conversion tests
 
-#build build/pinwheel/tools/riscv_constants.sv    : metron2 pinwheel/tools/riscv_constants.h
-#build build/pinwheel/tools/tilelink.sv           : metron2 pinwheel/tools/tilelink.h
-#build build/pinwheel/tools/regfile_if.sv         : metron2 pinwheel/tools/regfile_if.h
-#build build/pinwheel/core/pinwheel_core.sv       : metron2 pinwheel/core/pinwheel_core.h
+rule metron3
+  command = symlinks/metron/build/debug/metron/metron/metron -q -v -e -c ${in} -o ${out}
+  depfile = ${out}.d
+  deps = gcc
 
-#build build/pinwheel/uart/uart_hello.sv          : metron2 pinwheel/uart/uart_hello.h
-#build build/pinwheel/uart/uart_rx.sv             : metron2 pinwheel/uart/uart_rx.h
-#build build/pinwheel/uart/uart_tx.sv             : metron2 pinwheel/uart/uart_tx.h
-#build build/pinwheel/uart/uart_tilelink.sv       : metron2 pinwheel/uart/uart_tilelink.h
+build build/pinwheel/tools/riscv_constants.sv    : metron3 pinwheel/tools/riscv_constants.h
+build build/pinwheel/tools/tilelink.sv           : metron3 pinwheel/tools/tilelink.h
+build build/pinwheel/tools/regfile_if.sv         : metron3 pinwheel/tools/regfile_if.h
+build build/pinwheel/core/pinwheel_core.sv       : metron3 pinwheel/core/pinwheel_core.h
 
-build build/pinwheel/soc/regfile.sv              : metron2 pinwheel/soc/regfile.h
-build build/pinwheel/soc/serial.sv               : metron2 pinwheel/soc/serial.h
-build build/pinwheel/soc/test_reg.sv             : metron2 pinwheel/soc/test_reg.h
-#build build/pinwheel/soc/bus_ram.sv              : metron2 pinwheel/soc/bus_ram.h
-#build build/pinwheel/soc/block_ram.sv            : metron2 pinwheel/soc/block_ram.h
-#build build/pinwheel/soc/pinwheel_soc.sv         : metron2 pinwheel/soc/pinwheel_soc.h
+build build/pinwheel/uart/uart_hello.sv          : metron3 pinwheel/uart/uart_hello.h
+build build/pinwheel/uart/uart_rx.sv             : metron3 pinwheel/uart/uart_rx.h
+build build/pinwheel/uart/uart_tx.sv             : metron3 pinwheel/uart/uart_tx.h
+build build/pinwheel/uart/uart_tilelink.sv       : metron3 pinwheel/uart/uart_tilelink.h
+
+build build/pinwheel/soc/regfile.sv              : metron3 pinwheel/soc/regfile.h
+build build/pinwheel/soc/serial.sv               : metron3 pinwheel/soc/serial.h
+build build/pinwheel/soc/test_reg.sv             : metron3 pinwheel/soc/test_reg.h
+build build/pinwheel/soc/bus_ram.sv              : metron3 pinwheel/soc/bus_ram.h
+build build/pinwheel/soc/block_ram.sv            : metron3 pinwheel/soc/block_ram.h
+build build/pinwheel/soc/pinwheel_soc.sv         : metron3 pinwheel/soc/pinwheel_soc.h
 
 ################################################################################
 # sv2v

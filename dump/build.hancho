@@ -1,10 +1,10 @@
-rules = hancho.load("rules/rules.hancho")
+import hancho
+
+exports.rules = hancho.load("symlinks/hancho/rules.hancho")
+exports.core  = hancho.load("pinwheel/core/core.hancho", **exports)
 
 #rv_tests = hancho.module("tests/rv_tests/build.hancho")
 #firmware = hancho.module("tests/firmware/build.hancho")
-
-core      = hancho.load("pinwheel/core/build.hancho")
-
 #simulator = hancho.module("pinwheel/simulator/build.hancho")
 #soc       = hancho.module("pinwheel/soc/build.hancho")
 #tools     = hancho.module("pinwheel/tools/build.hancho")

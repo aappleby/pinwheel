@@ -1,8 +1,0 @@
-rules = hancho.load("{repo_path}/rules/rules.hancho")
-
-metron_src = [
-  "pinwheel_core.h",
-]
-
-metron_ok = [rules.check_cpp(s) for s in metron_src]
-metron_sv = [rules.metron(s)    for s in metron_src]

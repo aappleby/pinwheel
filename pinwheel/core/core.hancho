@@ -1,0 +1,2 @@
+pinwheel_ok = imports.rules.check_cpp(in_src = "pinwheel_core.h")
+pinwheel_sv = imports.rules.metron(in_src = "pinwheel_core.h")
