@@ -1,6 +1,6 @@
 `default_nettype none
 
-module pinwheel_ice40(
+module top(
   input  logic EXT_CLK,
   output logic [7:0] LEDS,
 );

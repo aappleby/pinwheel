@@ -1,7 +1,64 @@
 import hancho
 
-hancho.Task(
-  command = "g++ -c {in_src} -o {out_bin}",
-  in_src  = "top.v",
+################################################################################
+
+def gen_chparams(c):
+  result = []
+  for key, val in c.items():
+    if isinstance(val, str):
+      val = f"\"{val}\""
+    result.append(f"chparam -set {key} {val} {{top}};")
+  return result
+
+yosys = hancho.Config(
+  desc = "Run yosys on {rel(in_sv)}",
+  command = "yosys -q -p 'read_verilog -defer {join_prefix('-I', includes)} -sv {rel(in_sv)}; dump; {gen_chparams(params)} synth_ice40 -top {top} -json {rel(out_json)};'",
+  gen_chparams = gen_chparams,
+  top = "{path.splitext(path.basename(in_sv))[0]}",
+  params = {},
+  includes = [],
+)
+
+nextpnr = hancho.Config(
+  desc = "Run nextpnr-ice40 on {rel(in_json)}",
+  command = "nextpnr-ice40 {flags} -q --{chip} --package {package} --json {rel(in_json)} --asc {rel(out_asc)} --pcf {pcf}",
+  flags = "",
+)
+
+icepack = hancho.Config(
+  desc = "Run icepack on {rel(in_asc)}",
+  command = "icepack {rel(in_asc)} {rel(out_bin)}",
+)
+
+iceprog = hancho.Config(
+  desc = "Run iceprog on {rel(in_bin)}",
+  command = "iceprog -S {rel(in_bin)}",
+)
+
+################################################################################
+
+top_json = yosys(
+  in_sv    = "top.v",
+  out_json = "{swap_ext(in_sv, '.json')}",
+  top      = "top",
+)
+
+top_asc = nextpnr(
+  in_json  = top_json.promise("out_json"),
+  out_asc  = "top.asc",
+  chip     = "hx8k",
+  package  = "ct256",
+  pcf      = "top.pcf",
+)
+
+top_bin = icepack(
+  in_asc  = top_asc.promise("out_asc"),
   out_bin = "top.bin",
 )
+
+#iceprog(
+#  name = "top_prog",
+#  in_bin = top_bin.promise("out_bin")
+#)
+
+################################################################################
