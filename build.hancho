@@ -37,6 +37,7 @@ iceprog = hancho.Config(
 
 ################################################################################
 
+"""
 top_json = yosys(
   in_sv    = "top.v",
   out_json = "{swap_ext(in_sv, '.json')}",
@@ -48,7 +49,27 @@ top_asc = nextpnr(
   out_asc  = "top.asc",
   chip     = "hx8k",
   package  = "ct256",
-  pcf      = "top.pcf",
+  pcf      = "top_hx8k.pcf",
+)
+
+top_bin = icepack(
+  in_asc  = top_asc.promise("out_asc"),
+  out_bin = "top.bin",
+)
+"""
+
+top_json = yosys(
+  in_sv    = "top.v",
+  out_json = "{swap_ext(in_sv, '.json')}",
+  top      = "top",
+)
+
+top_asc = nextpnr(
+  in_json  = top_json.promise("out_json"),
+  out_asc  = "top.asc",
+  chip     = "up5k",
+  package  = "sg48",
+  pcf      = "top_icebreaker.pcf",
 )
 
 top_bin = icepack(
