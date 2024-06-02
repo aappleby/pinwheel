@@ -1,14 +1,12 @@
 from hancho import *
 
-rules = load("../../rules/rules.hancho")
-
-# FIXME what happened to uart_top?
+rules = hancho.load("{repo_path}/symlinks/hancho/rules.hancho")
 
 metron_src = [
   "uart_hello.h",
   "uart_rx.h",
   "uart_tilelink.h",
-  #"uart_top.h",
+  "uart_top.h",
   "uart_tx.h",
 ]
 

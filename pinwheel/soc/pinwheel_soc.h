@@ -74,14 +74,14 @@ public:
     data_ram.tock_b(core.data_tla);
     regs.tick(core.reg_if);
 
-    logic<1> clear_to_send = uart0_tx.get_clear_to_send();
+    logic<1> ready = uart0_tx.get_ready();
     logic<1> idle = uart0_tx.get_idle();
 
     logic<8> data = uart0_hello.get_data();
     logic<1> request = uart0_hello.get_request();
 
     uart0_tx.tock(reset_in, data, request, core.data_tla);
-    uart0_hello.tick(reset_in, clear_to_send, idle);
+    uart0_hello.tick(reset_in, ready, idle);
   }
 
   //----------------------------------------

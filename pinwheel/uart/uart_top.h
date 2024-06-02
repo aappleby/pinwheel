@@ -55,11 +55,11 @@ public:
     logic<1> request = hello.get_request();
 
     logic<1> serial = tx.get_serial();
-    logic<1> clear_to_send = tx.get_clear_to_send();
+    logic<1> ready = tx.get_ready();
     logic<1> idle = tx.get_idle();
 
     // Tick all submodules.
-    hello.tick(reset, clear_to_send, idle);
+    hello.tick(reset, ready, idle);
     tx.tick(reset, data, request);
     rx.tick(reset, serial);
   }

@@ -43,9 +43,9 @@ public:
     tld_.d_ready  = 1;
   }
 
-  logic<1> get_serial() const        { return tx.get_serial(); }
-  logic<1> get_clear_to_send() const { return tx.get_clear_to_send(); }
-  logic<1> get_idle() const          { return tx.get_idle(); }
+  logic<1> get_serial() const  { return tx.get_serial(); }
+  logic<1> get_ready() const   { return tx.get_ready(); }
+  logic<1> get_idle() const    { return tx.get_idle(); }
 
   //----------------------------------------
 
@@ -85,7 +85,7 @@ public:
         switch(tla.a_address & 0xF) {
           case 0x0000: {
             tld_.d_opcode = TL::AccessAckData;
-            tld_.d_data   = b32(tx.get_clear_to_send());
+            tld_.d_data   = b32(tx.get_ready());
             tld_.d_valid  = 1;
             break;
           }
