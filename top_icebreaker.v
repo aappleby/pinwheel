@@ -110,48 +110,54 @@ module top(
     end
   end
 
-  logic[6:0] SS_0 = 7'b1000000;
-  logic[6:0] SS_1 = 7'b1111001;
-  logic[6:0] SS_2 = 7'b0100100;
-  logic[6:0] SS_3 = 7'b0110000;
-  logic[6:0] SS_4 = 7'b0011001;
-  logic[6:0] SS_5 = 7'b1111111;
-  logic[6:0] SS_6 = 7'b1111111;
-  logic[6:0] SS_7 = 7'b1111111;
-  logic[6:0] SS_8 = 7'b1111111;
-  logic[6:0] SS_9 = 7'b1111111;
-  logic[6:0] SS_A = 7'b1111111;
-  logic[6:0] SS_B = 7'b1111111;
-  logic[6:0] SS_C = 7'b1111111;
-  logic[6:0] SS_D = 7'b1111111;
-  logic[6:0] SS_E = 7'b1111111;
-  logic[6:0] SS_F = 7'b1111111;
+  function logic[6:0] hex_to_ssd(logic[3:0] in);
+    case(in)
+      4'h0: hex_to_ssd = 7'b1000000;
+      4'h1: hex_to_ssd = 7'b1111001;
+      4'h2: hex_to_ssd = 7'b0100100;
+      4'h3: hex_to_ssd = 7'b0110000;
+      4'h4: hex_to_ssd = 7'b0011001;
+      4'h5: hex_to_ssd = 7'b0010010;
+      4'h6: hex_to_ssd = 7'b0000010;
+      4'h7: hex_to_ssd = 7'b1111000;
+      4'h8: hex_to_ssd = 7'b0000000;
+      4'h9: hex_to_ssd = 7'b0010000;
+      4'hA: hex_to_ssd = 7'b0001000;
+      4'hB: hex_to_ssd = 7'b0000011;
+      4'hC: hex_to_ssd = 7'b1000110;
+      4'hD: hex_to_ssd = 7'b0100001;
+      4'hE: hex_to_ssd = 7'b0000110;
+      4'hF: hex_to_ssd = 7'b0001110;
+    endcase
+  endfunction
 
-  assign LEDR_N = BTN_N;
-  assign LEDG_N = ~BTN_N;
+  logic[7:0] out_ssd;
 
-  assign LED1 = P1B1;
-  assign LED2 = P1B2;
-  assign LED3 = P1B3;
-  assign LED4 = P1B4;
-  assign LED5 = P1B7;
+  always_comb begin
+    logic[6:0] dig0;
+    logic[6:0] dig1;
 
-  //assign P1A1  = counter[16];
-  //assign P1A2  = counter[17];
-  //assign P1A3  = counter[18];
-  //assign P1A4  = counter[19];
-  //assign P1A7  = counter[20];
-  //assign P1A8  = counter[21];
-  //assign P1A9  = counter[22];
-  //assign P1A10 = counter[23];
+    LEDR_N = BTN_N;
+    LEDG_N = ~BTN_N;
 
-  assign P1A1  = SS_4[0];
-  assign P1A2  = SS_4[1];
-  assign P1A3  = SS_4[2];
-  assign P1A4  = SS_4[3];
-  assign P1A7  = SS_4[4];
-  assign P1A8  = SS_4[5];
-  assign P1A9  = SS_4[6];
-  assign P1A10 = counter[24];
+    LED1 = P1B1;
+    LED2 = P1B2;
+    LED3 = P1B3;
+    LED4 = P1B4;
+    LED5 = P1B7;
+
+    out_ssd[6:0] = hex_to_ssd(counter[12] ? counter[25:22] : counter[29:26]);
+    out_ssd[7]   = counter[12];
+  end
+
+
+  assign P1A1  = out_ssd[0];
+  assign P1A2  = out_ssd[1];
+  assign P1A3  = out_ssd[2];
+  assign P1A4  = out_ssd[3];
+  assign P1A7  = out_ssd[4];
+  assign P1A8  = out_ssd[5];
+  assign P1A9  = out_ssd[6];
+  assign P1A10 = out_ssd[7];
 
 endmodule

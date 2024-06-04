@@ -67,46 +67,7 @@ synth = hancho.Command(
 
 ################################################################################
 
-#def call_synth(*, in_top, pcf, chip, package, includes = [], **kwargs):
-#  top_json = yosys(
-#    in_sv    = in_top,
-#    includes = includes,
-#  )
-#
-#  top_asc = nextpnr(
-#    in_json  = top_json.promise("out_json"),
-#    chip     = chip,
-#    package  = package,
-#    pcf      = pcf,
-#  )
-#
-#  top_bin = icepack(
-#    in_asc  = top_asc.promise("out_asc"),
-#  )
-#
-#  return top_bin
-#
-#
-#synth = hancho.Command(
-#  call = call_synth
-#)
-
-
-#call_synth(
-#  in_top = "top_icebreaker.v",
-#  pcf = "top_icebreaker.pcf",
-#  chip = "up5k",
-#  package = "sg48",
-#)
-#
-#call_synth(
-#  in_top = "top_hx8k.v",
-#  pcf = "top_hx8k.pcf",
-#  chip = "hx8k",
-#  package = "ct256",
-#)
-
-synth(
+top_icebreaker = synth(
   in_sv = "top_icebreaker.v",
   pcf = "top_icebreaker.pcf",
   chip = "up5k",
@@ -120,83 +81,6 @@ synth(
   package = "ct256",
 )
 
-################################################################################
-
-"""
-from functools import *
-
-# A normal function
-def add(foo, *args, a, b, c, **kwargs):
-  print(foo)
-  print(args)
-  print(kwargs)
-  return 100 * a + 10 * b + c
-
-add_part = partial(add, c = 2)
-add_part = partial(add_part, b = 1)
-
-add_part = partial(add_part, jskdlkfsjf = "skdjflskj")
-add_part = partial(add_part, snarp = "riuiiriri")
-add_part = partial(add_part, 1)
-add_part = partial(add_part, "narp")
-add_part = partial(add_part, a = 3)
-
-# Calling partial function
-print(add_part())
-
-
-import inspect
-
-def args_to_config():
-    frame = inspect.currentframe().f_back
-    keys, varargs, keywords, values = inspect.getargvalues(frame)
-
-    print("----------")
-    print(f"keys {keys}")
-    print(f"varargs {varargs}")
-    print(f"keywords {keywords}")
-    print(f"values {values}")
-
-    args   = values.pop(varargs)  if varargs is not None  else None
-    kwargs = values.pop(keywords) if keywords is not None else None
-
-    print("----------")
-
-    print(f"keys {keys}")
-    print(f"varargs {varargs}")
-    print(f"keywords {keywords}")
-    print(f"values {values}")
-    print(f"args {args}")
-    print(f"kwargs {kwargs}")
-    print("----------")
-
-    values.update(kwargs)
-    return hancho.Config(**values)
-
-
-def call_synth2(*, in_top, pcf, chip, package = "cloaca", includes = [], **kwargs):
-  return args_to_config()
-
-d = call_synth2(
-  in_top = "asdf",
-  pcf = "askjdf.pcf",
-  chip = "up5k",
-  **hancho.Config(foo = 1),
-)
-
-print(d)
-
-s = inspect.signature(call_synth2)
-for p in s.parameters.items():
-  print(p[1].kind)
-
-#print(s.parameters)
-
-
-#iceprog(
-#  name = "top_prog",
-#  in_bin = top_bin.promise("out_bin")
-#)
-"""
+#iceprog(in_bin = top_icebreaker.promise("out_bin"))
 
 ################################################################################
