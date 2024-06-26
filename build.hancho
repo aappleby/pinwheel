@@ -48,7 +48,8 @@ iceprog = hancho.Command(
 synth = hancho.Command(
   desc = "Synth {rel(in_sv)}",
   command = [
-    "yosys -q -p 'read_verilog -defer {join_prefix('-I', includes)} -sv {rel(in_sv)}; dump; {chparams(params)} synth_ice40 -json {rel(out_json)};'",
+    "yosys -p 'read_verilog -defer {join_prefix('-I', includes)} -sv {rel(in_sv)}; dump; {chparams(params)} synth_ice40 -json {rel(out_json)};'",
+    #"yosys -q -p 'read_verilog -defer {join_prefix('-I', includes)} -sv {rel(in_sv)}; dump; {chparams(params)} synth_ice40 -json {rel(out_json)};'",
     "nextpnr-ice40 {flags} -q --json {rel(out_json)} --pcf {pcf} --{chip} --package {package}  --asc {rel(out_asc)}",
     "icepack {rel(out_asc)} {rel(out_bin)}",
   ],

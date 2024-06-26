@@ -32,11 +32,14 @@ set_io -nowarn SER_RTSn B13
 set_io -nowarn SER_TX   B12
 set_io -nowarn SER_RX   B10
 
-set_io -nowarn LOGIC7 C16
-set_io -nowarn LOGIC6 D16
-set_io -nowarn LOGIC5 E16
-set_io -nowarn LOGIC4 F16
-set_io -nowarn LOGIC3 G16
-set_io -nowarn LOGIC2 H16
-set_io -nowarn LOGIC1 J15
-set_io -nowarn LOGIC0 G14
+set_io -nowarn PROBE1 B2
+set_io -nowarn PROBE2 L1
+
+set_io -nowarn LOGIC[0] C16
+set_io -nowarn LOGIC[1] D16
+set_io -nowarn LOGIC[2] E16
+set_io -nowarn LOGIC[3] F16
+set_io -nowarn LOGIC[4] G16
+set_io -nowarn LOGIC[5] H16
+set_io -nowarn LOGIC[6] J15
+set_io -nowarn LOGIC[7] G14
