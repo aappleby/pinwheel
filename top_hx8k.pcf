@@ -8,7 +8,7 @@
 # | gnd  t2  t3  r4 gnd |  r5  r6  t8 gnd  r9 |  p9 r10 gnd p10 m11 | p13 gnd t14 t16 io2 |
 
 # | gnd  b1  c1  d1 gnd |  e2  f2  g2 gnd  h2 |  j2  k3 gnd  l3  m2 |  n3 gnd  p1 3.3 3.3 |
-# | gnd  b2  c2  d2 gnd |  f1  g1  h1 gnd  j3 |  j1  k1 gnd  l1  m1 |  n2 gnd  p2  r1 io3 |
+# | gnd  b2  c2  d2 gnd |  f1  g1* h1 gnd  j3*|  j1  k1 gnd  l1  m1 |  n2 gnd  p2  r1 io3 |
 
 # 12 MHz Clock
 set_io -nowarn EXT_CLK J3
@@ -32,14 +32,35 @@ set_io -nowarn SER_RTSn B13
 set_io -nowarn SER_TX   B12
 set_io -nowarn SER_RX   B10
 
-set_io -nowarn PROBE1 B2
-set_io -nowarn PROBE2 L1
+# Debug interface on bank 3
 
-set_io -nowarn LOGIC[0] C16
-set_io -nowarn LOGIC[1] D16
-set_io -nowarn LOGIC[2] E16
-set_io -nowarn LOGIC[3] F16
-set_io -nowarn LOGIC[4] G16
-set_io -nowarn LOGIC[5] H16
-set_io -nowarn LOGIC[6] J15
-set_io -nowarn LOGIC[7] G14
+set_io -nowarn LOGIC[0] B1
+set_io -nowarn LOGIC[1] C1
+set_io -nowarn LOGIC[2] D1
+set_io -nowarn LOGIC[3] E2
+set_io -nowarn LOGIC[4] F2
+set_io -nowarn LOGIC[5] G2
+set_io -nowarn LOGIC[6] H2
+set_io -nowarn LOGIC[7] J2
+
+set_io -nowarn PROBE1 M1
+set_io -nowarn PROBE2 M2
+
+
+# GBIN0    F7
+# GBIN1    C8
+# GBIN2    H16
+# GBIN3    H11
+# GBIN4    K9
+# GBIN5    R9
+# GBIN6    J3 EXT_CLK
+# GBIN7    G1
+# CBSEL0   K11
+# CBSEL1   P13
+# TRST_B   N14
+# SDO      P12
+# SDI      P11
+# SCK      R11
+# SS       R12
+# CDONE    M10
+# CRESET_B N11

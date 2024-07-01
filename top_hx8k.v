@@ -26,6 +26,13 @@ module top(
   * Achieved output frequency:    48.000 MHz
   */
 
+  // double f_pfd = f_pllin / (divr + 1);
+  // int filter_range = f_pfd < 17 ? 1 : f_pfd < 26 ? 2 : f_pfd < 44 ? 3 : f_pfd < 66 ? 4 : f_pfd < 101 ? 5 : 6;
+  // assert (f_pfd >= 10 && f_pfd <= 133);
+  // double f_vco = f_pfd * (divf + 1);
+  // assert(f_vco >= 533 && f_vco <= 1066);
+  // double fout = f_vco * exp2(-divq);
+
   logic pll_clock;
   logic pll_lock;
   localparam pll_clock_rate = 48000000;
@@ -57,21 +64,6 @@ module top(
 
   //----------------------------------------------------------------------------
 
-  //logic clock = pll_clock;
-  //localparam clock_rate = pll_clock_rate;
-
-  logic clock = EXT_CLK;
-  localparam clock_rate = ext_clock_rate;
-
-  //localparam clock_rate = pll_clock_rate / 2;
-  //logic clock;
-  //always @(posedge pll_clock) clock <= ~clock;
-
-  /*
-  localparam clock_rate = pll_clock_rate / 6;
-  logic clock;
-  */
-
   logic[7:0] clock_div3;
   logic[7:0] clock_div;
   always @(posedge pll_clock) begin
@@ -91,12 +83,8 @@ module top(
   logic clock_250K = clock_div[5];
   logic clock_125K = clock_div[6];
 
-
-  //logic[7:0] div;
-  //always @(posedge pll_clock) div <= div + 1;
-  //assign PROBE = div[4];
-  //assign PROBE = 1;
-  //assign PROBE = pll_clock;
+  logic clock = clock_8M;
+  localparam clock_rate = 8000000;
 
   //----------------------------------------------------------------------------
 
@@ -107,39 +95,6 @@ module top(
 
   localparam bits_per_byte = 10; // 1 start + 8 data + 1 stop
   localparam bit_count_width = $clog2(bits_per_byte);
-
-  /*
-  logic[bit_delay_width-1:0] rx_bit_delay;
-  logic[bit_count_width-1:0] rx_bit_count;
-  logic[9:0] rx_shift;
-
-  always @(posedge clock) begin
-    if (reset) begin
-      rx_bit_delay  <= clocks_per_bit - 1;
-      rx_bit_count  <= bits_per_byte - 1;
-    end else begin
-
-      if (rx_bit_delay == (clocks_per_bit / 2)) begin
-        rx_shift <= (SER_RX << 9) | (rx_shift >> 1);
-      end
-
-      if (rx_bit_delay < clocks_per_bit - 1) begin
-        rx_bit_delay <= rx_bit_delay + 1;
-      end else if (rx_bit_count < bits_per_byte - 1) begin
-        rx_bit_delay <= 0;
-        rx_bit_count <= rx_bit_count + 1;
-      end else if (SER_RX == 0) begin
-        rx_bit_delay <= 1;
-        rx_bit_count <= 0;
-      end
-
-    end
-  end
-
-  assign LEDS[6:0] = rx_shift[7:1];
-  assign LEDS[7] = (rx_shift[0] == 0) && (rx_shift[9] == 1) && (rx_bit_delay == clocks_per_bit - 1) && (rx_bit_count == bits_per_byte - 1);
-
-  */
 
   // xorshift rng
   logic[31:0] rng;
@@ -157,6 +112,33 @@ module top(
   end
 
 
+  logic[15:0] message_delay;
+  logic[7:0]  message_out;
+  logic[7:0]  message_count;
+  logic       message_valid;
+  logic       message_early;
+
+  always @(posedge clock) begin
+    if (reset) begin
+      message_delay <= 499;
+    end else begin
+      if (message_delay) begin
+        message_delay <= message_delay - 1;
+        message_out   <= 8'b0;
+        message_valid <= 0;
+      end else begin
+        message_delay <= 499;
+        message_out   <= message_count;
+        message_count <= message_count + 1;
+        message_valid <= 1;
+      end
+
+      message_early <= message_delay == 5;
+
+    end
+  end
+
+  /*
   logic[7:0]  rx_data;
   logic       rx_valid;
   logic[15:0] rx_counter;
@@ -178,30 +160,12 @@ module top(
       end
     end
   end
-
-  //assign PROBE1 = rng[0];
-  assign PROBE1 = clock_125K;
-  //assign PROBE1 = EXT_CLK;
-  //assign PROBE2 = rng[1];
-  assign PROBE2 = clock_8M;
-
-  //assign LOGIC[0] = rx_valid;
-  //assign LOGIC[1] = rng[1];
-  //assign LOGIC[2] = rng[2];
-
-  assign LOGIC[0] = clock_8M;
-  assign LOGIC[1] = clock_250K;
-  assign LOGIC[2] = clock_500K;
-  assign LOGIC[3] = clock_1M;
-  assign LOGIC[4] = clock_2M;
-  assign LOGIC[5] = clock_4M;
-  assign LOGIC[6] = clock_8M;
-  assign LOGIC[7] = EXT_CLK;
+  */
 
   logic[bit_delay_width-1:0] tx_bit_delay;
   logic[bit_count_width-1:0] tx_bit_count;
-  logic[9:0] tx_shift;
-  logic      tx_ready;
+  logic[9:0]                 tx_shift;
+  logic                      tx_ready;
 
   //logic tx_idle = (tx_bit_count == bits_per_byte - 1) && (tx_bit_delay == clocks_per_bit - 1);
 
@@ -219,6 +183,22 @@ module top(
     end
   end
 
-  //assign SER_TX = tx_idle ? 1 : tx_shift[0];
+
+
+
+  assign PROBE1 = clock_125K;
+  assign PROBE2 = clock_8M;
+
+  //assign LOGIC[0] = tx_shift[0];
+  //assign LOGIC[1] = 0;
+  //assign LOGIC[2] = 0;
+  //assign LOGIC[3] = 0;
+  //assign LOGIC[4] = 0;
+  //assign LOGIC[5] = 0;
+  //assign LOGIC[6] = 0;
+  //assign LOGIC[7] = 0;
+
+  assign LOGIC[0]   = message_early;
+  assign LOGIC[7:1] = message_out[6:0];
 
 endmodule
