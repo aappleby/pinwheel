@@ -9,7 +9,8 @@ module top(
   output logic [7:0] LEDS,
   output logic PROBE1,
   output logic PROBE2,
-  output logic [7:0] LOGIC
+  output logic [7:0] LOGIC,
+  output logic [7:0] SALEAE,
 );
 
   localparam ext_clock_rate = 12000000;
@@ -200,5 +201,13 @@ module top(
 
   assign LOGIC[0]   = message_early;
   assign LOGIC[7:1] = message_out[6:0];
+
+  always @(posedge clock) begin
+    if (reset) begin
+      SALEAE <= 8'b00000001;
+    end else begin
+      SALEAE <= {SALEAE[0], SALEAE[7:1]};
+    end
+  end
 
 endmodule

@@ -46,6 +46,15 @@ set_io -nowarn LOGIC[7] J2
 set_io -nowarn PROBE1 M1
 set_io -nowarn PROBE2 M2
 
+set_io -nowarn SALEAE[0] C16
+set_io -nowarn SALEAE[1] D16
+set_io -nowarn SALEAE[2] E16
+set_io -nowarn SALEAE[3] F16
+set_io -nowarn SALEAE[4] G16
+set_io -nowarn SALEAE[5] H16
+set_io -nowarn SALEAE[6] J15
+set_io -nowarn SALEAE[7] G14
+
 
 # GBIN0    F7
 # GBIN1    C8
