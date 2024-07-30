@@ -12,7 +12,7 @@ module simple_message
   input  logic      _ready
 );
 
-  localparam delay_max = 37;
+  localparam delay_max = 20;
 
   logic[7:0] text[0:5];
   logic[7:0] delay, delay_;
@@ -25,17 +25,18 @@ module simple_message
   end
 
   always_comb begin
-    delay_  = delay;
-    cursor_ = cursor;
-
     if (_reset) begin
       delay_  = delay_max;
       cursor_ = 0;
-    end else if (delay_) begin
-      delay_ = delay - 1;
+    end else if (delay) begin
+      delay_  = delay - 1;
+      cursor_ = cursor;
     end else if (_valid && _ready) begin
+      delay_  = cursor == 5 ? delay_max - 1 : delay;
       cursor_ = cursor == 5 ? 0 : cursor + 1;
-      if (cursor_ == 0) delay_  = delay_max;
+    end else begin
+      delay_  = delay;
+      cursor_ = cursor;
     end
   end
 
@@ -65,7 +66,7 @@ module simple_tx
 );
 
   localparam bits_per_byte = 10; // 1 start + 8 data + 1 stop
-  localparam delay_mid = clocks_per_bit > 2 ? (clocks_per_bit / 2) : 0;
+  localparam delay_mid = clocks_per_bit / 2;
   localparam delay_max = clocks_per_bit - 1;
   localparam count_max = bits_per_byte - 1; // 1 start + 8 data + 9 stop to make sure we're really stopped :D
 
@@ -76,7 +77,7 @@ module simple_tx
   initial begin
     tx_delay = delay_max;
     tx_count = count_max;
-    tx_shift = 0;
+    tx_shift = 10'b1111111111;
   end
 
   assign _tx_ready = !_reset && tx_delay == delay_max && tx_count == count_max;
@@ -139,7 +140,7 @@ module simple_rx
 );
 
   localparam bits_per_byte = 10; // 1 start + 8 data + 1 stop
-  localparam delay_mid = clocks_per_bit > 2 ? (clocks_per_bit / 2) : 0;
+  localparam delay_mid = clocks_per_bit / 2;
   localparam delay_max = clocks_per_bit - 1;
   localparam count_max = bits_per_byte - 1; // 1 start + 8 data + 9 stop to make sure we're really stopped :D
 
@@ -163,9 +164,6 @@ module simple_rx
   //----------------------------------------
 
   always_comb begin
-    rx_delay_ = rx_delay;
-    rx_count_ = rx_count;
-
     if (_reset) begin
       rx_delay_ = delay_max;
       rx_count_ = count_max;
@@ -177,33 +175,33 @@ module simple_rx
     end else if (_rx_in == 0) begin
       rx_delay_ = 0;
       rx_count_ = 0;
+    end else begin
+      rx_delay_ = rx_delay;
+      rx_count_ = rx_count;
     end
   end
 
   //----------------------------------------
 
   always_comb begin
-    rx_shift_ = rx_shift;
+    if (_reset)
+      rx_data_  = 0;
+    else if (rx_delay_ == delay_mid && rx_count_ == count_max - 1)
+      rx_data_  = rx_shift_;
+    else
+      rx_data_ = rx_data;
+  end
 
+  //----------------------------------------
+
+  always_comb begin
     if (_reset)
       rx_shift_ = 0;
     else if (rx_delay_ == delay_mid)
       rx_shift_ = {_rx_in, rx_shift[7:1]};
+    else
+      rx_shift_ = rx_shift;
   end
-
-  //----------------------------------------
-
-  always_comb begin
-    rx_data_  = rx_data;
-
-    if (_reset) begin
-      rx_data_  = 0;
-    end else if (rx_delay_ == delay_mid && rx_count_ == count_max - 1) begin
-      rx_data_  = rx_shift_;
-    end
-  end
-
-  wire _rx_bit = rx_delay == delay_mid && rx_count > 0 && rx_count < count_max;
 
   //----------------------------------------
 
@@ -214,22 +212,19 @@ module simple_rx
     rx_shift <= rx_shift_;
   end
 
+  wire _rx_bit = rx_delay == delay_mid && rx_count > 0 && rx_count < count_max;
+
+
 endmodule
 
 //==============================================================================
 
 module bench();
 
-  logic clock;
-  logic reset;
-  initial clock = 1;
-  initial reset = 1;
+  logic clock = 1;
+  logic reset = 1;
 
-  initial begin
-    clock = 0;
-    #45;
-    while(1) #5 clock = ~clock;
-  end
+  always #5 clock = ~clock;
 
   initial begin
     $dumpfile ("bench.vcd");
@@ -243,7 +238,7 @@ module bench();
 
   //----------------------------------------------------------------------------
 
-  localparam clocks_per_bit = 9;
+  localparam clocks_per_bit = 1;
 
   simple_message msg();
 

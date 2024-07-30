@@ -1,29 +1,32 @@
 [*]
 [*] GTKWave Analyzer v3.3.104 (w)1999-2020 BSI
-[*] Tue Jul 30 01:57:50 2024
+[*] Tue Jul 30 04:02:54 2024
 [*]
 [dumpfile] "/home/aappleby/repos/pinwheel/uart/bench.vcd"
-[dumpfile_mtime] "Tue Jul 30 01:57:46 2024"
-[dumpfile_size] 43217
+[dumpfile_mtime] "Tue Jul 30 04:02:20 2024"
+[dumpfile_size] 98275
 [savefile] "/home/aappleby/repos/pinwheel/uart/uart_test.gtkw"
 [timestart] 0
-[size] 3153 929
+[size] 1994 1287
 [pos] -1 -1
-*-8.279175 200 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-10.055098 580 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] bench.
 [sst_width] 233
-[signals_width] 230
+[signals_width] 186
 [sst_expanded] 1
-[sst_vpaned_height] 86
-@200
+[sst_vpaned_height] 126
+@800200
 -top
 @28
 bench.clock
 bench.reset
+@1000200
+-top
 @200
 -
+@800200
 -message
-@22
+@24
 bench.msg.delay[7:0]
 bench.msg.cursor[7:0]
 @820
@@ -31,30 +34,46 @@ bench.msg._out[7:0]
 @28
 bench.msg._valid
 bench.msg._ready
+@1000200
+-message
 @200
 -
--uart tx
+@800200
+-uart_tx
+@820
+bench.tx._tx_in[7:0]
 @28
 bench.tx._tx_valid
 bench.tx._tx_ready
-@820
-bench.tx._tx_in[7:0]
-@22
+@24
 bench.tx.tx_count[7:0]
+bench.tx.tx_delay[7:0]
+@821
 bench.tx.tx_shift[9:0]
 @28
+bench.tx._tx_bit
+bench.tx._tx_byte
 bench.tx._tx_out
+@1000200
+-uart_tx
 @200
 -
--uart rx
+@800200
+-uart_rx
 @28
 bench.rx._rx_ready
 bench.rx._rx_in
+@24
+bench.rx.rx_count[7:0]
+bench.rx.rx_delay[7:0]
 @820
 bench.rx.rx_shift[7:0]
 @28
+bench.rx._rx_bit
 bench.rx._rx_valid
 @820
 bench.rx._rx_out[7:0]
+@1000200
+-uart_rx
 [pattern_trace] 1
 [pattern_trace] 0
