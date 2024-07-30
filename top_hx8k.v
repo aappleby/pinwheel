@@ -9,7 +9,7 @@ module top(
   output logic [7:0] LEDS,
   output logic PROBE1,
   output logic PROBE2,
-  output logic [7:0] LOGIC,
+  output logic [15:0] DSLOGIC,
   output logic [7:0] SALEAE,
 );
 
@@ -92,12 +92,18 @@ module top(
   localparam baud_rate = 1000000;
 
   localparam clocks_per_bit  = clock_rate / baud_rate;
-  localparam bit_delay_width = $clog2(clocks_per_bit - 1);
-
   localparam bits_per_byte = 10; // 1 start + 8 data + 1 stop
-  localparam bit_count_width = $clog2(bits_per_byte);
 
+  localparam delay_mid = (clocks_per_bit / 2) - 1;
+  localparam delay_max = clocks_per_bit - 1;
+  localparam count_max = 18; // 1 start + 8 data + 9 stop to make sure we're really stopped :D
+
+  localparam delay_width = $clog2(delay_max);
+  localparam count_width = $clog2(count_max);
+
+  //----------------------------------------------------------------------------
   // xorshift rng
+
   logic[31:0] rng;
   always @(posedge clock) begin
     if (reset) begin
@@ -112,6 +118,7 @@ module top(
     end
   end
 
+  //----------------------------------------------------------------------------
 
   logic[15:0] message_delay;
   logic[7:0]  message_out;
@@ -139,32 +146,97 @@ module top(
     end
   end
 
-  /*
-  logic[7:0]  rx_data;
-  logic       rx_valid;
-  logic[15:0] rx_counter;
+  //----------------------------------------------------------------------------
+  // Trivial uart string transmitter
+
+  logic[delay_width-1:0] ping_delay;
+
+  logic[67:0] ping = {
+    // message interval
+    8'b11111111,
+
+    // "Ping!\n" = 0x50 0x69 0x6E 0x67 0x21 0x0A
+    // stop bit, byte, start bit
+
+    1'b1, 8'h0A, 1'b0,
+    1'b1, 8'h21, 1'b0,
+    1'b1, 8'h67, 1'b0,
+    1'b1, 8'h6E, 1'b0,
+    1'b1, 8'h69, 1'b0,
+    1'b1, 8'h50, 1'b0
+  };
 
   always @(posedge clock) begin
     if (reset) begin
-      rx_data    <= 8'h00;
-      rx_valid   <= 0;
-      rx_counter <= 16'hFFFF;
+        ping_delay <= 0;
     end else begin
-      if (rx_counter) begin
-        rx_counter <= rx_counter - 1;
-        rx_valid   <= 0;
-        rx_data    <= rx_data;
+      if (ping_delay == clocks_per_bit - 1) begin
+        ping <= {ping[0], ping[67:1]};
+        ping_delay <= 0;
       end else begin
-        rx_counter <= 16'hFFFF;
-        rx_valid   <= 1;
-        rx_data    <= rx_data + 157;
+        ping_delay <= ping_delay + 1;
       end
     end
   end
-  */
 
-  logic[bit_delay_width-1:0] tx_bit_delay;
-  logic[bit_count_width-1:0] tx_bit_count;
+  //----------------------------------------------------------------------------
+
+  // 0    1    2    3    4    5    6    7    8    9    10   11   12   13   14
+  // 0123 0123 0123 0123 0123 0123 0123 0123 0123 0123 0123 0123 0123 0123 0123
+  //   S    B    B    B    B    B    B    B    B    E
+  //                                                V
+
+  logic rx_in;
+
+  logic[bits_per_byte-1:0]   rx_shift;
+  logic[delay_width-1:0] rx_delay;
+  logic[count_width-1:0] rx_count;
+
+  logic[7:0] rx_data;
+  logic      rx_valid;
+
+  always @(posedge clock) begin
+    if (reset) begin
+      rx_shift <= 0;
+      rx_valid <= 0;
+      rx_delay <= clocks_per_bit;
+      rx_count <= bits_per_byte;
+    end else begin
+      if (rx_count == bits_per_byte) begin
+        if (rx_in == 0) begin
+          rx_delay <= 0;
+          rx_count <= 0;
+        end
+      end
+
+      if (rx_delay == clocks_per_bit/2) begin
+        rx_shift <= {rx_in, rx_shift[bits_per_byte-1:1]};
+      end
+
+      if (rx_delay == clocks_per_bit - 1) begin
+        if (rx_count < bits_per_byte) begin
+          rx_count <= rx_count + 1;
+        end
+      end
+
+      if (rx_count == count_max && rx_delay == 0) begin
+        rx_data  <= rx_shift[7:0];
+        rx_valid <= 1;
+      end else begin
+        rx_valid <= 0;
+      end
+
+    end
+  end
+
+
+  assign rx_in = ping[0];
+
+  //----------------------------------------------------------------------------
+
+`ifdef 0
+  logic[delay_width-1:0] tx_bit_delay;
+  logic[count_width-1:0] tx_bit_count;
   logic[9:0]                 tx_shift;
   logic                      tx_ready;
 
@@ -183,24 +255,25 @@ module top(
       end
     end
   end
+`endif
 
+  //----------------------------------------------------------------------------
 
+  //assign DSLOGIC[0] = ping[0];
 
+  //assign PROBE1 = clock_125K;
+  //assign PROBE2 = clock_8M;
 
-  assign PROBE1 = clock_125K;
-  assign PROBE2 = clock_8M;
+  //assign DSLOGIC[0]   = message_early;
+  //assign DSLOGIC[7:1] = message_out[6:0];
 
-  //assign LOGIC[0] = tx_shift[0];
-  //assign LOGIC[1] = 0;
-  //assign LOGIC[2] = 0;
-  //assign LOGIC[3] = 0;
-  //assign LOGIC[4] = 0;
-  //assign LOGIC[5] = 0;
-  //assign LOGIC[6] = 0;
-  //assign LOGIC[7] = 0;
-
-  assign LOGIC[0]   = message_early;
-  assign LOGIC[7:1] = message_out[6:0];
+  always @(posedge pll_clock) begin
+    if (reset) begin
+      DSLOGIC <= 16'b0000000000000001;
+    end else begin
+      DSLOGIC <= {DSLOGIC[14:0], DSLOGIC[15]};
+    end
+  end
 
   always @(posedge clock) begin
     if (reset) begin

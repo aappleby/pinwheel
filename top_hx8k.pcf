@@ -34,17 +34,26 @@ set_io -nowarn SER_RX   B10
 
 # Debug interface on bank 3
 
-set_io -nowarn LOGIC[0] B1
-set_io -nowarn LOGIC[1] C1
-set_io -nowarn LOGIC[2] D1
-set_io -nowarn LOGIC[3] E2
-set_io -nowarn LOGIC[4] F2
-set_io -nowarn LOGIC[5] G2
-set_io -nowarn LOGIC[6] H2
-set_io -nowarn LOGIC[7] J2
+set_io -nowarn DSLOGIC[0] B1
+set_io -nowarn DSLOGIC[1] B2
+set_io -nowarn DSLOGIC[2] C1
+set_io -nowarn DSLOGIC[3] C2
+set_io -nowarn DSLOGIC[4] D1
+set_io -nowarn DSLOGIC[5] D2
+set_io -nowarn DSLOGIC[6] E2
+set_io -nowarn DSLOGIC[7] F1
 
-set_io -nowarn PROBE1 M1
-set_io -nowarn PROBE2 M2
+set_io -nowarn DSLOGIC[8]  J2
+set_io -nowarn DSLOGIC[9]  J1
+set_io -nowarn DSLOGIC[10] K3
+set_io -nowarn DSLOGIC[11] K1
+set_io -nowarn DSLOGIC[12] L3
+set_io -nowarn DSLOGIC[13] L1
+set_io -nowarn DSLOGIC[14] M2
+set_io -nowarn DSLOGIC[15] M1
+
+set_io -nowarn PROBE1 P1
+set_io -nowarn PROBE2 P2
 
 set_io -nowarn SALEAE[0] C16
 set_io -nowarn SALEAE[1] D16
