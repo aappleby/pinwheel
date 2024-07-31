@@ -80,18 +80,18 @@ module simple_tx
 
   always_comb begin
     _out = tx_shift[0];
+    _in_ready = 0;
+    tx_delay_ = tx_delay;
+    tx_count_ = tx_count;
+    tx_shift_ = tx_shift;
 
     if (_reset) begin
       tx_delay_ = delay_max;
       tx_count_ = count_max;
       tx_shift_ = 10'b1111111111;
-      _in_ready = 0;
     end else begin
-      tx_shift_ = tx_shift;
-      _in_ready = 0;
       if (tx_delay < delay_max) begin
         tx_delay_ = tx_delay + 1;
-        tx_count_ = tx_count;
       end else if (tx_count < count_max) begin
         tx_delay_ = 0;
         tx_count_ = tx_count + 1;
