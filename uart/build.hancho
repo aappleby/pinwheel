@@ -1,0 +1,5 @@
+import hancho
+
+rules = hancho.load("../symlinks/hancho/rules.hancho")
+
+convert = rules.cpp_bin(name = "convert", in_srcs = "convert.cpp")

@@ -1,80 +1,85 @@
 [*]
 [*] GTKWave Analyzer v3.3.104 (w)1999-2020 BSI
-[*] Wed Jul 31 08:38:53 2024
+[*] Tue Aug  6 02:46:07 2024
 [*]
-[dumpfile] "/home/aappleby/repos/pinwheel/uart/bench.vcd"
-[dumpfile_mtime] "Wed Jul 31 08:38:24 2024"
-[dumpfile_size] 98201
+[dumpfile] "/home/aappleby/repos/pinwheel/uart/icarus_top.vcd"
+[dumpfile_mtime] "Tue Aug  6 02:40:32 2024"
+[dumpfile_size] 82223
 [savefile] "/home/aappleby/repos/pinwheel/uart/uart_test.gtkw"
 [timestart] 0
-[size] 2297 1005
-[pos] -1 -1
-*-9.768091 749 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
-[treeopen] bench.
+[size] 2252 929
+[pos] -580 1
+*-8.989601 840 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] icarus_top.
+[treeopen] icarus_top.top.
 [sst_width] 233
-[signals_width] 154
+[signals_width] 392
 [sst_expanded] 1
-[sst_vpaned_height] 249
-@800200
--top
+[sst_vpaned_height] 258
 @28
-bench.clock
-bench.reset
-@1000200
--top
-@200
+icarus_top.clock
+icarus_top.reset
+@201
 -
 @800200
--message
-@24
-bench.msg.delay[7:0]
-bench.msg.cursor[7:0]
-@820
-bench.msg._out[7:0]
-@1000200
--message
-@200
--
-@800200
--uart_tx
-@24
-bench.tx.tx_count[7:0]
-bench.tx.tx_delay[7:0]
-@820
-bench.tx.tx_shift[9:0]
-@28
-bench.tx._tx_bit
-bench.tx._tx_byte
-@1000200
--uart_tx
-@200
--
-@800200
--uart_rx
-@28
-bench.rx._rx_bit
+-msg
 @22
-bench.rx.delay[7:0]
-bench.rx.count[7:0]
-@23
-bench.rx.shift[7:0]
-@820
-bench.rx._out[7:0]
+icarus_top.top.msg.delay[7:0]
 @28
-bench.rx._out_valid
+icarus_top.top.msg.cursor[2:0]
+@820
+icarus_top.top.msg._out[7:0]
+@28
+icarus_top.top.msg._out_valid
+icarus_top.top.msg._out_ready
 @1000200
--uart_rx
+-msg
+@200
+-
+@800200
+-tx
+@820
+icarus_top.top.tx._in[7:0]
+@28
+icarus_top.top.tx._in_ready
+icarus_top.top.tx._in_valid
+@22
+icarus_top.top.tx.tx_count[7:0]
+icarus_top.top.tx.tx_delay[7:0]
+@820
+icarus_top.top.tx.tx_shift[9:0]
+@28
+icarus_top.top.tx._out
+@1000200
+-tx
+@200
+-
+@800200
+-rx
+@28
+icarus_top.top.rx._in
+@22
+icarus_top.top.rx.count[7:0]
+icarus_top.top.rx.delay[7:0]
+@820
+icarus_top.top.rx.shift[7:0]
+icarus_top.top.rx._out[7:0]
+@28
+icarus_top.top.rx._out_valid
+icarus_top.top.rx._out_ready
+@1000200
+-rx
 @200
 -
 @800200
 -sink
 @820
-bench.sink._data[7:0]
+icarus_top.top.sink._in[7:0]
 @28
-bench.sink._data_valid
-bench.sink._data_ready
+icarus_top.top.sink._in_valid
+icarus_top.top.sink._in_ready
 @820
-bench.sink.data[7:0]
+icarus_top.top.sink.data[7:0]
 @1000200
 -sink
 [pattern_trace] 1

@@ -1,6 +1,17 @@
 // clang-format off
 {
   "configurations": [
+
+    {
+      "name": "matcher",
+      "type": "debugpy",
+      "cwd": "${workspaceFolder}/uart",
+      "request": "launch",
+      "program": "${workspaceFolder}/uart/parser.py",
+      "console": "integratedTerminal",
+    },
+
+
     {
       "name": "pinwheel_test",
       "preLaunchTask": "build_pinwheel_test",
