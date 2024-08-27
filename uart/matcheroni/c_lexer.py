@@ -1,9 +1,29 @@
 #!/usr/bin/python3
 
-import matcher
-from matcher import *
+import matcheroni
+from matcheroni import *
 from enum import Enum
 import c_constants
+
+def strcmp(str1, str2):
+    if str1 < str2:
+        return -1
+    elif str1 > str2:
+        return 1
+    else:
+        return 0
+
+def atom_cmp(a, b, base = matcheroni.atom_cmp):
+  if isinstance(a, Lexeme) and isinstance(b, Lexeme):
+    if a.type.value != b.type.value:
+      return b.type.value - a.type.value
+    return strcmp(a.span, b.span)
+
+  if isinstance(a, Lexeme) and isinstance(b, LexemeType):
+    return b.value - a.type.value
+  return base(a, b)
+
+matcheroni.atom_cmp = atom_cmp
 
 #---------------------------------------------------------------------------------------------------
 
@@ -15,7 +35,7 @@ LexemeType = Enum(
     "LEX_NEWLINE",
     "LEX_STRING",
     "LEX_KEYWORD",
-    "LEX_IDENTIFIER",
+    "LEX_IDENT",
     "LEX_COMMENT",
     "LEX_PREPROC",
     "LEX_FLOAT",
@@ -32,23 +52,23 @@ LexemeType = Enum(
 
 def lex_to_color(lex_type):
   match lex_type:
-    case LexemeType.LEX_INVALID    : return 0x0000FF
-    case LexemeType.LEX_SPACE      : return 0x804040
-    case LexemeType.LEX_NEWLINE    : return 0x404080
-    case LexemeType.LEX_STRING     : return 0x4488AA
-    case LexemeType.LEX_KEYWORD    : return 0x0088FF
-    case LexemeType.LEX_IDENTIFIER : return 0xCCCC40
-    case LexemeType.LEX_COMMENT    : return 0x66AA66
-    case LexemeType.LEX_PREPROC    : return 0xCC88CC
-    case LexemeType.LEX_FLOAT      : return 0xFF88AA
-    case LexemeType.LEX_INT        : return 0xFF8888
-    case LexemeType.LEX_PUNCT      : return 0x808080
-    case LexemeType.LEX_CHAR       : return 0x44DDDD
-    case LexemeType.LEX_SPLICE     : return 0x00CCFF
-    case LexemeType.LEX_FORMFEED   : return 0xFF00FF
-    case LexemeType.LEX_BOF        : return 0x80FF80
-    case LexemeType.LEX_EOF        : return 0x8080FF
-    case LexemeType.LEX_LAST       : return 0xFF00FF
+    case LexemeType.LEX_INVALID  : return 0x0000FF
+    case LexemeType.LEX_SPACE    : return 0x804040
+    case LexemeType.LEX_NEWLINE  : return 0x404080
+    case LexemeType.LEX_STRING   : return 0x4488AA
+    case LexemeType.LEX_KEYWORD  : return 0x0088FF
+    case LexemeType.LEX_IDENT    : return 0xCCCC40
+    case LexemeType.LEX_COMMENT  : return 0x66AA66
+    case LexemeType.LEX_PREPROC  : return 0xCC88CC
+    case LexemeType.LEX_FLOAT    : return 0xFF88AA
+    case LexemeType.LEX_INT      : return 0xFF8888
+    case LexemeType.LEX_PUNCT    : return 0x808080
+    case LexemeType.LEX_CHAR     : return 0x44DDDD
+    case LexemeType.LEX_SPLICE   : return 0x00CCFF
+    case LexemeType.LEX_FORMFEED : return 0xFF00FF
+    case LexemeType.LEX_BOF      : return 0x80FF80
+    case LexemeType.LEX_EOF      : return 0x8080FF
+    case LexemeType.LEX_LAST     : return 0xFF00FF
   return 0xFF00FF
 
 #---------------------------------------------------------------------------------------------------
@@ -63,30 +83,30 @@ def EOL(span, ctx):
 #---------------------------------------------------------------------------------------------------
 # Character types from ctype.h
 
-isalnum  = Ranges('0','9','a','z','A','Z')
-isalpha  = Ranges('a', 'z', 'A', 'Z')
-isblank  = Atoms(' ', '\t')
-iscntrl  = Ranges(0x00, 0x1F, 0x7F, 0x7F)
-isdigit  = Range('0', '9')
-isgraph  = Range(0x21, 0x7E)
-islower  = Range('a', 'z')
-isprint  = Range(0x20, 0x7E)
-ispunct  = Ranges(0x21, 0x2F, 0x3A, 0x40, 0x5B, 0x60, 0x7B, 0x7E)
-isspace  = Atoms(' ','\f','\v','\n','\r','\t')
-isupper  = Range('A', 'Z')
-isxdigit = Ranges('0','9','a','f','A','F')
+#isalnum  = Ranges('0','9','a','z','A','Z')
+#isalpha  = Ranges('a', 'z', 'A', 'Z')
+#isblank  = Atoms(' ', '\t')
+#iscntrl  = Ranges(0x00, 0x1F, 0x7F, 0x7F)
+#isdigit  = Range('0', '9')
+#isgraph  = Range(0x21, 0x7E)
+#islower  = Range('a', 'z')
+#isprint  = Range(0x20, 0x7E)
+#ispunct  = Ranges(0x21, 0x2F, 0x3A, 0x40, 0x5B, 0x60, 0x7B, 0x7E)
+#isspace  = Atoms(' ','\f','\v','\n','\r','\t')
+#isupper  = Range('A', 'Z')
+#isxdigit = Ranges('0','9','a','f','A','F')
 
 #match_space   = Some(Atoms(' ', '\t'))
 #match_newline = Seq(Opt(Atom('\r')), Atom('\n'))
 
-lex_newline = Seq(Opt(Atom('\r')), Atom('\n'))
+match_newline = Seq(Opt(Atom('\r')), Atom('\n'))
 
 #  using ws = Atoms<' ', '\t'>;
 #  using pattern = Some<ws>;
 
 #whitespace = Some(isspace)
 
-lex_space = Some(Atoms(' ', '\t'))
+match_space = Some(Atoms(' ', '\t'))
 
 #---------------------------------------------------------------------------------------------------
 # Basic UTF8
@@ -151,7 +171,7 @@ integer_suffix = Oneof(
 complex_suffix = Atoms('i', 'j')
 
 # Octal has to be _after_ bin/hex so we don't prematurely match the prefix
-lex_int = Seq(
+match_int = Seq(
   Oneof(
     decimal_constant,
     hexadecimal_constant,
@@ -215,7 +235,7 @@ hexadecimal_floating_constant = Seq(
   Opt(complex_suffix)
 )
 
-lex_float = Oneof(
+match_float = Oneof(
   decimal_floating_constant,
   hexadecimal_floating_constant
 )
@@ -272,7 +292,7 @@ escape_sequence = Oneof(
 # According to GCC it's only a warning to have whitespace between the
 # backslash and the newline... and apparently \r\n is ok too?
 
-lex_splice = Seq(
+match_splice = Seq(
   Atom('\\'),
   Any(Atoms(' ','\t')),
   Opt(Atom('\r')),
@@ -280,16 +300,16 @@ lex_splice = Seq(
   Atom('\n')
 )
 
-lex_formfeed = Atom('\f')
+match_formfeed = Atom('\f')
 
 
 
 #---------------------------------------------------------------------------------------------------
 
-lex_preproc = Seq(
+match_preproc = Seq(
   Atom('#'),
   Any(
-    lex_splice,
+    match_splice,
     NotAtom('\n')
   )
 )
@@ -299,7 +319,7 @@ lex_preproc = Seq(
 
 # Note, we add splices here since we're matching before preproccessing.
 
-s_char          = Oneof(lex_splice, escape_sequence, NotAtoms('"', '\\', '\n'))
+s_char          = Oneof(match_splice, escape_sequence, NotAtoms('"', '\\', '\n'))
 s_char_sequence = Some(s_char)
 encoding_prefix = Oneof(Lit("u8"), Atoms('u', 'U', 'L')) # u8 must go first
 string_literal  = Seq(Opt(encoding_prefix), Atom('"'), Opt(s_char_sequence), Atom('"'))
@@ -338,7 +358,7 @@ backref_type    = Opt(d_char_sequence)
 
 #----------------------------------------
 
-lex_string = Oneof(
+match_string = Oneof(
   string_literal
   #Ref(match_cooked_string_literal),
   #Ref(match_raw_string_literal)
@@ -353,13 +373,13 @@ single_line_comment = Seq(Lit("//"), Until(EOL))
 # Multi-line non-nested comments
 multi_line_comment = Seq(Lit("/*"), Until(Lit("*/")), Lit("*/"))
 
-lex_comment = Oneof(single_line_comment, multi_line_comment)
+match_comment = Oneof(single_line_comment, multi_line_comment)
 
 #------------------------------------------------------------------------------
 # 6.4.6 Punctuators
 
 # We're just gonna match these one punct at a time
-lex_punct = Charset("-,;:!?.()[]{}*/&#%^+(=)|~")
+match_punct = Charset("-,;:!?.()[]{}*/&#%^+=|~")
 
 # Yeaaaah, not gonna try to support trigraphs, they're obsolete and have been
 # removed from the latest C spec. Also we have to declare them funny to get
@@ -382,7 +402,7 @@ encoding_prefix    = Oneof(Lit("u8"), Atoms('u', 'U', 'L')) # u8 must go first
 #character_constant = Seq( Opt(encoding_prefix), Atom('\''), c_char_sequence, Atom('\'') )
 
 # ...in GCC they're only a warning.
-lex_char = Seq( Opt(encoding_prefix), Atom('\''), Any(c_char), Atom('\'') )
+match_char = Seq( Opt(encoding_prefix), Atom('\''), Any(c_char), Atom('\'') )
 
 #---------------------------------------------------------------------------------------------------
 # 6.4.2 Identifiers - GCC allows dollar signs in identifiers?
@@ -402,10 +422,10 @@ nondigit = Oneof(
   utf8_char        # Lots of GCC test files for unicode
 )
 
-lex_ident = Seq(nondigit, Any(digit, nondigit))
+match_ident = Seq(nondigit, Any(digit, nondigit))
 
-def lex_keyword(span, ctx):
-  tail = lex_ident(span, ctx)
+def match_keyword(span, ctx):
+  tail = match_ident(span, ctx)
   if isinstance(tail, Fail):
     return tail
   lexeme = span[:len(span) - len(tail)]
@@ -413,15 +433,15 @@ def lex_keyword(span, ctx):
 
 #---------------------------------------------------------------------------------------------------
 
-def lex_eof(span, ctx):
+def match_eof(span, ctx):
   r"""
-  >>> lex_eof('asdf', {})
+  >>> match_eof('asdf', {})
   Fail @ 'asdf'
-  >>> lex_eof('', {})
+  >>> match_eof('', {})
   ''
 
   # doesn't work right in python?
-  #>>> lex_eof('\0', {})
+  #>>> match_eof('\0', {})
   #''
   """
   if not span:
@@ -429,60 +449,99 @@ def lex_eof(span, ctx):
   return Atom(0)(span, ctx)
 
 #---------------------------------------------------------------------------------------------------
+
+class Lexeme:
+  def __init__(self, type, span):
+    self.type = type
+    self.span = span
+
+  def __repr__(self):
+    return f"{self.type.name}({self.span})"
+
+def MatchToLex(pattern, type):
+  def match(span, ctx):
+    tail = pattern(span, ctx)
+    if not isinstance(tail, Fail):
+      ctx.append(Lexeme(type, span[:len(span) - len(tail)]))
+    return tail
+  return match
+
+#---------------------------------------------------------------------------------------------------
 # Match char needs to come before match identifier because of its possible L'_' prefix...
 
 def next_lexeme(span, ctx):
   matchers = [
-    (lex_space,    LexemeType.LEX_SPACE),
-    (Capture(lex_newline),  LexemeType.LEX_NEWLINE),
-    (lex_string,   LexemeType.LEX_STRING),
-    (lex_char,     LexemeType.LEX_CHAR),
-    (lex_keyword,  LexemeType.LEX_KEYWORD),
-    (lex_ident,    LexemeType.LEX_IDENTIFIER),
-    (lex_comment,  LexemeType.LEX_PREPROC),
-    (lex_preproc,  LexemeType.LEX_NEWLINE),
-    (lex_float,    LexemeType.LEX_FLOAT),
-    (lex_int,      LexemeType.LEX_INT),
-    (lex_punct,    LexemeType.LEX_PUNCT),
-    (lex_splice,   LexemeType.LEX_SPLICE),
-    (lex_formfeed, LexemeType.LEX_FORMFEED),
-    (lex_eof,      LexemeType.LEX_EOF),
+    #MatchToLex(match_space,    LexemeType.LEX_SPACE),
+    match_space,
+    MatchToLex(match_newline,  LexemeType.LEX_NEWLINE),
+    MatchToLex(match_string,   LexemeType.LEX_STRING),
+    MatchToLex(match_char,     LexemeType.LEX_CHAR),
+    MatchToLex(match_keyword,  LexemeType.LEX_KEYWORD),
+    MatchToLex(match_ident,    LexemeType.LEX_IDENT),
+    MatchToLex(match_comment,  LexemeType.LEX_COMMENT),
+    #MatchToLex(match_preproc,  LexemeType.LEX_PREPROC),
+    MatchToLex(match_float,    LexemeType.LEX_FLOAT),
+    MatchToLex(match_int,      LexemeType.LEX_INT),
+    MatchToLex(match_punct,    LexemeType.LEX_PUNCT),
+    #MatchToLex(match_splice,   LexemeType.LEX_SPLICE),
+    #MatchToLex(match_formfeed, LexemeType.LEX_FORMFEED),
+    #MatchToLex(match_eof,      LexemeType.LEX_EOF),
   ]
 
   for matcher in matchers:
-    if not isinstance(tail := matcher[0](span, ctx), Fail):
-      return (matcher[1], span[:len(span) - len(tail)])
+    tail = matcher(span, ctx)
+    if not isinstance(tail, Fail):
+      return tail
 
   raise ValueError(f"Don't know how to lex '{span[:8]}...'")
 
 #---------------------------------------------------------------------------------------------------
 
+import doctest
+doctest.testmod()
+
+#---------------------------------------------------------------------------------------------------
+
 if __name__ == "__main__":
-    import doctest
-    doctest.testmod()
-    doctest.testmod(matcher)
+  span = "int x = 2;"
+  ctx = []
+  while span:
+    span = next_lexeme(span, ctx)
 
-    source = "int x = -12.0f;"
+  for lexeme in ctx:
+    print(lexeme)
 
-    while source:
-      lexeme = next_lexeme(source, {})
-      print(lexeme)
-      source = source[len(lexeme[1]):]
+  print("---")
 
-    #print(next_lexeme("this_is_an_identifier = 7"))
-    #print(next_lexeme("default: slkdfj"))
-    #print(next_lexeme(" \t stuff"))
-    #print(next_lexeme("\r\nhello world"))
-    #print(next_lexeme("\"asdf\" narp"))
-    #print(next_lexeme("'q' blerp"))
-    #print(next_lexeme("/* comment */ int x"))
-    #print(next_lexeme("// comment\nnextline"))
-    #print(next_lexeme("#ifdef BLAH blee\nnextline"))
-    #print(next_lexeme("1.08348e18f;"))
-    #print(next_lexeme("0x8477FFFF;"))
-    #print(next_lexeme("-7;"))
-    #print(next_lexeme("\\\nasdf;"))
-    #print(next_lexeme("\f\nasdf;"))
-    #print(next_lexeme(""))
+  #span2 = ctx.copy()
+
+  #span2 = [Lexeme(LexemeType.LEX_PUNCT, "-"), Lexeme(LexemeType.LEX_PUNCT, "%")]
+  #ctx2 = []
+  ##pattern2 = LEX_IDENT
+  #pattern2 = LEX_DASH
+  #tail2 = pattern2(span2, ctx2)
+  #print(ctx2)
+  #print(tail2)
+
+#source = "int x = -12.0f;"
+#while source:
+#  lexeme = next_lexeme(source, {})
+#  print(lexeme)
+#  source = source[len(lexeme[1]):]
+
+#print(next_lexeme("default: slkdfj"))
+#print(next_lexeme(" \t stuff"))
+#print(next_lexeme("\r\nhello world"))
+#print(next_lexeme("\"asdf\" narp"))
+#print(next_lexeme("'q' blerp"))
+#print(next_lexeme("/* comment */ int x"))
+#print(next_lexeme("// comment\nnextline"))
+#print(next_lexeme("#ifdef BLAH blee\nnextline"))
+#print(next_lexeme("1.08348e18f;"))
+#print(next_lexeme("0x8477FFFF;"))
+#print(next_lexeme("-7;"))
+#print(next_lexeme("\\\nasdf;"))
+#print(next_lexeme("\f\nasdf;"))
+#print(next_lexeme(""))
 
 #---------------------------------------------------------------------------------------------------

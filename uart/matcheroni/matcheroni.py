@@ -1,8 +1,9 @@
 #!/usr/bin/python3
 
-from functools import cache, partial
+from functools import cache
 
-# FIXME probably need atom_cmp
+#---------------------------------------------------------------------------------------------------
+# FIXME probably need a better way to handle atom_cmp
 
 def atom_cmp(a, b):
   if isinstance(a, (str, int)) and isinstance(b, (str, int)):
@@ -11,14 +12,16 @@ def atom_cmp(a, b):
     return b_value - a_value
   raise ValueError(F"Don't know how to compare {type(a)} and {type(b)}")
 
-
 #---------------------------------------------------------------------------------------------------
 
 class Fail:
   def __init__(self, span):
     self.span = span
   def __repr__(self):
-    span = self.span.encode('unicode_escape').decode('utf-8')
+    if isinstance(self.span, str):
+      span = self.span.encode('unicode_escape').decode('utf-8')
+    else:
+      span = str(self.span)
     return f"Fail @ '{span}'"
   def __bool__(self):
     return False
@@ -195,9 +198,11 @@ def Seq(*args):
   Fail @ 'qwer'
   """
   def match(span, ctx):
+    top = len(ctx)
     for arg in args:
       tail = arg(span, ctx)
       if isinstance(tail, Fail):
+        del ctx[top:]
         return tail
       span = tail
     return span
@@ -216,10 +221,12 @@ def Oneof(*args):
   Fail @ 'qwer'
   """
   def match(span, ctx):
+    top = len(ctx)
     for arg in args:
       tail = arg(span, ctx)
       if not isinstance(tail, Fail):
         return tail
+      del ctx[top:]
     return Fail(span)
   return match
 
@@ -242,6 +249,10 @@ def Opt(*args):
         return tail
     return span
   return match
+
+@cache
+def OptSeq(*args):
+  return Opt(Seq(*args))
 
 #---------------------------------------------------------------------------------------------------
 
@@ -275,9 +286,11 @@ def Rep(count, P):
   'asdf'
   """
   def match(span, ctx):
+    top = len(ctx)
     for _ in range(count):
       tail = P(span, ctx)
       if isinstance(tail, Fail):
+        del ctx[top:]
         return tail
       span = tail
     return span
@@ -314,11 +327,7 @@ def Until(P):
   return Any(Seq(Not(P), AnyAtom))
 
 #---------------------------------------------------------------------------------------------------
-# Separated = a,   b , c   , d
-
-@cache
-def Trim(P):
-  return Seq(Opt(isspace), P, Opt(isspace))
+# Separated = a,b,c,d,
 
 @cache
 def Cycle(*args):
@@ -331,97 +340,129 @@ def Cycle(*args):
         span = tail
   return match
 
-@cache
-def separated(pattern, delim):
-  return Seq(
-    pattern,
-    Any(Seq(Any(isspace), delim, Any(isspace), pattern)),
-    # trailing delimiter OK
-    Opt(Seq(Any(isspace), delim))
-  )
+#---------------------------------------------------------------------------------------------------
+# a,b,c,d,
+# trailing delimiter OK
 
 @cache
-def comma_separated(pattern):
-  return separated(pattern, Atom(','))
+def Separated(pattern, delim):
+  return Cycle(pattern, delim)
 
 #---------------------------------------------------------------------------------------------------
 # Joined = a.b.c.d
+# trailing delimiter _not_ OK
 
 @cache
-def joined(pattern, delim):
+def Joined(pattern, delim):
   return Seq(
     pattern,
     Any(Seq(delim, pattern))
-    # trailing delimiter _not_ OK
   )
-
-@cache
-def dot_joined(pattern):
-  return joined(pattern, Atom('.'))
 
 #---------------------------------------------------------------------------------------------------
 # Delimited spans
 
 @cache
-def delimited_span(ldelim, rdelim):
+def Delimited(ldelim, rdelim):
   return Seq(ldelim, Until(rdelim), rdelim)
 
-dquote_span  = delimited_span(Atom('"'),  Atom('"'))   # note - no \" support
-squote_span  = delimited_span(Atom('\''), Atom('\''))  # note - no \' support
-bracket_span = delimited_span(Atom('['),  Atom(']'))
-brace_span   = delimited_span(Atom('{'),  Atom('}'))
-paren_span   = delimited_span(Atom('('),  Atom(')'))
-angle_span   = delimited_span(Atom('('),  Atom(')'))
-comment_span = delimited_span(Lit("/*"),  Lit("*/"))
+#---------------------------------------------------------------------------------------------------
+# Create stuff in the context
 
-def test_delimited_span():
-  r"""
-  >>> paren_span('(asdf)', {})
-  ''
-  >>> paren_span('asdf)', {})
-  Fail @ 'asdf)'
-  >>> paren_span('(asdf', {})
-  Fail @ ''
-  >>> paren_span('asdf', {})
-  Fail @ 'asdf'
+@cache
+def Capture(pattern):
   """
-  pass
+  Adds the span matched by 'pattern' to the context stack
+  """
+  def match(span, ctx):
+    tail = pattern(span, ctx)
+    if not isinstance(tail, Fail):
+      token = span[:len(span) - len(tail)]
+      if len(token) == 1:
+        token = token[0]
+      ctx.append(token)
+    return tail
+  return match
+
+@cache
+def List(*args):
+  """
+  Turns all elements added to the context stack after this matcher into a list.
+  """
+  def match(span, ctx):
+    top = len(ctx)
+    tail = span
+
+    for pattern in args:
+      tail = pattern(tail, ctx)
+      if isinstance(tail, Fail):
+        del ctx[top:]
+        return tail
+
+    values = ctx[top:]
+    del ctx[top:]
+
+    ctx.append(values)
+    return tail
+  return match
+
+@cache
+def Dict(*args):
+  """
+  Turns all (name, value) tuples added to the context stack after this matcher into a dict.
+  """
+  def match(span, ctx):
+    top = len(ctx)
+    tail = span
+
+    for pattern in args:
+      tail = pattern(tail, ctx)
+      if isinstance(tail, Fail):
+        del ctx[top:]
+        return tail
+
+    values = ctx[top:]
+    del ctx[top:]
+
+    result = {}
+    for field in values:
+      result[field[0]] = field[1]
+    ctx.append(result)
+    return tail
+
+  return match
+
+@cache
+def Field(name, *args):
+  """
+  Turns the top of the context stack into a (name, value) tuple
+  """
+  def match(span, ctx):
+    top = len(ctx)
+    tail = span
+
+    for pattern in args:
+      tail = pattern(tail, ctx)
+      if isinstance(tail, Fail):
+        del ctx[top:]
+        return tail
+
+    values = ctx[top:]
+    del ctx[top:]
+
+    if len(values) == 0:
+      field = (name, None)
+    elif len(values) == 1:
+      field = (name, values[0])
+    else:
+      field = (name, values)
+
+    ctx.append(field)
+    return tail
+
+  return match
 
 #---------------------------------------------------------------------------------------------------
-# Delimited lists
 
-isspace = Atoms(' ','\f','\v','\n','\r','\t')
-
-@cache
-def delimited_list(ldelim, pattern, rdelim):
-  return Seq(ldelim, Any(isspace), comma_separated(pattern), Any(isspace), rdelim)
-
-@cache
-def paren_list(pattern):
-  r"""
-  >>> paren_list(Atom('a'))('(a,a,a), foo', {})
-  ', foo'
-  """
-  return delimited_list(Atom('('), pattern, Atom(')'))
-
-@cache
-def bracket_list(pattern):
-  return delimited_list(Atom('['), pattern, Atom(']'))
-
-@cache
-def brace_list(pattern):
-  r"""
-  >>> brace_list(Atom('a'))('{a,a,a}, foobar', {})
-  ', foobar'
-  >>> brace_list(Atom('a'))('{a,b,a}, foobar', {})
-  Fail @ 'b,a}, foobar'
-  """
-  return delimited_list(Atom('{'), pattern, Atom('}'))
-
-#---------------------------------------------------------------------------------------------------
-
-if __name__ == "__main__":
-    import doctest
-    doctest.testmod()
-
-#---------------------------------------------------------------------------------------------------
+import doctest
+doctest.testmod()

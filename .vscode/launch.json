@@ -5,9 +5,9 @@
     {
       "name": "matcher",
       "type": "debugpy",
-      "cwd": "${workspaceFolder}/uart",
+      "cwd": "${workspaceFolder}/uart/matcheroni",
       "request": "launch",
-      "program": "${workspaceFolder}/uart/parser.py",
+      "program": "${workspaceFolder}/uart/matcheroni/test.py",
       "console": "integratedTerminal",
     },
 
