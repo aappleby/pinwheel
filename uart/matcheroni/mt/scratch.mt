@@ -1,23 +1,34 @@
-[foo]
-// Do something special here
-bar : u32 = 2;
-baz : u32;
-blep;
+// Simple message transmitter with a delay between transmissions
 
-[bar]
-zap = (2 * foo) ^ 8 + (1 + 8);
-foo = bar(10, 11, 12);
-if (blah) {
-  blee = 2;
-  florp(10);
-  return 7877;
-} else {
-  x = [1, 2, 3];
-  return /* not important */ 7777;
-  match (foo) {
-    case (bar) {
-    }
-    case (baz) {
+[params]
+max_delay  = 20;
+max_cursor = len(text) - 1;
+
+[ports]
+out.data  :> u8 = text[cursor];
+out.valid :> u1 = delay == 0;
+out.ready <: u1;
+
+[types]
+reg_delay  = unsigned(max_delay);
+reg_cursor = unsigned(max_cursor);
+
+[state]
+text   : u8[] = read("ping.hex");
+delay  : reg_delay  = max_delay;
+cursor : reg_cursor = 0;
+
+[update]
+match (true) {
+  case (delay > 0) {
+    @delay = delay - 1;
+  }
+  case (out.ready) {
+    if (cursor == max_cursor) {
+      @delay  = max_delay;
+      @cursor = 0;
+    } else {
+      @cursor = cursor + 1;
     }
   }
 }

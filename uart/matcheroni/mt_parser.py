@@ -44,8 +44,12 @@ ATOM_PLUS    = LexToAtom(LexemeType.LEX_PUNCT, "+")
 ATOM_EQ      = LexToAtom(LexemeType.LEX_PUNCT, "=")
 ATOM_PIPE    = LexToAtom(LexemeType.LEX_PUNCT, "|")
 ATOM_TILDE   = LexToAtom(LexemeType.LEX_PUNCT, "~")
+ATOM_LT      = LexToAtom(LexemeType.LEX_PUNCT, "<")
+ATOM_GT      = LexToAtom(LexemeType.LEX_PUNCT, ">")
+ATOM_DOT     = LexToAtom(LexemeType.LEX_PUNCT, ".")
+ATOM_AT      = LexToAtom(LexemeType.LEX_PUNCT, "@")
 
-cap_ident = Capture(ATOM_IDENT)
+
 cap_int   = Capture(ATOM_INT)
 
 
@@ -54,6 +58,8 @@ KW_CASE   = Atom(Lexeme(LexemeType.LEX_KEYWORD, "case"))
 KW_RETURN = Atom(Lexeme(LexemeType.LEX_KEYWORD, "return"))
 KW_ELSE   = Atom(Lexeme(LexemeType.LEX_KEYWORD, "else"))
 KW_IF     = Atom(Lexeme(LexemeType.LEX_KEYWORD, "if"))
+KW_SIGNED = Atom(Lexeme(LexemeType.LEX_KEYWORD, "signed"))
+KW_UNSIGNED = Atom(Lexeme(LexemeType.LEX_KEYWORD, "unsigned"))
 
 def parse_statement(span, ctx):
   return _parse_statement(span, ctx)
@@ -62,7 +68,12 @@ def parse_expression_chain(span, ctx):
   return _parse_expression_chain(span, ctx)
 
 def match_binary_op(span, ctx):
-  if span[0].text in mt_constants.mt_binops:
+  s = span
+  if s[0].text in mt_constants.mt_binops:
+    if len(s) >= 2 and (s[0].text + s[1].text) in mt_constants.mt_binops:
+      if len(s) >= 3 and (s[0].text + s[1].text + s[2].text) in mt_constants.mt_binops:
+        return span[3:]
+      return span[2:]
     return span[1:]
   return Fail(span)
 
@@ -77,30 +88,47 @@ parse_params = List(
 )
 
 parse_braces = List(
+  Tag("name", Capture(ATOM_IDENT)),
   ATOM_LBRACE,
   Cycle(parse_expression_chain, ATOM_COMMA),
   ATOM_RBRACE
 )
 
+parse_ident = Capture(Seq(
+  Opt(ATOM_AT),
+  ATOM_IDENT,
+  Any(Seq(
+    ATOM_DOT,
+    ATOM_IDENT,
+  ))
+))
+
 parse_call = Dict(
-  Field("func", cap_ident),
-  Field("params", parse_params)
+  Tag("func",   parse_ident),
+  Tag("params", parse_params)
+)
+
+parse_cast = Dict(
+  Tag("type",   Capture(Oneof(KW_SIGNED, KW_UNSIGNED))),
+  Tag("params", parse_params)
 )
 
 parse_expression_unit = Oneof(
-  Field("call", parse_call),
-  paren_expression,
-  Field("array", parse_braces),
-  Capture(ATOM_INT),
-  Capture(ATOM_FLOAT),
-  Capture(ATOM_IDENT),
+  Tag("cast",   parse_cast),
+  Tag("call",   parse_call),
+  Tag("parens", paren_expression),
+  Tag("array",  parse_braces),
+  Tag("int",    Capture(ATOM_INT)),
+  Tag("float",  Capture(ATOM_FLOAT)),
+  Tag("string", Capture(ATOM_STRING)),
+  Tag("ident",  Capture(ATOM_IDENT)),
 )
 
 _parse_expression_chain = Seq(
-  Field("exp", parse_expression_unit),
+  parse_expression_unit,
   Any(Seq(
-    Field("op ", Capture(match_binary_op)),
-    Field("exp", parse_expression_unit),
+    Tag("op ", Capture(match_binary_op)),
+    parse_expression_unit,
   ))
 )
 
@@ -112,68 +140,87 @@ parse_block = Seq(
 
 parse_else = Dict(
   KW_ELSE,
-  Field("statements", parse_block),
+  Tag("statements", parse_block),
 )
 
 parse_if = Dict(
   KW_IF,
-  Field("condition",  paren_expression),
-  Field("statements", parse_block),
-  Field("else",       Opt(parse_else))
+  Tag("condition",  paren_expression),
+  Tag("statements", parse_block),
+  Tag("else",       Opt(parse_else))
 )
 
 parse_case = List(
   KW_CASE,
-  Field("condition",  paren_expression),
-  #Field("statements", parse_block),
+  Tag("condition",  paren_expression),
   parse_block,
 )
 
 parse_match = List(
   KW_MATCH,
-  Field("condition",  paren_expression),
+  Tag("condition",  paren_expression),
   ATOM_LBRACK,
-  Any(Field("case", parse_case)),
+  Any(Tag("case", parse_case)),
   ATOM_RBRACK
 )
 
 parse_section_header = Seq(
   ATOM_LBRACE,
-  Dict(Field("name", cap_ident)),
+  Dict(Tag("name", parse_ident)),
   ATOM_RBRACE
 )
 
 parse_section = Dict(
-  Field("header", parse_section_header),
-  Field("body", Any(parse_statement))
+  Tag("header", parse_section_header),
+  Tag("body", Any(parse_statement))
+)
+
+parse_type = Seq(
+  parse_ident,
+  Opt(Tag("array_suffix",
+    Seq(
+      ATOM_LBRACE,
+      Opt(Tag("exp", parse_expression_chain)),
+      ATOM_RBRACE,
+    )
+  ))
 )
 
 parse_decl = Dict(
-  Field("name",  cap_ident),
-  OptSeq(ATOM_COLON, Field("type",  cap_ident)),
-  OptSeq(ATOM_EQ,    Field("value", parse_expression_chain)),
+  Tag("name",  parse_ident),
+  OptSeq(
+    Tag("op", Oneof(
+      Capture(ATOM_COLON),
+      Capture(Seq(ATOM_LT, ATOM_COLON)),
+      Capture(Seq(ATOM_COLON, ATOM_GT)),
+    )),
+    Tag("type",  parse_type)
+  ),
+  OptSeq(
+    Tag("op", Capture(ATOM_EQ)),
+    Tag("value", parse_expression_chain)),
   ATOM_SEMI
 )
 
 parse_return = Seq(
   KW_RETURN,
-  Field("value", parse_expression_chain)
+  Opt(parse_expression_chain)
 )
 
 _parse_statement = Oneof(
-  Field("match",  parse_match),
-  Field("if",     parse_if),
-  Field("return", parse_return, ATOM_SEMI),
+  Tag("match",  parse_match),
+  Tag("if",     parse_if),
+  Tag("return", parse_return, ATOM_SEMI),
 
-  Field("call",   parse_call, ATOM_SEMI),
-  Field("decl",   parse_decl),
+  Tag("call",   parse_call, ATOM_SEMI),
+  Tag("decl",   parse_decl),
 
   ATOM_SEMI,
   ATOM_NEWLINE,
 )
 
 parse_top = Oneof(
-  Field("section", parse_section),
+  Tag("section", parse_section),
   parse_statement,
   ATOM_NEWLINE,
 )

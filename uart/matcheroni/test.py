@@ -6,11 +6,17 @@ import pprint
 
 #---------------------------------------------------------------------------------------------------
 
+def print_indent(indent):
+  print("  " * indent, end='')
+  #for i in range(indent - 1):
+  #  print("┃ ", end="")
+  #print("┗ ", end='')
+
 def print_tree(tree, indent = 0):
   if isinstance(tree, tuple):
     key = tree[0]
     val = tree[1]
-    print("  " * indent, end='')
+    print_indent(indent)
     print(f"{key}", end = '')
 
     if isinstance(val, list):
@@ -34,7 +40,7 @@ def print_tree(tree, indent = 0):
       print_tree(val, indent)
 
   else:
-    print("  " * indent, end='')
+    print_indent(indent)
     print(f"{tree}")
 
 #---------------------------------------------------------------------------------------------------

@@ -135,7 +135,7 @@ match_comment = Oneof(
   Seq(Lit("/*"), Until(Lit("*/")), Lit("*/"))
 )
 
-match_punct = Charset("-,;:!?.()[]{}*/&#%^+=|~@")
+match_punct = Charset("-,;:!?.()[]{}<>*/&#%^+=|~@")
 
 match_char = Seq(
   Atom('\''),
