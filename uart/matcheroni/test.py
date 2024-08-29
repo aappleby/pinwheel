@@ -4,6 +4,8 @@ import mt_lexer
 import mt_parser
 import pprint
 
+filename = "mt/simple_sink.mt"
+
 #---------------------------------------------------------------------------------------------------
 
 def print_indent(indent):
@@ -48,7 +50,7 @@ def print_tree(tree, indent = 0):
 if __name__ == "__main__":
   print("test begin")
 
-  source = open("mt/scratch.mt").read()
+  source = open(filename).read()
   lexemes = mt_lexer.lex_string(source)
 
   print()

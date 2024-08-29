@@ -1,4 +1,4 @@
-# Simple message transmitter with a delay between transmissions
+// Simple message transmitter with a delay between transmissions
 
 [params]
 max_delay  = 20;

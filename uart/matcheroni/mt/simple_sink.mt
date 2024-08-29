@@ -1,13 +1,14 @@
-# Simple byte sink with ready/valid input
+// Simple byte sink with ready/valid input
 
 [ports]
-in.data  <: u8
-in.valid <: u1
-in.ready :> u1 = 1
+in.data  <: u8;
+in.valid <: u1;
+in.ready :> u1 = 1;
 
 [state]
-data : u8 = 0
+data : u8 = 0;
 
 [update]
-if in.valid:
-  @data = in.data
+if (in.valid) {
+  @data = in.data;
+}

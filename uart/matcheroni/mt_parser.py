@@ -52,13 +52,13 @@ ATOM_AT      = LexToAtom(LexemeType.LEX_PUNCT, "@")
 
 cap_int   = Capture(ATOM_INT)
 
-
-KW_MATCH  = Atom(Lexeme(LexemeType.LEX_KEYWORD, "match"))
-KW_CASE   = Atom(Lexeme(LexemeType.LEX_KEYWORD, "case"))
-KW_RETURN = Atom(Lexeme(LexemeType.LEX_KEYWORD, "return"))
-KW_ELSE   = Atom(Lexeme(LexemeType.LEX_KEYWORD, "else"))
-KW_IF     = Atom(Lexeme(LexemeType.LEX_KEYWORD, "if"))
-KW_SIGNED = Atom(Lexeme(LexemeType.LEX_KEYWORD, "signed"))
+KW_MATCH    = Atom(Lexeme(LexemeType.LEX_KEYWORD, "match"))
+KW_CASE     = Atom(Lexeme(LexemeType.LEX_KEYWORD, "case"))
+KW_DEFAULT  = Atom(Lexeme(LexemeType.LEX_KEYWORD, "case"))
+KW_RETURN   = Atom(Lexeme(LexemeType.LEX_KEYWORD, "return"))
+KW_ELSE     = Atom(Lexeme(LexemeType.LEX_KEYWORD, "else"))
+KW_IF       = Atom(Lexeme(LexemeType.LEX_KEYWORD, "if"))
+KW_SIGNED   = Atom(Lexeme(LexemeType.LEX_KEYWORD, "signed"))
 KW_UNSIGNED = Atom(Lexeme(LexemeType.LEX_KEYWORD, "unsigned"))
 
 def parse_statement(span, ctx):
@@ -69,7 +69,7 @@ def parse_expression_chain(span, ctx):
 
 def match_binary_op(span, ctx):
   s = span
-  if s[0].text in mt_constants.mt_binops:
+  if len(s) >= 1 and s[0].text in mt_constants.mt_binops:
     if len(s) >= 2 and (s[0].text + s[1].text) in mt_constants.mt_binops:
       if len(s) >= 3 and (s[0].text + s[1].text + s[2].text) in mt_constants.mt_binops:
         return span[3:]
@@ -150,10 +150,16 @@ parse_if = Dict(
   Tag("else",       Opt(parse_else))
 )
 
-parse_case = List(
-  KW_CASE,
-  Tag("condition",  paren_expression),
-  parse_block,
+parse_case = Oneof(
+  List(
+    KW_CASE,
+    Tag("condition",  paren_expression),
+    parse_block,
+  ),
+  List(
+    KW_DEFAULT,
+    parse_block,
+  ),
 )
 
 parse_match = List(
@@ -190,9 +196,9 @@ parse_decl = Dict(
   Tag("name",  parse_ident),
   OptSeq(
     Tag("op", Oneof(
-      Capture(ATOM_COLON),
       Capture(Seq(ATOM_LT, ATOM_COLON)),
       Capture(Seq(ATOM_COLON, ATOM_GT)),
+      Capture(ATOM_COLON),
     )),
     Tag("type",  parse_type)
   ),
