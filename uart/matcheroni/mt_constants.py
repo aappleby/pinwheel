@@ -3,7 +3,10 @@
 
 #------------------------------------------------------------------------------
 
-mt_keywords = [
+def longest_first(*args):
+  return sorted(args, key=len, reverse=True)
+
+mt_keywords = longest_first(
 "break",
 "case",
 "const",
@@ -26,49 +29,55 @@ mt_keywords = [
 "unsigned",
 "void",
 "while",
-]
+)
 
 #------------------------------------------------------------------------------
 
-mt_binops = [
+mt_binops = longest_first(
+  "-",
+  "::",
   "!=",
-  "%",
-  "%=",
+  "*",
+  "/",
   "&",
   "&&",
-  "&=",
-  "*",
-  "*=",
+  "%",
+  "^",
   "+",
-  "+=",
-  "-",
-  "-=",
-  ".",
-  "/",
-  "/=",
-  "::",
   "<",
   "<<",
-  "<<=",
   "<=",
   "<=>",
-  "=",
+  "<>", # port binding
   "==",
   ">",
   ">=",
   ">>",
-  ">>=",
-  "^",
-  "^=",
   "|",
-  "|=",
   "||",
+)
 
-  # special for metron
+mt_assignops = longest_first(
+  "-=",
+  "*=",
+  "/=",
+  "&=",
+  "%=",
+  "^=",
+  "+=",
+  "<<=",
+  "=",
+  ">>=",
+  "|=",
+)
+
+mt_declops = longest_first(
+  ":",  # not a port
   ":>", # output port
-  "<:", # input port
-  "<>", # port binding
-]
+  ":<", # input port
+)
+
+mt_allops = longest_first(*(mt_binops + mt_assignops + mt_declops))
 
 #------------------------------------------------------------------------------
 

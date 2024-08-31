@@ -385,31 +385,9 @@ def Capture(pattern):
   return match
 
 @cache
-def List(*args):
+def Node(node_type, *args):
   """
-  Turns all elements added to the context stack after this matcher into a list.
-  """
-  def match(span, ctx):
-    top = len(ctx)
-    tail = span
-
-    for pattern in args:
-      tail = pattern(tail, ctx)
-      if isinstance(tail, Fail):
-        del ctx[top:]
-        return tail
-
-    values = ctx[top:]
-    del ctx[top:]
-
-    ctx.append(values)
-    return tail
-  return match
-
-@cache
-def Dict(*args):
-  """
-  Turns all (name, value) tuples added to the context stack after this matcher into a dict.
+  Turns all (name, value) tuples added to the context stack after this matcher into a parse node.
   """
   def match(span, ctx):
     top = len(ctx)
@@ -424,16 +402,88 @@ def Dict(*args):
     values = ctx[top:]
     del ctx[top:]
 
-    result = {}
+    if len(values) == 0:
+      ctx.append(None)
+      return tail
+
+    result = node_type()
+
     for field in values:
+      if not isinstance(field, (list, tuple)):
+        print(f"Field {field} is not a list or tuple")
+        assert False
+      if field[0] in result:
+        print(f"field {field[0]}:{field[1]} was already in {result}")
+        assert False
       result[field[0]] = field[1]
+
     ctx.append(result)
     return tail
 
   return match
 
 @cache
-def Tag(name, *args):
+def Field(key, val_pattern):
+  """
+  Turns the top of the context stack into a (name, value) tuple
+  """
+  def match(span, ctx):
+    top = len(ctx)
+
+    val_tail = val_pattern(span, ctx)
+    if isinstance(val_tail, Fail):
+      del ctx[top:]
+      return Fail(span)
+    val = ctx[top:]
+    del ctx[top:]
+
+    if len(val) == 0:
+      field = (key, None)
+    elif len(val) == 1:
+      field = (key, val[0])
+    else:
+      field = (key, val)
+
+    ctx.append(field)
+    return val_tail
+
+  return match
+
+@cache
+def KeyVal(key_pattern, val_pattern):
+  """
+  Like Field(), except the name of the field comes from a pattern match.
+  """
+  def match(span, ctx):
+    top = len(ctx)
+    key_tail = key_pattern(span, ctx)
+    if isinstance(key_tail, Fail):
+      del ctx[top:]
+      return Fail(span)
+    key = ctx[top:]
+    del ctx[top:]
+
+    val_tail = val_pattern(key_tail, ctx)
+    if isinstance(val_tail, Fail):
+      del ctx[top:]
+      return Fail(span)
+    val = ctx[top:]
+    del ctx[top:]
+
+    if len(val) == 0:
+      field = (name, None)
+    elif len(val) == 1:
+      field = (name, val[0])
+    else:
+      field = (name, val)
+
+    ctx.append(field)
+    return val_tail
+
+  return match
+
+@cache
+def List(*args):
   """
   Turns the top of the context stack into a (name, value) tuple
   """
@@ -450,14 +500,12 @@ def Tag(name, *args):
     values = ctx[top:]
     del ctx[top:]
 
-    if len(values) == 0:
-      field = (name, None)
-    elif len(values) == 1:
-      field = (name, values[0])
-    else:
-      field = (name, values)
+    #if len(values) == 0:
+    #  values = None
+    #elif len(values) == 1:
+    #  values = values[0]
 
-    ctx.append(field)
+    ctx.append(values)
     return tail
 
   return match

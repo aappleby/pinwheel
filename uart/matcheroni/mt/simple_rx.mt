@@ -13,11 +13,11 @@ count_reg = unsigned(max = count_max);
 shift_reg = u8;
 
 [ports]
-in <: u1;
+in :< u1;
 
 out.data  :> shift_reg = shift;
 out.valid :> u1 = 0;
-out.ready <: u1;
+out.ready :< u1;
 
 [state]
 delay : delay_reg = delay_max;

@@ -4,7 +4,10 @@ import mt_lexer
 import mt_parser
 import pprint
 
-filename = "mt/simple_sink.mt"
+from mt_lexer import Lexeme
+from mt_parser import BaseNode
+
+filename = "mt/scratch.mt"
 
 #---------------------------------------------------------------------------------------------------
 
@@ -14,36 +17,34 @@ def print_indent(indent):
   #  print("┃ ", end="")
   #print("┗ ", end='')
 
-def print_tree(tree, indent = 0):
-  if isinstance(tree, tuple):
-    key = tree[0]
-    val = tree[1]
+def dump_node(node, indent = 0):
+  print(f"{type(node).__name__}{{}}")
+  for key, val in node.items():
     print_indent(indent)
-    print(f"{key}", end = '')
+    print(f".{key} : ", end='')
+    dump_variant(val, indent + 1)
 
-    if isinstance(val, list):
-      print("[]:")
-      print_tree(val, indent + 1)
-    elif isinstance(val, dict):
-      print("{}:")
-      print_tree(val, indent + 1)
-    elif isinstance(val, tuple):
-      print("():")
-      print_tree(val, indent + 1)
-    else:
-      print(f": {val}")
+def dump_array(array, indent = 0):
+  print(f"Array[{len(array)}]")
+  for key, val in enumerate(array):
+    print_indent(indent)
+    print(f"[{key}] : ", end="")
+    dump_variant(val, indent + 1)
 
-  elif isinstance(tree, dict):
-    for key, val in tree.items():
-      print_tree((key, val), indent)
+def dump_lexeme(lexeme, indent = 0):
+  print(f"{lexeme.type.name} = '{lexeme.text}'")
 
-  elif isinstance(tree, list):
-    for val in tree:
-      print_tree(val, indent)
-
+def dump_variant(variant, indent = 0):
+  if isinstance(variant, BaseNode):
+    dump_node(variant, indent)
+  elif isinstance(variant, list):
+    dump_array(variant, indent)
+  elif isinstance(variant, Lexeme):
+    dump_lexeme(variant, indent)
+  elif variant is None:
+    print(f"<None>")
   else:
-    print_indent(indent)
-    print(f"{tree}")
+    print(f"??? {variant}")
 
 #---------------------------------------------------------------------------------------------------
 
@@ -62,83 +63,19 @@ if __name__ == "__main__":
   print("# parsing")
   trees = mt_parser.parse_lexemes(lexemes)
 
-  print()
-  print("# trees")
+  failed = False
   for tree in trees:
-    #pprint.pprint(tree, sort_dicts=False, indent=2)
-    print_tree(tree)
+    if isinstance(tree, Lexeme):
+      print(f"Parsing failed at {tree}")
+      failed = True
+
+  if not failed:
+    print()
+    print("# trees")
+    print("trees : ", end="")
+    dump_variant(trees, 1)
 
   print()
+
   print("test end")
   pass
-
-
-
-
-
-
-
-
-
-
-
-
-
-#dquote_span  = Delimited(Atom('"'),  Atom('"'))   # note - no \" support
-#squote_span  = Delimited(Atom('\''), Atom('\''))  # note - no \' support
-#bracket_span = Delimited(Atom('['),  Atom(']'))
-#brace_span   = Delimited(Atom('{'),  Atom('}'))
-#paren_span   = Delimited(Atom('('),  Atom(')'))
-#angle_span   = Delimited(Atom('('),  Atom(')'))
-#comment_span = Delimited(Lit("/*"),  Lit("*/"))
-#
-#def test_delimited_span():
-#  r"""
-#  >>> paren_span('(asdf)', {})
-#  ''
-#  >>> paren_span('asdf)', {})
-#  Fail @ 'asdf)'
-#  >>> paren_span('(asdf', {})
-#  Fail @ ''
-#  >>> paren_span('asdf', {})
-#  Fail @ 'asdf'
-#  """
-#  pass
-#
-#
-#
-#isspace = Atoms(' ','\f','\v','\n','\r','\t')
-#
-#@cache
-#def delimited_list(ldelim, pattern, rdelim):
-#  return Seq(ldelim, Any(isspace), comma_separated(pattern), Any(isspace), rdelim)
-#
-#@cache
-#def paren_list(pattern):
-#  r"""
-#  >>> paren_list(Atom('a'))('(a,a,a), foo', {})
-#  ', foo'
-#  """
-#  return delimited_list(Atom('('), pattern, Atom(')'))
-#
-#@cache
-#def bracket_list(pattern):
-#  return delimited_list(Atom('['), pattern, Atom(']'))
-#
-#@cache
-#def brace_list(pattern):
-#  r"""
-#  >>> brace_list(Atom('a'))('{a,a,a}, foobar', {})
-#  ', foobar'
-#  >>> brace_list(Atom('a'))('{a,b,a}, foobar', {})
-#  Fail @ 'b,a}, foobar'
-#  """
-#  return delimited_list(Atom('{'), pattern, Atom('}'))
-#
-#@cache
-#def dot_joined(pattern):
-#  return joined(pattern, Atom('.'))
-#
-#@cache
-#def comma_separated(pattern):
-#  return separated(pattern, Atom(','))

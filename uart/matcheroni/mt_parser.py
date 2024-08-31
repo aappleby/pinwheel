@@ -5,6 +5,49 @@ from mt_lexer import *
 import mt_constants
 
 #---------------------------------------------------------------------------------------------------
+
+class BaseNode:
+    def items(self):
+        return self.__dict__.items()
+
+    def keys(self):
+        return self.__dict__.keys()
+
+    def __contains__(self, key):
+        return key in self.__dict__
+
+    def __getitem__(self, key):
+        return self.__dict__[key]
+
+    def __setitem__(self, key, val):
+        self.__dict__[key] = val
+
+    def __getattr__(self, key):
+        return self.__dict__[key]
+
+    def __setattr__(self, key, val):
+        self.__dict__[key] = val
+
+    def __repr__(self):
+        return type(self).__name__ + ":" + self.__dict__.__repr__()
+
+class BlockNode(BaseNode):      pass
+class CallNode(BaseNode):       pass
+class CaseNode(BaseNode):       pass
+class ConstNode(BaseNode):      pass
+class DeclNode(BaseNode):       pass
+class DefaultNode(BaseNode):    pass
+class ElseNode(BaseNode):       pass
+class ExpressionNode(BaseNode): pass
+class IfNode(BaseNode):         pass
+class LambdaNode(BaseNode):     pass
+class MatchNode(BaseNode):      pass
+class OperatorNode(BaseNode):   pass
+class ReturnNode(BaseNode):     pass
+class SectionNode(BaseNode):    pass
+class TypeNode(BaseNode):       pass
+
+#---------------------------------------------------------------------------------------------------
 # Define our atom types for the parser
 
 def LexToAtom(type, span = None):
@@ -12,54 +55,66 @@ def LexToAtom(type, span = None):
     return Atom(type)
   return Atom(Lexeme(type, span))
 
-ATOM_NEWLINE = LexToAtom(LexemeType.LEX_NEWLINE)
-ATOM_STRING  = LexToAtom(LexemeType.LEX_STRING)
-ATOM_CHAR    = LexToAtom(LexemeType.LEX_CHAR)
-ATOM_KEYWORD = LexToAtom(LexemeType.LEX_KEYWORD)
-ATOM_IDENT   = LexToAtom(LexemeType.LEX_IDENT)
-ATOM_COMMENT = LexToAtom(LexemeType.LEX_COMMENT)
-ATOM_FLOAT   = LexToAtom(LexemeType.LEX_FLOAT)
-ATOM_INT     = LexToAtom(LexemeType.LEX_INT)
-ATOM_PUNC    = LexToAtom(LexemeType.LEX_PUNCT)
+ATOM_STRING   = LexToAtom(LexemeType.LEX_STRING)
+ATOM_CHAR     = LexToAtom(LexemeType.LEX_CHAR)
+ATOM_KEYWORD  = LexToAtom(LexemeType.LEX_KEYWORD)
+ATOM_IDENT    = LexToAtom(LexemeType.LEX_IDENT)
+ATOM_COMMENT  = LexToAtom(LexemeType.LEX_COMMENT)
+ATOM_FLOAT    = LexToAtom(LexemeType.LEX_FLOAT)
+ATOM_INT      = LexToAtom(LexemeType.LEX_INT)
+ATOM_PUNC     = LexToAtom(LexemeType.LEX_PUNCT)
+ATOM_OP       = LexToAtom(LexemeType.LEX_OP)
 
-ATOM_DASH    = LexToAtom(LexemeType.LEX_PUNCT, "-")
-ATOM_COMMA   = LexToAtom(LexemeType.LEX_PUNCT, ",")
-ATOM_SEMI    = LexToAtom(LexemeType.LEX_PUNCT, ";")
-ATOM_COLON   = LexToAtom(LexemeType.LEX_PUNCT, ":")
-ATOM_BANG    = LexToAtom(LexemeType.LEX_PUNCT, "!")
-ATOM_QUEST   = LexToAtom(LexemeType.LEX_PUNCT, "?")
-ATOM_LPAREN  = LexToAtom(LexemeType.LEX_PUNCT, "(")
-ATOM_RPAREN  = LexToAtom(LexemeType.LEX_PUNCT, ")")
-ATOM_LBRACE  = LexToAtom(LexemeType.LEX_PUNCT, "[")
-ATOM_RBRACE  = LexToAtom(LexemeType.LEX_PUNCT, "]")
-ATOM_LBRACK  = LexToAtom(LexemeType.LEX_PUNCT, "{")
-ATOM_RBRACK  = LexToAtom(LexemeType.LEX_PUNCT, "}")
-ATOM_STAR    = LexToAtom(LexemeType.LEX_PUNCT, "*")
-ATOM_FSLASH  = LexToAtom(LexemeType.LEX_PUNCT, "/")
-ATOM_AMP     = LexToAtom(LexemeType.LEX_PUNCT, "&")
-ATOM_POUND   = LexToAtom(LexemeType.LEX_PUNCT, "#")
-ATOM_PERCENT = LexToAtom(LexemeType.LEX_PUNCT, "%")
-ATOM_CARET   = LexToAtom(LexemeType.LEX_PUNCT, "^")
-ATOM_PLUS    = LexToAtom(LexemeType.LEX_PUNCT, "+")
-ATOM_EQ      = LexToAtom(LexemeType.LEX_PUNCT, "=")
-ATOM_PIPE    = LexToAtom(LexemeType.LEX_PUNCT, "|")
-ATOM_TILDE   = LexToAtom(LexemeType.LEX_PUNCT, "~")
-ATOM_LT      = LexToAtom(LexemeType.LEX_PUNCT, "<")
-ATOM_GT      = LexToAtom(LexemeType.LEX_PUNCT, ">")
-ATOM_DOT     = LexToAtom(LexemeType.LEX_PUNCT, ".")
-ATOM_AT      = LexToAtom(LexemeType.LEX_PUNCT, "@")
+PUNCT_NEWLINE = LexToAtom(LexemeType.LEX_NEWLINE)
 
+PUNCT_COMMA   = LexToAtom(LexemeType.LEX_PUNCT, ",")
+PUNCT_SEMI    = LexToAtom(LexemeType.LEX_PUNCT, ";")
+PUNCT_DOT     = LexToAtom(LexemeType.LEX_PUNCT, ".")
+PUNCT_LPAREN  = LexToAtom(LexemeType.LEX_PUNCT, "(")
+PUNCT_RPAREN  = LexToAtom(LexemeType.LEX_PUNCT, ")")
+PUNCT_LBRACE  = LexToAtom(LexemeType.LEX_PUNCT, "[")
+PUNCT_RBRACE  = LexToAtom(LexemeType.LEX_PUNCT, "]")
+PUNCT_LBRACK  = LexToAtom(LexemeType.LEX_PUNCT, "{")
+PUNCT_RBRACK  = LexToAtom(LexemeType.LEX_PUNCT, "}")
+PUNCT_AT      = LexToAtom(LexemeType.LEX_PUNCT, "@")
 
-cap_int   = Capture(ATOM_INT)
+KW_MATCH      = LexToAtom(LexemeType.LEX_KEYWORD, "match")
+KW_CASE       = LexToAtom(LexemeType.LEX_KEYWORD, "case")
+KW_DEFAULT    = LexToAtom(LexemeType.LEX_KEYWORD, "default")
+KW_RETURN     = LexToAtom(LexemeType.LEX_KEYWORD, "return")
+KW_ELSE       = LexToAtom(LexemeType.LEX_KEYWORD, "else")
+KW_IF         = LexToAtom(LexemeType.LEX_KEYWORD, "if")
+KW_SIGNED     = LexToAtom(LexemeType.LEX_KEYWORD, "signed")
+KW_UNSIGNED   = LexToAtom(LexemeType.LEX_KEYWORD, "unsigned")
 
-KW_MATCH    = Atom(Lexeme(LexemeType.LEX_KEYWORD, "match"))
-KW_CASE     = Atom(Lexeme(LexemeType.LEX_KEYWORD, "case"))
-KW_DEFAULT  = Atom(Lexeme(LexemeType.LEX_KEYWORD, "case"))
-KW_RETURN   = Atom(Lexeme(LexemeType.LEX_KEYWORD, "return"))
-KW_ELSE     = Atom(Lexeme(LexemeType.LEX_KEYWORD, "else"))
-KW_IF       = Atom(Lexeme(LexemeType.LEX_KEYWORD, "if"))
-KW_SIGNED   = Atom(Lexeme(LexemeType.LEX_KEYWORD, "signed"))
-KW_UNSIGNED = Atom(Lexeme(LexemeType.LEX_KEYWORD, "unsigned"))
+#---------------------------------------------------------------------------------------------------
+
+def match_assignop(span, ctx):
+  if len(span) and span[0].type == LexemeType.LEX_OP and span[0].text in mt_constants.mt_assignops:
+    return span[1:]
+  return Fail(span)
+
+def match_declop(span, ctx):
+  if len(span) and span[0].type == LexemeType.LEX_OP and span[0].text in mt_constants.mt_declops:
+    return span[1:]
+  return Fail(span)
+
+def match_binop(span, ctx):
+  if len(span) and span[0].type == LexemeType.LEX_OP and span[0].text in mt_constants.mt_binops:
+    return span[1:]
+  return Fail(span)
+
+match_ident = Seq(
+  Opt(PUNCT_AT),
+  ATOM_IDENT,
+  Any(Seq(
+    PUNCT_DOT,
+    ATOM_IDENT,
+  ))
+)
+
+#---------------------------------------------------------------------------------------------------
+# Forward decls
 
 def parse_statement(span, ctx):
   return _parse_statement(span, ctx)
@@ -67,168 +122,192 @@ def parse_statement(span, ctx):
 def parse_expression_chain(span, ctx):
   return _parse_expression_chain(span, ctx)
 
-def match_binary_op(span, ctx):
-  s = span
-  if len(s) >= 1 and s[0].text in mt_constants.mt_binops:
-    if len(s) >= 2 and (s[0].text + s[1].text) in mt_constants.mt_binops:
-      if len(s) >= 3 and (s[0].text + s[1].text + s[2].text) in mt_constants.mt_binops:
-        return span[3:]
-      return span[2:]
-    return span[1:]
-  return Fail(span)
+def parse_expression(span, ctx):
+  return _parse_expression(span, ctx)
+
+def parse_decl(span, ctx):
+  return _parse_decl(span, ctx)
+
+parse_ident = Capture(match_ident)
+
+parse_exp_or_decl = Oneof(
+  parse_expression,
+  parse_decl,
+)
 
 #---------------------------------------------------------------------------------------------------
 
-paren_expression = Seq(ATOM_LPAREN, parse_expression_chain, ATOM_RPAREN)
+parse_paren_tuple = List(
+  PUNCT_LPAREN,
+  Oneof(
+    PUNCT_RPAREN,
+    Seq(
+      Any(
+        Seq(parse_expression, PUNCT_COMMA),
+        Seq(parse_decl,       PUNCT_COMMA),
+      ),
+      Oneof(
+        Seq(parse_expression, PUNCT_RPAREN),
+        Seq(parse_decl,       PUNCT_RPAREN)
+      )
+    )
+  )
 
-parse_params = List(
-  ATOM_LPAREN,
-  Cycle(parse_expression_chain, ATOM_COMMA),
-  ATOM_RPAREN
+  #Cycle(parse_exp_or_decl, PUNCT_COMMA),
+  #PUNCT_RPAREN
 )
 
-parse_braces = List(
-  Tag("name", Capture(ATOM_IDENT)),
-  ATOM_LBRACE,
-  Cycle(parse_expression_chain, ATOM_COMMA),
-  ATOM_RBRACE
-)
-
-parse_ident = Capture(Seq(
-  Opt(ATOM_AT),
-  ATOM_IDENT,
-  Any(Seq(
-    ATOM_DOT,
-    ATOM_IDENT,
-  ))
-))
-
-parse_call = Dict(
-  Tag("func",   parse_ident),
-  Tag("params", parse_params)
-)
-
-parse_cast = Dict(
-  Tag("type",   Capture(Oneof(KW_SIGNED, KW_UNSIGNED))),
-  Tag("params", parse_params)
-)
-
-parse_expression_unit = Oneof(
-  Tag("cast",   parse_cast),
-  Tag("call",   parse_call),
-  Tag("parens", paren_expression),
-  Tag("array",  parse_braces),
-  Tag("int",    Capture(ATOM_INT)),
-  Tag("float",  Capture(ATOM_FLOAT)),
-  Tag("string", Capture(ATOM_STRING)),
-  Tag("ident",  Capture(ATOM_IDENT)),
-)
-
-_parse_expression_chain = Seq(
-  parse_expression_unit,
-  Any(Seq(
-    Tag("op ", Capture(match_binary_op)),
-    parse_expression_unit,
-  ))
+parse_bracket_tuple = List(
+  PUNCT_LBRACE,
+  Cycle(parse_exp_or_decl, PUNCT_COMMA),
+  PUNCT_RBRACE
 )
 
 parse_block = Seq(
-  ATOM_LBRACK,
+  PUNCT_LBRACK,
   List(Any(parse_statement)),
-  ATOM_RBRACK
+  PUNCT_RBRACK
 )
 
-parse_else = Dict(
-  KW_ELSE,
-  Tag("statements", parse_block),
+parse_tuple = Oneof(
+  parse_paren_tuple,
+  parse_bracket_tuple
 )
 
-parse_if = Dict(
-  KW_IF,
-  Tag("condition",  paren_expression),
-  Tag("statements", parse_block),
-  Tag("else",       Opt(parse_else))
+#---------------------------------------------------------------------------------------------------
+
+
+#def parse_block(span, ctx):
+#  tail = PUNCT_LBRACK(span, ctx)
+#  if isinstance(tail, Fail): return Fail(span)
+#
+#  tail = List(Any(parse_statement))(tail, ctx)
+#  if isinstance(tail, Fail): return Fail(span)
+#
+#  pass
+
+parse_call = Node(CallNode,
+  Field("func",   Capture(Oneof(match_ident, ATOM_KEYWORD))),
+  Field("params", parse_tuple)
 )
 
-parse_case = Oneof(
-  List(
-    KW_CASE,
-    Tag("condition",  paren_expression),
-    parse_block,
-  ),
-  List(
-    KW_DEFAULT,
-    parse_block,
-  ),
+parse_lambda = Node(LambdaNode,
+  Field("params", parse_tuple),
+  Field("body",   parse_block)
 )
 
-parse_match = List(
-  KW_MATCH,
-  Tag("condition",  paren_expression),
-  ATOM_LBRACK,
-  Any(Tag("case", parse_case)),
-  ATOM_RBRACK
-)
-
-parse_section_header = Seq(
-  ATOM_LBRACE,
-  Dict(Tag("name", parse_ident)),
-  ATOM_RBRACE
-)
-
-parse_section = Dict(
-  Tag("header", parse_section_header),
-  Tag("body", Any(parse_statement))
-)
-
-parse_type = Seq(
+parse_const = Oneof(
+  Capture(ATOM_INT),
+  Capture(ATOM_FLOAT),
+  Capture(ATOM_STRING),
   parse_ident,
-  Opt(Tag("array_suffix",
-    Seq(
-      ATOM_LBRACE,
-      Opt(Tag("exp", parse_expression_chain)),
-      ATOM_RBRACE,
-    )
-  ))
 )
 
-parse_decl = Dict(
-  Tag("name",  parse_ident),
+parse_expression_unit = Oneof(
+  parse_lambda,   # (){}
+  parse_call,     # identifier()
+  parse_tuple,    # ()
+  parse_block,    # {}
+  parse_const,    # int | float | string | identifier
+)
+
+parse_binop = Capture(match_binop)
+
+
+# unit op unit op unit...
+_parse_expression_chain = List(
+  parse_expression_unit,
+  Any(Seq(parse_binop, parse_expression_unit))
+)
+
+_parse_expression = Node(ExpressionNode,
+  Field("exp", parse_expression_chain)
+)
+
+parse_else = Node(ElseNode,
+  KW_ELSE,
+  Field("block", parse_block),
+)
+
+parse_if = Node(IfNode,
+  KW_IF,
+  Field("condition",  parse_tuple),
+  Field("block",      parse_block),
+  #Field("else",       Opt(parse_else))
+)
+
+parse_case = Node(CaseNode,
+  KW_CASE,
+  Field("condition",  parse_tuple),
+  Field("block",      parse_block),
+)
+
+parse_default = Node(DefaultNode,
+  KW_DEFAULT,
+  Field("block", parse_block),
+)
+
+parse_match = Node(MatchNode,
+  KW_MATCH,
+  Field("condition", parse_tuple),
+  PUNCT_LBRACK,
+  Field("body",
+    List(Any(Oneof(
+      Field("case",    parse_case),
+      Field("default", parse_default),
+    )))
+  ),
+  PUNCT_RBRACK
+)
+
+parse_type = Node(TypeNode,
+  Field("base", Oneof(
+    parse_call,
+    parse_tuple,
+    parse_ident
+  )),
+  Opt(Field("suffix", parse_tuple))
+)
+
+_parse_decl = Node(DeclNode,
+  Field("name",    parse_ident),
   OptSeq(
-    Tag("op", Oneof(
-      Capture(Seq(ATOM_LT, ATOM_COLON)),
-      Capture(Seq(ATOM_COLON, ATOM_GT)),
-      Capture(ATOM_COLON),
-    )),
-    Tag("type",  parse_type)
+    Field("dir",   Capture(match_declop)),
+    Field("type",  parse_type)
   ),
   OptSeq(
-    Tag("op", Capture(ATOM_EQ)),
-    Tag("value", parse_expression_chain)),
-  ATOM_SEMI
+    Field("eq",    Capture(match_assignop)),
+    Field("val",   parse_expression)
+  ),
 )
 
-parse_return = Seq(
+parse_return = Node(ReturnNode,
   KW_RETURN,
-  Opt(parse_expression_chain)
+  Field("val", Opt(parse_expression))
 )
 
 _parse_statement = Oneof(
-  Tag("match",  parse_match),
-  Tag("if",     parse_if),
-  Tag("return", parse_return, ATOM_SEMI),
+  parse_match,
+  parse_if,
+  Seq(parse_return,     PUNCT_SEMI),
+  Seq(parse_call,       PUNCT_SEMI),
+  Seq(parse_expression, PUNCT_SEMI),
+  Seq(parse_decl,       PUNCT_SEMI),
 
-  Tag("call",   parse_call, ATOM_SEMI),
-  Tag("decl",   parse_decl),
+  PUNCT_SEMI,
+  PUNCT_NEWLINE,
+)
 
-  ATOM_SEMI,
-  ATOM_NEWLINE,
+parse_section = Node(SectionNode,
+  PUNCT_LBRACE,
+  Field("name", parse_ident),
+  PUNCT_RBRACE,
+  Field("body", List(Any(parse_statement)))
 )
 
 parse_top = Oneof(
-  Tag("section", parse_section),
-  parse_statement,
-  ATOM_NEWLINE,
+  parse_section,
+  PUNCT_NEWLINE
 )
 
 #---------------------------------------------------------------------------------------------------
@@ -238,39 +317,11 @@ def parse_lexemes(lexemes):
   ctx = []
   while span:
     tail = parse_top(span, ctx)
-    #print(tail)
     if isinstance(tail, Fail):
       ctx.append(span[0])
       tail = span[1:]
     span = tail
   return ctx
-
-#---------------------------------------------------------------------------------------------------
-
-"""
-parse_statement = Capture(Until(Atom('\n')))
-
-parse_statements = List(Any(parse_statement))
-
-parse_section =
-Dict(
-  ATOM_LBRACE,
-  Field("name", cap_ident),
-  ATOM_RBRACE,
-  Field("contents", parse_statements),
-)
-
-parse_decl =
-Dict(
-  Field("type", cap_ident),
-  Field("name", cap_ident),
-  OptSeq(
-    ATOM_EQ,
-    Field("value", cap_int),
-    ATOM_SEMI
-  )
-)
-"""
 
 #---------------------------------------------------------------------------------------------------
 

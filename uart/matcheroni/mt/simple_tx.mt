@@ -8,8 +8,8 @@ delay_max = clocks_per_bit - 1;
 count_max = bits_per_byte - 1;
 
 [ports]
-in.data  <: u8;
-in.valid <: u1;
+in.data  :< u8;
+in.valid :< u1;
 in.ready :> u1 = 0;
 out.data :> u1 = shift[0];
 

@@ -61,6 +61,7 @@ LexemeType = Enum(
     "LEX_INT",
     "LEX_PUNCT",
     "LEX_CHAR",
+    "LEX_OP",
   ]
 )
 
@@ -76,6 +77,7 @@ def lex_to_color(lex_type):
     case LexemeType.LEX_INT      : return 0xFF8888
     case LexemeType.LEX_PUNCT    : return 0x808080
     case LexemeType.LEX_CHAR     : return 0x44DDDD
+    case LexemeType.LEX_OP       : return 0x888888
   return 0xFF00FF
 
 #---------------------------------------------------------------------------------------------------
@@ -106,12 +108,20 @@ bin_digit    = Atoms('0', '1')
 bin_digits   = Seq(bin_digit, Any(Ticked(bin_digit)))
 bin_constant = Seq(bin_prefix, bin_digits)
 
+bit_suffix = Seq(
+  Atoms('u', 's', 'b'),
+  dec_constant
+)
+
 float_suffix = Seq(Atoms('e', 'E'), Opt(sign), dec_digits)
 
-match_int = Oneof(
-  dec_constant,
-  hex_constant,
-  bin_constant
+match_int = Seq(
+  Oneof(
+    dec_constant,
+    hex_constant,
+    bin_constant
+  ),
+  Opt(bit_suffix)
 )
 
 match_float = Seq(
@@ -135,7 +145,15 @@ match_comment = Oneof(
   Seq(Lit("/*"), Until(Lit("*/")), Lit("*/"))
 )
 
-match_punct = Charset("-,;:!?.()[]{}<>*/&#%^+=|~@")
+#match_punct = Charset("-,;:!?.()[]{}<>*/&#%^+=|~@")
+
+match_punct = Charset(",;.()[]{}@")
+
+def match_op(span, ctx):
+  for op in mt_constants.mt_allops:
+    if span.startswith(op):
+      return span[len(op):]
+  return Fail(span)
 
 match_char = Seq(
   Atom('\''),
@@ -177,6 +195,7 @@ def next_lexeme(span, ctx):
     match_comment,
     MatchToLex(match_float,    LexemeType.LEX_FLOAT),
     MatchToLex(match_int,      LexemeType.LEX_INT),
+    MatchToLex(match_op,       LexemeType.LEX_OP),
     MatchToLex(match_punct,    LexemeType.LEX_PUNCT),
   ]
 

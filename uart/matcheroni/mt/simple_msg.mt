@@ -7,7 +7,7 @@ max_cursor = len(text) - 1;
 [ports]
 out.data  :> u8 = text[cursor];
 out.valid :> u1 = delay == 0;
-out.ready <: u1;
+out.ready :< u1;
 
 [types]
 reg_delay  = unsigned(max_delay);
