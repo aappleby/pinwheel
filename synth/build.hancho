@@ -1,0 +1,20 @@
+################################################################################
+
+top_icebreaker = hancho(
+    hancho.fpga_rules.synth,
+    in_sv   = "top_icebreaker.v",
+    pcf     = "top_icebreaker.pcf",
+    chip    = "up5k",
+    package = "sg48",
+)
+
+top_hx8k = hancho(
+    hancho.fpga_rules.synth,
+    in_sv   = "top_hx8k.v",
+    pcf     = "top_hx8k.pcf",
+    chip    = "hx8k",
+    package = "ct256",
+)
+
+#iceprog(in_bin = top_icebreaker.promise("out_bin"))
+

@@ -1,38 +1,16 @@
 hancho.repo_name = "pinwheel"
 
 hancho.base_rules  = hancho.load("symlinks/hancho/base_rules.hancho")
-hancho.riscv_rules = hancho.load("riscv_rules.hancho")
-hancho.fpga_rules  = hancho.load("fpga_rules.hancho")
+hancho.riscv_rules = hancho.load("symlinks/hancho/riscv_rules.hancho")
+hancho.fpga_rules  = hancho.load("symlinks/hancho/fpga_rules.hancho")
 hancho.metrolib    = hancho.repo("symlinks/metrolib/build.hancho")
 hancho.metron      = hancho.repo("symlinks/metron/build.hancho")
 
 ################################################################################
 
-top_icebreaker = hancho(
-  hancho.fpga_rules.synth,
-  in_sv = "synth/top_icebreaker.v",
-  pcf = "synth/top_icebreaker.pcf",
-  chip = "up5k",
-  package = "sg48",
-)
-
-top_hx8k = hancho(
-  hancho.fpga_rules.synth,
-  in_sv = "synth/top_hx8k.v",
-  pcf = "synth/top_hx8k.pcf",
-  chip = "hx8k",
-  package = "ct256",
-)
-
-#iceprog(in_bin = top_icebreaker.promise("out_bin"))
-
-################################################################################
-
-uart     = hancho.load("uart/build.hancho") # nothing actually in this one yet
-firmware = hancho.load("tests/firmware/build.hancho") # works
-rv_tests = hancho.load("tests/rv_tests/build.hancho") # works
-tools    = hancho.load("pinwheel/tools/build.hancho")
-sim      = hancho.load("pinwheel/build.hancho")
+synth    = hancho.load("synth/build.hancho")
+pinwheel = hancho.load("pinwheel/build.hancho")
+tests    = hancho.load("tests/build.hancho")
 
 # dump = hancho.load("dump/build.hancho") # just crap from old ninja build
 
