@@ -1,131 +1,90 @@
-target=DEBUG
-# FIXME why is stepping_code failing in release builds?
-#target=RELEASE
-#target=SIZE
-
-include symlinks/metrolib/rules/rules.ninja
-include symlinks/metrolib/rules/config_ALL.ninja
-include symlinks/metrolib/rules/config_${target}.ninja
-
-includes = ${includes} -Isymlinks/metrolib
-includes = ${includes} -Isymlinks/metron
-
-################################################################################
-# Prereqs
-
-include symlinks/metrolib/rules/build_imgui.ninja
-
-build build/check_metron : run_command
-  command = symlinks/hancho/hancho.py -C symlinks/metron > /dev/null
-
-build build/check_metrolib : run_command
-  command = ninja -C symlinks/metrolib > /dev/null
 
 ################################################################################
 # Syntax check for Pinwheel Metron RTL
 
-build build/pinwheel/tools/tilelink.h.ok     : check_cpp pinwheel/tools/tilelink.h
-build build/pinwheel/soc/regfile.h.ok        : check_cpp pinwheel/soc/regfile.h
-build build/pinwheel/soc/serial.h.ok         : check_cpp pinwheel/soc/serial.h
-build build/pinwheel/soc/test_reg.h.ok       : check_cpp pinwheel/soc/test_reg.h
-build build/pinwheel/soc/bus_ram.h.ok        : check_cpp pinwheel/soc/bus_ram.h
-build build/pinwheel/core/pinwheel_core.h.ok : check_cpp pinwheel/core/pinwheel_core.h
-build build/pinwheel/soc/pinwheel_soc.h.ok   : check_cpp pinwheel/soc/pinwheel_soc.h
+build tools/tilelink.h.ok     : check_cpp pinwheel/tools/tilelink.h
+build soc/regfile.h.ok        : check_cpp pinwheel/soc/regfile.h
+build soc/serial.h.ok         : check_cpp pinwheel/soc/serial.h
+build soc/test_reg.h.ok       : check_cpp pinwheel/soc/test_reg.h
+build soc/bus_ram.h.ok        : check_cpp pinwheel/soc/bus_ram.h
+build core/pinwheel_core.h.ok : check_cpp pinwheel/core/pinwheel_core.h
+build soc/pinwheel_soc.h.ok   : check_cpp pinwheel/soc/pinwheel_soc.h
 
 ################################################################################
 # Metron conversion tests
 
-rule metron3
-  command = symlinks/metron/build/debug/metron/metron/metron -q -v -e -c ${in} -o ${out}
-  depfile = ${out}.d
-  deps = gcc
+build tools/riscv_constants.sv    : metron3 pinwheel/tools/riscv_constants.h
+build tools/tilelink.sv           : metron3 pinwheel/tools/tilelink.h
+build tools/regfile_if.sv         : metron3 pinwheel/tools/regfile_if.h
+build core/pinwheel_core.sv       : metron3 pinwheel/core/pinwheel_core.h
 
-build build/pinwheel/tools/riscv_constants.sv    : metron3 pinwheel/tools/riscv_constants.h
-build build/pinwheel/tools/tilelink.sv           : metron3 pinwheel/tools/tilelink.h
-build build/pinwheel/tools/regfile_if.sv         : metron3 pinwheel/tools/regfile_if.h
-build build/pinwheel/core/pinwheel_core.sv       : metron3 pinwheel/core/pinwheel_core.h
+build uart/uart_hello.sv          : metron3 pinwheel/uart/uart_hello.h
+build uart/uart_rx.sv             : metron3 pinwheel/uart/uart_rx.h
+build uart/uart_tx.sv             : metron3 pinwheel/uart/uart_tx.h
+build uart/uart_tilelink.sv       : metron3 pinwheel/uart/uart_tilelink.h
 
-build build/pinwheel/uart/uart_hello.sv          : metron3 pinwheel/uart/uart_hello.h
-build build/pinwheel/uart/uart_rx.sv             : metron3 pinwheel/uart/uart_rx.h
-build build/pinwheel/uart/uart_tx.sv             : metron3 pinwheel/uart/uart_tx.h
-build build/pinwheel/uart/uart_tilelink.sv       : metron3 pinwheel/uart/uart_tilelink.h
-
-build build/pinwheel/soc/regfile.sv              : metron3 pinwheel/soc/regfile.h
-build build/pinwheel/soc/serial.sv               : metron3 pinwheel/soc/serial.h
-build build/pinwheel/soc/test_reg.sv             : metron3 pinwheel/soc/test_reg.h
-build build/pinwheel/soc/bus_ram.sv              : metron3 pinwheel/soc/bus_ram.h
-build build/pinwheel/soc/block_ram.sv            : metron3 pinwheel/soc/block_ram.h
-build build/pinwheel/soc/pinwheel_soc.sv         : metron3 pinwheel/soc/pinwheel_soc.h
+build soc/regfile.sv              : metron3 pinwheel/soc/regfile.h
+build soc/serial.sv               : metron3 pinwheel/soc/serial.h
+build soc/test_reg.sv             : metron3 pinwheel/soc/test_reg.h
+build soc/bus_ram.sv              : metron3 pinwheel/soc/bus_ram.h
+build soc/block_ram.sv            : metron3 pinwheel/soc/block_ram.h
+build soc/pinwheel_soc.sv         : metron3 pinwheel/soc/pinwheel_soc.h
 
 ################################################################################
 # sv2v
 
-#build build/pinwheel/soc/pinwheel_soc.sv.2.v : sv2v build/pinwheel/soc/pinwheel_soc.sv
+#build soc/pinwheel_soc.sv.2.v : sv2v soc/pinwheel_soc.sv
 #  includes = -I. -Igen -Isymlinks/metron
 
-#build build/pinwheel/soc/block_ram.sv.2.v : sv2v build/pinwheel/soc/block_ram.sv
+#build soc/block_ram.sv.2.v : sv2v soc/block_ram.sv
 #  includes = -I. -Igen -Isymlinks/metron
 
-#build build/pinwheel/soc/bus_ram.sv.2.v : sv2v build/pinwheel/soc/bus_ram.sv
+#build soc/bus_ram.sv.2.v : sv2v soc/bus_ram.sv
 #  includes = -I. -Igen -Isymlinks/metron
 
-#build build/pinwheel/soc/regfile.sv.2.v : sv2v build/pinwheel/soc/regfile.sv
+#build soc/regfile.sv.2.v : sv2v soc/regfile.sv
 #  includes = -I. -Igen -Isymlinks/metron
 
 ################################################################################
 # Verilator tests
 
-#build build/pinwheel/verilator/Vpinwheel_soc.mk build/pinwheel/verilator/Vpinwheel_soc.h : verilator build/pinwheel/soc/pinwheel_soc.sv | all_sv
+#build verilator/Vpinwheel_soc.mk verilator/Vpinwheel_soc.h : verilator soc/pinwheel_soc.sv | all_sv
 #  includes = -I. -Igen -Isymlinks/metron
 
 ################################################################################
 # Yosys tests
 
-#build build/pinwheel/yosys/pinwheel_soc.json : yosys_check build/pinwheel/soc/pinwheel_soc.sv.2.v
+#build yosys/pinwheel_soc.json : yosys_check soc/pinwheel_soc.sv.2.v
 
-#build build/pinwheel/yosys/block_ram.json : yosys_noisy build/pinwheel/soc/block_ram.sv.2.v
+#build yosys/block_ram.json : yosys_noisy soc/block_ram.sv.2.v
 
-#build build/pinwheel/yosys/block_ram.asc  : nextpnr-ice40 build/pinwheel/yosys/block_ram.json
+#build yosys/block_ram.asc  : nextpnr-ice40 yosys/block_ram.json
 ##  chip = hx8k
 #  chip = up5k
 #  package = sg48
 #  pcf = ice40/icebreaker.pcf
 #  flags = --pcf-allow-unconstrained
 
-#rule nextpnr-ice40
-#  command = nextpnr-ice40 -q --${chip} --package ${package} --json ${in} --asc ${out} --pcf ${pcf}
+#build yosys/bus_ram.json : yosys_noisy soc/bus_ram.sv.2.v
 
-#build build/pinwheel/yosys/bus_ram.json : yosys_noisy build/pinwheel/soc/bus_ram.sv.2.v
+#build yosys/regfile.json : yosys soc/regfile.sv.2.v
 
-#build build/pinwheel/yosys/regfile.json : yosys build/pinwheel/soc/regfile.sv.2.v
-
-#build build/pinwheel/yosys/pinwheel_soc.json : yosys build/pinwheel/soc/pinwheel_soc.sv.2.v
+#build yosys/pinwheel_soc.json : yosys soc/pinwheel_soc.sv.2.v
 #  includes = -I. -Igen -Isymlinks/metron
 
-#build build/pinwheel/yosys/pinwheel_core.asc: nextpnr-ice40 build/pinwheel/yosys/pinwheel_core.json
+#build yosys/pinwheel_core.asc: nextpnr-ice40 yosys/pinwheel_core.json
 #  chip = hx8k
 #  package = ct256
 #  pcf = examples/uart/ice40-hx8k-b-evn.pcf
 
-#build build/pinwheel/yosys/pinwheel_core.bin: icepack build/pinwheel/yosys/pinwheel_core.asc
+#build yosys/pinwheel_core.bin: icepack yosys/pinwheel_core.asc
 
-################################################################################
-# Icarus tests
-
-#build build/pinwheel/icarus/pinwheel.iv : iverilog build/pinwheel/soc/pinwheel_soc.sv.2.v
-
-################################################################################
-# Functional tests
+#build icarus/pinwheel.iv : iverilog soc/pinwheel_soc.sv.2.v
 
 #build build/tests/pinwheel_test.o:      compile_cpp tests/pinwheel_test.cpp
-#
+
 #build build/pinwheel_test: c_binary $
 #  build/tests/pinwheel_test.o | firmware
 #  libraries = -lubsan
 
 #build build/pinwheel_test_pass: run_test build/pinwheel_test
-
-################################################################################
-# Pinwheel UART demo
-
-#include demo/demo.ninja

@@ -1,4 +1,3 @@
-
 .section .start
 
 address_zero:

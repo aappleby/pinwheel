@@ -1,3 +1,5 @@
+// This was an idea for a SPI-ish-to-bus-transaction interface for bringing up FPGA components.
+
 #ifndef PINWHEEL_PROBE
 #define PINWHEEL_PROBE
 

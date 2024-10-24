@@ -1,9 +1,0 @@
-from hancho import *
-
-rules = load("../../rules/rules.hancho")
-
-elf_to_hex = load(root="{root_dir}/symlinks/metrolib", file="metrolib/tools/elf_to_hex.hancho")
-
-objs  = [rules.rv_compile(source) for source in glob("*.S")]
-bins  = [rules.rv_link(obj, "{swap_ext(files_in[0], '')}") for obj in objs]
-hexes = [elf_to_hex.run(bin) for bin in bins]

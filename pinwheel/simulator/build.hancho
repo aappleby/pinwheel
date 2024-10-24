@@ -1,5 +1,0 @@
-from hancho import *
-
-rules = load("../../rules/rules.hancho")
-
-lib = rules.cpp_lib(glob("*.cpp"), "libsimulator.a")

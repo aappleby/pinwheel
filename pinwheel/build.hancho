@@ -1,0 +1,69 @@
+import glob
+
+includes = [
+    "{repo_dir}",
+    "{repo_dir}/symlinks/glm",
+    "{repo_dir}/symlinks/metrolib",
+    "{repo_dir}/symlinks/metron",
+]
+
+pinwheel_ok = hancho(hancho.base_rules.check_cpp, in_src = "core/pinwheel_core.h", includes=includes)
+pinwheel_sv = hancho(hancho.metron.convert, in_src = "core/pinwheel_core.h", includes=includes)
+
+libsim = hancho(
+    hancho.base_rules.cpp_lib,
+    in_srcs = glob.glob("simulator/*.cpp"),
+    out_lib = "libsimulator.a",
+    includes = includes
+)
+
+libsoc = hancho(
+    hancho.base_rules.cpp_lib,
+    in_srcs = glob.glob("soc/*.cpp"),
+    out_lib = "libsoc.a",
+    includes = includes
+)
+
+libtools = hancho(
+    hancho.base_rules.cpp_lib,
+    in_srcs = glob.glob("tools/*.cpp"),
+    out_lib = "libtools.a",
+    includes = includes
+)
+
+# FIXME broken?
+
+#metron_src = [
+#    "regfile.h",
+#    "serial.h",
+#    "test_reg.h",
+#    #"bus_ram.h",
+#    #"block_ram.h",
+#    #"pinwheel_soc.h",
+#]
+#
+#for src in metron_src:
+#    hancho(hancho.base_rules.check_cpp, in_src = src, includes=includes)
+#    #src_sv = hancho(hancho.metron.convert, in_src = src, includes=includes)
+#    #hancho(hancho.metron.sv2v, in_sv = src_sv, includes=includes)
+
+#metron_src = [
+#    "riscv_constants.h",
+#    "tilelink.h",
+#    "regfile_if.h",
+#]
+#
+#for src in metron_src:
+#    hancho(hancho.base_rules.check_cpp, in_src = src, includes="{repo_dir}/symlinks/metron")
+#    hancho(hancho.metron.convert, in_src = src)
+
+#metron_src = [
+#  "uart_hello.h",
+#  "uart_rx.h",
+#  "uart_tilelink.h",
+#  "uart_top.h",
+#  "uart_tx.h",
+#]
+#
+#metron_ok = [rules.check_cpp(s) for s in metron_src]
+#metron_sv = [rules.metron(s)    for s in metron_src]
