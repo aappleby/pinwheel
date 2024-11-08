@@ -18,3 +18,32 @@ top_hx8k = hancho(
 
 #iceprog(in_bin = top_icebreaker.promise("out_bin"))
 
+#rm -f ~/.yosys_show.*
+#yosys -Q -p 'logger -werror .; read_verilog -sv bram.sv; hierarchy -top pinwheel_mem; synth_ice40; stat; show;'
+#yosys -Q -p 'logger -werror .; read_verilog -sv bram.sv; hierarchy -top pinwheel_regs; synth_ice40; stat; show;'
+
+
+#build build/demo/demo_mc.o : compile_cpp demo/demo_mc.cpp
+#build build/demo/demo_mc   : c_binary $
+#  build/demo/demo_mc.o $
+#  symlinks/metrolib/bin/metrolib/libcore.a
+#
+#build build/demo/demo_ice40.json : yosys demo/demo_ice40.sv | build/pinwheel/soc/pinwheel_soc.sv
+#  includes = -I. -Igen -Isymlinks/metron
+#
+#build build/demo/demo_ice40.asc : nextpnr-ice40 build/demo/demo_ice40.json
+#  chip = hx8k
+#  package = ct256
+#  pcf = demo/demo_ice40.pcf
+#
+#build build/demo/demo_ice40.bin : icepack build/demo/demo_ice40.asc
+
+#build yosys/block_ram.json : yosys_noisy soc/block_ram.sv.2.v
+
+#build yosys/block_ram.asc  : nextpnr-ice40 yosys/block_ram.json
+##  chip = hx8k
+#  chip = up5k
+#  package = sg48
+#  pcf = ice40/icebreaker.pcf
+#  flags = --pcf-allow-unconstrained
+

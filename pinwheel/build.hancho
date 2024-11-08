@@ -10,12 +10,6 @@ hancho.config.includes = [
 pinwheel_ok = hancho(hancho.base_rules.check_cpp, in_src = "core/pinwheel_core.h")
 pinwheel_sv = hancho(hancho.metron.convert, in_src = "core/pinwheel_core.h")
 
-libsim = hancho(
-    hancho.base_rules.cpp_lib,
-    in_srcs = glob.glob("simulator/*.cpp"),
-    out_lib = "libsimulator.a",
-)
-
 libsoc = hancho(
     hancho.base_rules.cpp_lib,
     in_srcs = glob.glob("soc/*.cpp"),
@@ -26,6 +20,34 @@ libtools = hancho(
     hancho.base_rules.cpp_lib,
     in_srcs = glob.glob("tools/*.cpp"),
     out_lib = "libtools.a",
+)
+
+libglad = hancho(
+    hancho.base_rules.cpp_lib,
+    in_srcs   = ["{repo_dir}/symlinks/glad/glad.c"],
+    task_dir  = "{repo_dir}",
+    build_dir = "{build_root}/glad",
+    out_lib   = "libglad.a",
+)
+
+imgui_srcs   = glob.glob(hancho.config.expand("{repo_dir}/symlinks/imgui/*.cpp"))
+print(imgui_srcs)
+
+libimgui = hancho(
+    hancho.base_rules.cpp_lib,
+    in_srcs   = glob.glob(hancho.config.expand("{repo_dir}/symlinks/imgui/*.cpp")),
+    task_dir  = "{repo_dir}",
+    build_dir = "{build_root}/imgui",
+    out_lib   = "libimgui.a",
+    debug = True,
+)
+
+pinwheel_sim = hancho(
+    hancho.base_rules.cpp_bin,
+    in_srcs = glob.glob("simulator/*.cpp"),
+    out_bin = "pinwheel_sim",
+    in_libs = [libsoc, libtools, hancho.metrolib.libappbase, hancho.metrolib.libcore, libimgui, libglad],
+    sys_libs = ["-lSDL2"]
 )
 
 # FIXME broken?
@@ -64,3 +86,11 @@ libtools = hancho(
 #
 #metron_ok = [rules.check_cpp(s) for s in metron_src]
 #metron_sv = [rules.metron(s)    for s in metron_src]
+
+#build verilator/Vpinwheel_soc.mk verilator/Vpinwheel_soc.h : verilator soc/pinwheel_soc.sv | all_sv
+#  includes = -I. -Igen -Isymlinks/metron
+
+#build yosys/pinwheel_soc.json : yosys_check soc/pinwheel_soc.sv.2.v
+
+#build icarus/pinwheel.iv : iverilog soc/pinwheel_soc.sv.2.v
+

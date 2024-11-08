@@ -6,9 +6,11 @@ hancho.fpga_rules  = hancho.load("{hancho_dir}/fpga_rules.hancho")
 hancho.metrolib    = hancho.repo("symlinks/metrolib/build.hancho")
 hancho.metron      = hancho.repo("symlinks/metron/build.hancho")
 
+#print(hancho.metrolib)
+
 ################################################################################
 
-synth    = hancho.load("synth/build.hancho")
+#synth    = hancho.load("synth/build.hancho")
 pinwheel = hancho.load("pinwheel/build.hancho")
 tests    = hancho.load("tests/build.hancho")
 

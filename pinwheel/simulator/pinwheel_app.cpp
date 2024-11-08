@@ -66,7 +66,7 @@ void PinwheelApp::app_init(int screen_w, int screen_h) {
 
   pinwheel_sim = new PinwheelSim(
     "build/tests/firmware/hello.code.vh",
-    "build/tests/firmware/hello.data.vh",
+    "build/tests/firmware/hello.rodata.vh",
     //"build/tests/rv_tests/add.code.vh",
     //"build/tests/rv_tests/add.data.vh",
     "pinwheel/uart/message.hex"
