@@ -1,19 +1,15 @@
 hancho.repo_name = "pinwheel"
 
-hancho.base_rules  = hancho.load("{hancho_dir}/base_rules.hancho")
-hancho.riscv_rules = hancho.load("{hancho_dir}/riscv_rules.hancho")
-hancho.fpga_rules  = hancho.load("{hancho_dir}/fpga_rules.hancho")
+hancho.base_rules  = hancho.repo("{hancho_dir}/base_rules.hancho")
+hancho.riscv_rules = hancho.repo("{hancho_dir}/riscv_rules.hancho")
+hancho.fpga_rules  = hancho.repo("{hancho_dir}/fpga_rules.hancho")
 hancho.metrolib    = hancho.repo("symlinks/metrolib/build.hancho")
 hancho.metron      = hancho.repo("symlinks/metron/build.hancho")
-
-#print(hancho.metrolib)
 
 ################################################################################
 
 #synth    = hancho.load("synth/build.hancho")
 pinwheel = hancho.load("pinwheel/build.hancho")
 tests    = hancho.load("tests/build.hancho")
-
-# dump = hancho.load("dump/build.hancho") # just crap from old ninja build
 
 ################################################################################
