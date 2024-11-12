@@ -2,13 +2,16 @@ import glob
 
 hancho.config.includes = [
     "{repo_dir}",
-    "{repo_dir}/symlinks/glm",
+    "{repo_dir}/symlinks",
     "{repo_dir}/symlinks/metrolib",
     "{repo_dir}/symlinks/metron",
 ]
 
 pinwheel_ok = hancho(hancho.base_rules.check_cpp, in_src = "core/pinwheel_core.h")
 pinwheel_sv = hancho(hancho.metron.convert, in_src = "core/pinwheel_core.h")
+
+hancho.imgui = hancho.repo("{repo_dir}/symlinks/third_party/imgui.hancho")
+hancho.glad  = hancho.repo("{repo_dir}/symlinks/third_party/glad.hancho")
 
 libsoc = hancho(
     hancho.base_rules.cpp_lib,
@@ -22,29 +25,18 @@ libtools = hancho(
     out_lib = "libtools.a",
 )
 
-libglad = hancho(
-    hancho.base_rules.cpp_lib,
-    in_srcs   = ["{repo_dir}/symlinks/glad/glad.c"],
-    task_dir  = "{repo_dir}",
-    build_dir = "{build_root}/glad",
-    out_lib   = "libglad.a",
-)
-
-imgui_srcs   = glob.glob(hancho.config.expand("{repo_dir}/symlinks/imgui/*.cpp"))
-
-libimgui = hancho(
-    hancho.base_rules.cpp_lib,
-    in_srcs   = glob.glob(hancho.config.expand("{repo_dir}/symlinks/imgui/*.cpp")),
-    task_dir  = "{repo_dir}",
-    build_dir = "{build_root}/imgui",
-    out_lib   = "libimgui.a",
-)
-
 pinwheel_sim = hancho(
     hancho.base_rules.cpp_bin,
     in_srcs = glob.glob("simulator/*.cpp"),
     out_bin = "pinwheel_sim",
-    in_libs = [libsoc, libtools, hancho.metrolib.libappbase, hancho.metrolib.libcore, libimgui, libglad],
+    in_libs = [
+        libsoc,
+        libtools,
+        hancho.metrolib.libappbase,
+        hancho.metrolib.libcore,
+        hancho.imgui.lib,
+        hancho.glad.lib
+    ],
     sys_libs = ["-lSDL2"]
 )
 
