@@ -7,7 +7,7 @@ start_o = hancho(
 
 def build_firmware(in_src):
     out_obj = hancho(hancho.riscv_rules.rv_compile, in_src=in_src)
-    out_elf = hancho(hancho.riscv_rules.rv_link,    in_objs=[out_obj, start_o], out_bin=hancho.swap_ext(in_src, '.elf'))
+    out_elf = hancho(hancho.riscv_rules.rv_link,    in_objs=[out_obj, start_o], out_bin="{ext(in_objs[0], '.elf')}")
     out_hex = hancho(hancho.metrolib.tools.elf_to_hex, in_elf=out_elf)
     return out_hex
 
@@ -16,7 +16,7 @@ for src in glob.glob("firmware/*.cpp"):
 
 def build_test(in_src):
     out_obj = hancho(hancho.riscv_rules.rv_compile, in_src=in_src)
-    out_elf = hancho(hancho.riscv_rules.rv_link,    in_objs=[out_obj], out_bin=hancho.swap_ext(in_src, '.elf'))
+    out_elf = hancho(hancho.riscv_rules.rv_link,    in_objs=[out_obj], out_bin="{ext(in_objs[0], '.elf')}")
     out_hex = hancho(hancho.metrolib.tools.elf_to_hex, in_elf=out_elf)
     return out_hex
 
