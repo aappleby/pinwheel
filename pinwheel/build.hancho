@@ -1,6 +1,6 @@
 import glob
 
-hancho.config.includes = [
+hancho.context.includes = [
     "{repo_dir}",
     "{repo_dir}/symlinks",
     "{repo_dir}/symlinks/metrolib",
